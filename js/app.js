@@ -599,65 +599,205 @@ const App = (() => {
       if (!resp.ok) return;
       const data = await resp.json();
       
-      if (data.version && data.version !== _lastVersion) {
-        console.log(`[App] Update detected: ${data.version} (Current: ${_lastVersion})`);
+      const remoteVersion = data.version;
+      const localVersion  = localStorage.getItem('crm_app_version') || 'v0';
+
+      if (remoteVersion && remoteVersion !== localVersion) {
+        console.log(`[App] Update detected: ${remoteVersion} (Current: ${localVersion})`);
         _updatePending = true;
-        localStorage.setItem('crm_app_version_new', data.version);
-        showUpdateNotice(); // Show immediately if just detected
-      } else if (data.version) {
-        localStorage.setItem('crm_app_version', data.version);
-        _lastVersion = data.version;
+        showUpdateNotice(remoteVersion, data.description);
       }
     } catch (e) {}
   }
 
-  function showUpdateNotice() {
-    if (document.getElementById('update-notice-floating')) return;
-    const banner = document.createElement('div');
-    banner.id = 'update-notice-floating';
-    banner.style = `
-      position: fixed;
-      left: 50%;
-      bottom: 85px;
-      transform: translateX(-50%);
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.4);
-      z-index: 10001;
-      width: 90%;
-      max-width: 360px;
-      animation: appUpdateSlideUp 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  function showUpdateNotice(newVer, desc) {
+    if (document.getElementById('blocking-update-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'blocking-update-overlay';
+    overlay.className = 'fade-in';
+    overlay.style = `
+      position: fixed; inset: 0; background: rgba(10, 17, 24, 0.97);
+      backdrop-filter: blur(12px); z-index: 99999;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
     `;
-    banner.innerHTML = `
-      <div style="width:36px; height:36px; border-radius:10px; background:rgba(13, 115, 119, 0.1); display:flex; align-items:center; justify-content:center; font-size:20px;">🚀</div>
-      <div style="flex:1; overflow:hidden;">
-        <div style="font-weight:700; font-size:13px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Actualización disponible</div>
-        <div style="font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Mejoras de estabilidad listas</div>
+    
+    overlay.innerHTML = `
+      <div class="card" style="max-width: 450px; width: 100%; border: 1px solid var(--primary-light); box-shadow: 0 0 50px rgba(14, 165, 233, 0.4); padding: 32px; text-align: center; background: var(--bg-surface);">
+        <div style="font-size: 56px; margin-bottom: 24px;">🚀</div>
+        <h2 style="font-size: 26px; font-weight: 800; color: white; margin-bottom: 12px; letter-spacing:-0.5px;">Actualización Requerida</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 16px; font-size:15px;">Se ha detectado la versión <b>${newVer}</b> del núcleo Elite 3.0.</p>
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 28px; font-size: 13.5px; color: var(--text-muted); text-align: left; border-left: 4px solid var(--primary);">
+          ${desc || 'Mejoras críticas de rendimiento y sincronización de datos.'}
+        </div>
+        <p style="font-size: 14px; font-weight: 700; color: var(--primary-light); margin-bottom: 24px; text-transform:uppercase; letter-spacing:1px;">Es obligatorio actualizar para continuar</p>
+        <button class="btn btn-primary btn-lg" onclick="App.applyUpdate('${newVer}')" style="width: 100%; height: 56px; font-weight: 800; font-size: 17px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);">
+          INSTALAR Y REINICIAR
+        </button>
       </div>
-      <button class="btn btn-sm btn-primary" onclick="App.applyUpdate()" style="padding:4px 10px; font-size:11px; border-radius:6px; font-weight:700;">Actualizar</button>
-      <button onclick="this.parentElement.remove()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding:2px; display:flex; align-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      <style>
-        @keyframes appUpdateSlideUp { 
-          from { transform: translate(-50%, 100px); opacity: 0; } 
-          to { transform: translate(-50%, 0); opacity: 1; } 
-        }
-      </style>
     `;
-    document.body.appendChild(banner);
+    
+    document.body.style.overflow = 'hidden';
+    document.body.appendChild(overlay);
   }
 
-  function applyUpdate() {
-    const newVer = localStorage.getItem('crm_app_version_new');
-    if (newVer) localStorage.setItem('crm_app_version', newVer);
+  function applyUpdate(version) {
+    if (version) localStorage.setItem('crm_app_version', version);
     window.location.reload(true);
   }
 
-  // ─── Role helpers ─────────────────────────────────────────────────────────
+  // ─── Daily Rate Mandatory logic ──────────────────────────────────────────
+  async function _checkDailyRate() {
+    try {
+      const data = await Sheets.readSheet(CONFIG.SHEETS.RATES, false);
+      const today = Utils.todayISO();
+      const hasToday = data.some(r => String(r['Fecha']).split('T')[0] === today);
+      
+      if (!hasToday) {
+        console.log('[App] Tasa de hoy no encontrada. Iniciando auto-fetch...');
+        try {
+          const bcv = await API.call('FETCH_BCV_RATE', {});
+          if (bcv && bcv.success && bcv.rate) {
+            console.log('[App] Auto-fetch exitoso:', bcv.rate);
+            await Sheets.appendRow(CONFIG.SHEETS.RATES, {
+              ID: Utils.generateId(),
+              Fecha: today,
+              'Tasa Oficial': bcv.rate,
+              Fuente: bcv.source || 'BCV (Auto)'
+            });
+            Utils.showToast(`Tasa del día automatizada: Bs. ${bcv.rate}`, 'success');
+            // Recargar vista actual si estamos en rates
+            if (window.location.hash === '#/rates') Rates.render();
+            return;
+          }
+        } catch(scavengeErr) {
+          console.warn('[App] Scavenger falló:', scavengeErr.message);
+        }
+        
+        // Si falló el auto-fetch o dio error, mostrar modal bloqueante
+        _showBlockingRateModal();
+      }
+    } catch(e) {
+      console.error('[App] Error en verificador de tasa:', e);
+    }
+  }
+
+  function _showBlockingRateModal() {
+    if (document.getElementById('blocking-rate-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'blocking-rate-overlay';
+    overlay.className = 'fade-in';
+    overlay.style = `
+      position: fixed; inset: 0; background: rgba(10, 17, 24, 0.98);
+      backdrop-filter: blur(15px); z-index: 99998;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    `;
+    
+    overlay.innerHTML = `
+      <div class="card" style="max-width: 420px; width: 100%; border: 1px solid #f59e0b; box-shadow: 0 0 50px rgba(245, 158, 11, 0.2); padding: 36px; text-align: center; background: var(--bg-surface);">
+        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+        <h2 style="font-size: 22px; font-weight: 800; color: white; margin-bottom: 12px; letter-spacing:-0.5px;">Dato Crítico Requerido</h2>
+        <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 28px; line-height:1.5;">La tasa oficial BCV de hoy no ha sido registrada y la consulta automática falló. Por favor, ingrésela manualmente.</p>
+        
+        <div style="text-align: left; margin-bottom: 32px;">
+          <label style="display:block; font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Valor Oficial (Bs. por 1$)</label>
+          <div style="position:relative;">
+            <input type="number" id="mandatory-rate-input" step="0.0001" style="width:100%; padding:18px; background:rgba(255,255,255,0.03); border:1.5px solid var(--border); color:white; border-radius:12px; font-size:24px; font-weight:800; text-align:center; outline:none; transition:border-color 0.2s;" placeholder="0.00">
+            <div style="position:absolute; left:20px; top:50%; transform:translateY(-50%); font-weight:800; color:var(--text-muted); font-size:18px;">Bs.</div>
+          </div>
+        </div>
+
+        <button class="btn btn-warning" onclick="App.saveMandatoryRate()" id="save-mandatory-btn" style="width: 100%; height: 56px; font-weight: 800; font-size:16px; color: #000; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);">
+          GUARDAR Y EMPEZAR DÍA
+        </button>
+        <p style="margin-top: 24px; font-size: 12px; color: var(--text-muted);">Consulte el valor oficial en <a href="http://bcv.org.ve" target="_blank" style="color:#0ea5e9; font-weight:800; text-decoration:none;">bcv.org.ve</a></p>
+      </div>
+    `;
+    
+    document.body.style.overflow = 'hidden';
+    document.body.appendChild(overlay);
+    setTimeout(() => document.getElementById('mandatory-rate-input')?.focus(), 300);
+  }
+
+  async function saveMandatoryRate() {
+    const input = document.getElementById('mandatory-rate-input');
+    const btn   = document.getElementById('save-mandatory-btn');
+    const val   = parseFloat(String(input.value).replace(',', '.'));
+    
+    if (!val || val <= 0) {
+      Utils.showToast('Por favor, ingrese un valor de tasa válido.', 'error');
+      input.focus();
+      input.style.borderColor = '#ef4444';
+      return;
+    }
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-sm"></span> GUARDANDO...`;
+
+      await Sheets.appendRow(CONFIG.SHEETS.RATES, {
+        ID: Utils.generateId(),
+        Fecha: Utils.todayISO(),
+        'Tasa Oficial': val,
+        Fuente: 'Manual (Apertura)'
+      });
+
+      Utils.showToast('Tasa del día registrada con éxito.', 'success');
+      document.getElementById('blocking-rate-overlay').remove();
+      document.body.style.overflow = '';
+      if (window.location.hash === '#/rates') Rates.render();
+    } catch(e) {
+      Utils.showToast('Error de conexión. Intente de nuevo.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'REINTENTAR';
+    }
+  }
+
+  // ─── Theme & Currency ───────────────────────────────────────────────────
+  function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light-mode');
+    localStorage.setItem('crm_theme', isLight ? 'light' : 'dark');
+    _updateThemeUI(isLight);
+  }
+
+  function _updateThemeUI(isLight) {
+    const sun  = document.getElementById('theme-icon-sun');
+    const moon = document.getElementById('theme-icon-moon');
+    if (sun) sun.style.display = isLight ? 'block' : 'none';
+    if (moon) moon.style.display = isLight ? 'none' : 'block';
+  }
+
+  function toggleCurrency() {
+    const current = localStorage.getItem('crm_currency') || 'USD';
+    const next    = current === 'USD' ? 'VES' : 'USD';
+    localStorage.setItem('crm_currency', next);
+    _updateCurrencyUI(next);
+    
+    const hash = window.location.hash.substring(1) || '/dashboard';
+    _handleRoute(hash);
+    Utils.showToast(`Moneda cambiada a ${next}`, 'info');
+  }
+
+  function _updateCurrencyUI(curr) {
+    const usd = document.getElementById('currency-label-usd');
+    const ves = document.getElementById('currency-label-ves');
+    if (!usd || !ves) return;
+    const isUSD = curr === 'USD';
+    usd.style.color   = isUSD ? 'var(--primary-light)' : 'var(--text-muted)';
+    usd.style.opacity = isUSD ? '1' : '0.5';
+    ves.style.color   = isUSD ? 'var(--text-muted)' : 'var(--primary-light)';
+    ves.style.opacity = isUSD ? '0.5' : '1';
+  }
+
+  function getCurrency() {
+    return localStorage.getItem('crm_currency') || 'USD';
+  }
+
+  function setFontScale(scale) {
+    document.documentElement.style.fontSize = `${scale * 16}px`;
+    localStorage.setItem('crm_font_scale', scale);
+  }
 
   function isAdmin() {
     const role = _currentUser?.role || localStorage.getItem('crm_user_role') || _currentRole;
@@ -668,229 +808,43 @@ const App = (() => {
     return _currentUser?.email || '';
   }
 
-  // ─── Theme & Currency ────────────────────────────────────────────────────
-  function toggleTheme() {
-    const isLight = document.documentElement.classList.toggle('light-mode');
-    localStorage.setItem('crm_theme', isLight ? 'light' : 'dark');
-    _updateThemeUI(isLight);
-  }
-
-  function _updateThemeUI(isLight) {
-    document.getElementById('theme-icon-sun').style.display  = isLight ? 'block' : 'none';
-    document.getElementById('theme-icon-moon').style.display = isLight ? 'none' : 'block';
-  }
-
-  function toggleCurrency() {
-    const current = localStorage.getItem('crm_currency') || 'USD';
-    const next    = current === 'USD' ? 'VES' : 'USD';
-    localStorage.setItem('crm_currency', next);
-    _updateCurrencyUI(next);
-    
-    // Forzar recarga de la vista actual para reflejar el cambio de moneda
-    const hash = window.location.hash.substring(1) || '/dashboard';
-    _handleRoute(hash);
-    
-    Utils.showToast(`Moneda cambiada a ${next}`, 'info');
-  }
-
-  function _updateCurrencyUI(curr) {
-    const isUSD = curr === 'USD';
-    document.getElementById('currency-label-usd').style.color   = isUSD ? 'var(--primary-light)' : 'var(--text-muted)';
-    document.getElementById('currency-label-usd').style.opacity = isUSD ? '1' : '0.5';
-    document.getElementById('currency-label-ves').style.color   = isUSD ? 'var(--text-muted)' : 'var(--primary-light)';
-    document.getElementById('currency-label-ves').style.opacity = isUSD ? '0.5' : '1';
-  }
-
-  function getCurrency() {
-    return localStorage.getItem('crm_currency') || 'USD';
-  }
-
-  async function _checkDailyRate() {
-    // If not authenticated yet, wait (but init calls it after auth)
-    try {
-      const last = await Sheets.latestRate();
-      const today = Utils.todayISO();
-      if (!last || last['Fecha'] !== today) {
-        _showDailyRateModal();
-      }
-    } catch(e) { console.error('Error verificando tasa diaria:', e); }
-  }
-
-  function _showDailyRateModal() {
-    Utils.showModal({
-      title: 'Tasa de Cambio del Día',
-      size: 'sm',
-      closable: false,
-      content: `
-        <div style="text-align:center; padding:10px;">
-          <div style="font-size:40px; margin-bottom:10px;">📊</div>
-          <p class="text-muted" style="margin-bottom:20px;">
-            Es el primer inicio del día. Por favor ingrese la tasa oficial BCV para continuar con los cálculos precisos.
-          </p>
-          <div class="form-group">
-            <label class="form-label">Tasa Oficial (Bs/$)</label>
-            <input type="number" step="0.01" id="daily-rate-prompt" class="form-input" 
-                   style="font-size:28px; text-align:center; font-weight:800; color:var(--primary-light);" 
-                   placeholder="0.00" autofocus />
-          </div>
-        </div>
-      `,
-      footer: `
-        <button class="btn btn-primary btn-wide" onclick="App.saveDailyRatePrompt()">Establecer Tasa Oficial</button>
-      `
-    });
-  }
-
-  async function saveDailyRatePrompt() {
-    const val = Utils.toNumber(document.getElementById('daily-rate-prompt').value);
-    if (!val || val <= 0) {
-      Utils.showToast('Ingrese un valor válido', 'warning');
-      return;
-    }
-
-    try {
-      Utils.showToast('Guardando tasa...', 'info');
-      await Sheets.appendRow(CONFIG.SHEETS.RATES, {
-        'ID': Utils.generateId(),
-        'Fecha': Utils.todayISO(),
-        'Tasa Oficial': val,
-        'Fuente': 'BCV'
-      });
-      Utils.showToast('Tasa del día establecida', 'success');
-      Utils.closeModal();
-      
-      // Forzar limpieza de caché para mostrar la nueva tasa al instante
-      Sheets.invalidateAll();
-      _handleRoute(_currentRoute);
-    } catch(e) {
-      Utils.showToast('Error: ' + e.message, 'error');
-    }
-  }
-
-  // ─── Boot ─────────────────────────────────────────────────────────────────
-  // Expose methods as a global before init
-  window.App = {
-    navigate, toggleSidebar, closeSidebar,
-    toggleNotifications, toggleUserMenu, closeMenus,
-    toggleMoreMenu,
-    markAllNotifRead, isAdmin, getCurrentUserEmail,
-    runSetupNow,
-    toggleTheme, toggleCurrency, getCurrency, setFontScale,
-    saveDailyRatePrompt,
-    applyUpdate, showUpdateNotice
-  };
-
-  // Auto-init when DOM is ready
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Restore sidebar preference
-    const sidebarCollapsed = localStorage.getItem('crm_sidebar_collapsed') === 'true';
-    if (sidebarCollapsed && window.innerWidth >= 768) {
-      document.getElementById('app-shell').classList.add('sidebar-collapsed');
-      document.getElementById('sidebar').classList.add('collapsed');
-    }
-
-    // Restore theme preferences
-    if (localStorage.getItem('crm_theme') === 'light') {
-      document.documentElement.classList.add('light-mode');
-      setTimeout(() => _updateThemeUI(true), 100);
-    }
-    const curr = localStorage.getItem('crm_currency') || 'USD';
-    setTimeout(() => _updateCurrencyUI(curr), 100);
-
-    // DYNAMIC VIEWPORT FIX (Elite 5.6) — Fixes mobile browser address bar height issues
-    const setVh = () => {
-      let vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    window.addEventListener('resize', setVh);
-    window.addEventListener('orientationchange', setVh);
-    setVh();
-
-    // Request notification permission (Removed because Utils function is missing)
-    if (typeof Utils.requestNotificationPermission === 'function') {
-      await Utils.requestNotificationPermission();
-    }
-    await init();
-
-    // ── MOBILE SWIPE DRAWER — Chrome-Android Compatible ───────────────────
-    // Uses a dedicated #swipe-zone div to avoid Chrome's back-gesture conflict
-    // ─────────────────────────────────────────────────────────────────────────
+  // ─── Mobile Swipe Gesture (Elite 3.0) ───────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
     if (window.innerWidth < 768) {
       const sidebar   = document.getElementById('sidebar');
       const overlay   = document.getElementById('sidebar-overlay');
       const swipeZone = document.getElementById('swipe-zone');
 
-      if (!sidebar) { console.warn('[Swipe] sidebar not found'); }
+      let tX = 0, tY = 0, active = false, opening = true;
+      const THRESHOLD = 0.5, MIN_SWIPE = 60;
 
-      const MIN_SWIPE  = 40;   // px to commit open/close
-      const THRESHOLD  = 1.5;  // dx must be this larger than dy to count
+      const _isOpen = () => sidebar?.classList.contains('mobile-open');
 
-      let tX = 0, tY = 0, active = false, opening = false;
-
-      function _isOpen() { return sidebar && sidebar.classList.contains('mobile-open'); }
-
-      function _showOverlay(opacity) {
-        if (!overlay) return;
-        overlay.style.display = 'block';
-        overlay.style.opacity = opacity;
-      }
-
-      function _openSidebar() {
-        if (!sidebar) return;
-        sidebar.style.transition = '';
-        sidebar.style.transform  = '';
-        sidebar.classList.add('mobile-open');
-        if (overlay) {
-          overlay.style.display  = 'block';
-          overlay.style.opacity  = '';
-          overlay.classList.add('show');
-        }
-        document.body.classList.add('lock-scroll');
-      }
-
-      function _closeSidebar() {
-        closeSidebar();
-        if (sidebar) sidebar.style.transform = '';
-        if (overlay) { overlay.style.opacity = ''; overlay.style.display = ''; }
-      }
-
-      // ── OPEN: touch starts on swipe-zone ─────────────────────────────────
       if (swipeZone) {
         swipeZone.addEventListener('touchstart', (e) => {
           if (_isOpen()) return;
-          tX = e.touches[0].clientX;
-          tY = e.touches[0].clientY;
-          active  = true;
-          opening = true;
+          tX = e.touches[0].clientX; tY = e.touches[0].clientY;
+          active = true; opening = true;
           if (sidebar) sidebar.style.transition = 'none';
         }, { passive: true });
       }
 
-      // ── CLOSE: touch starts anywhere on the open sidebar ─────────────────
       if (sidebar) {
         sidebar.addEventListener('touchstart', (e) => {
           if (!_isOpen()) return;
-          tX = e.touches[0].clientX;
-          tY = e.touches[0].clientY;
-          active  = true;
-          opening = false;
+          tX = e.touches[0].clientX; tY = e.touches[0].clientY;
+          active = true; opening = false;
           sidebar.style.transition = 'none';
         }, { passive: true });
       }
 
-      // ── MOVE ──────────────────────────────────────────────────────────────
       document.addEventListener('touchmove', (e) => {
         if (!active || !sidebar) return;
         const dx = e.touches[0].clientX - tX;
         const dy = e.touches[0].clientY - tY;
-
-        // Cancel if mostly vertical
         if (Math.abs(dy) > Math.abs(dx) * THRESHOLD && Math.abs(dx) < 15) {
-          active = false;
-          sidebar.style.transition = '';
-          return;
+          active = false; sidebar.style.transition = ''; return;
         }
-
         const W = sidebar.offsetWidth;
         let offset;
         if (opening) {
@@ -944,7 +898,6 @@ const App = (() => {
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
     runSetupNow, saveDailyRatePrompt,
-    applyUpdate, showUpdateNotice
+    applyUpdate, showUpdateNotice, saveMandatoryRate
   };
 })();
-

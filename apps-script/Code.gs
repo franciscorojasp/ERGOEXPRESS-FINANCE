@@ -52,6 +52,7 @@ function doPost(e) {
       const user = auth(req);
       switch (req.action) {
         case 'VALIDATE_TOKEN': return ok({ success: true, user });
+        case 'FETCH_BCV_RATE': return ok(fetchBCVRate());
         case 'READ':           return ok(read(req));
         case 'BATCH_READ':     return ok(batchRead(req));
         case 'APPEND':         return ok(append(req));
@@ -533,5 +534,61 @@ function syncToCalendar(req) {
     return { success: true, eventId: event.getId() };
   } catch (e) {
     return { success: false, error: 'Error Sync Calendar: ' + e.message };
+  }
+}
+
+/**
+ * Obtiene la tasa oficial del BCV (USD) mediante web scraping.
+ */
+function fetchBCVRate() {
+  try {
+    const url = 'https://www.bcv.org.ve/';
+    const options = {
+      'muteHttpExceptions': true,
+      'followRedirects': true,
+      'headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    };
+    
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) {
+      return { success: false, error: 'Servidor BCV no disponible (HTTP ' + response.getResponseCode() + ')' };
+    }
+    
+    const html = response.getContentText();
+    
+    // El BCV suele tener la tasa en un div con id="dolar" o similar. 
+    // Buscamos el patrón: <div id="dolar"> ... <strong> 47,4061 </strong>
+    // Nota: El regex debe ser flexible ante espacios y cambios menores.
+    const regex = /id=["']dolar["'][^>]*>[\s\S]*?<strong>\s*([\d,.]+)\s*<\/strong>/i;
+    const match = html.match(regex);
+    
+    if (match && match[1]) {
+      let rateStr = match[1].replace(',', '.'); // Convertir coma decimal a punto
+      const rate = parseFloat(rateStr);
+      
+      if (!isNaN(rate) && rate > 0) {
+        return { 
+          success: true, 
+          rate: rate, 
+          date: new Date().toISOString().split('T')[0],
+          source: 'BCV (Auto)'
+        };
+      }
+    }
+    
+    // Intento 2: Buscar por etiquetas de texto si el ID falló
+    const regex2 = /Dólar[\s\S]*?<strong>\s*([\d,.]+)\s*<\/strong>/i;
+    const match2 = html.match(regex2);
+    if (match2 && match2[1]) {
+       let rateStr = match2[1].replace(',', '.');
+       const rate = parseFloat(rateStr);
+       if (!isNaN(rate)) return { success: true, rate, date: new Date().toISOString().split('T')[0], source: 'BCV (Auto-Alt)' };
+    }
+
+    return { success: false, error: 'No se pudo localizar el valor de la tasa en el HTML del BCV.' };
+  } catch (err) {
+    return { success: false, error: 'Error al consultar BCV: ' + err.message };
   }
 }
