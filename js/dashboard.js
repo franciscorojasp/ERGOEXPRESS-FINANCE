@@ -7,6 +7,10 @@ const Dashboard = (() => {
   let _charts = {};
 
   async function render(container) {
+    if (!container) {
+      console.warn('[Dashboard] Render abortado: Contenedor no encontrado.');
+      return;
+    }
     container.innerHTML = `
       <div class="fade-in">
         <!-- Welcome -->

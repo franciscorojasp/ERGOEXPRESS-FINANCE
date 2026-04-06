@@ -318,14 +318,19 @@ const App = (() => {
   }
 
   function _handleRoute(route) {
-    // If an update is pending, we try to reload on navigation
-    if (_updatePending) {
-      console.log('[App] New version pending. Reloading on navigation...');
+    // 1. Force remove the loading spinner as soon as the app logic takes over a route
+    const appLoading = document.getElementById('app-loading');
+    if (appLoading) appLoading.style.display = 'none';
+
+    // 2. Prevent reload-loops: Only reload if the version is pending AND we are 
+    // actually navigating away from what we already rendered.
+    if (_updatePending && _currentRoute !== route) {
+      console.log('[App] New version pending. Reloading for navigation to:', route);
       window.location.reload();
       return;
     }
 
-    _currentRoute = route;
+    _currentRoute = route || '/dashboard';
 
     // Match route with params
     let handler = routes[route];
@@ -599,15 +604,23 @@ const App = (() => {
       if (!resp.ok) return;
       const data = await resp.json();
       
-      const remoteVersion = data.version;
-      const localVersion  = localStorage.getItem('crm_app_version') || 'v0';
+      const remote = (data.version || '').trim().toLowerCase();
+      const local  = (localStorage.getItem('crm_app_version') || 'v0').trim().toLowerCase();
 
-      if (remoteVersion && remoteVersion !== localVersion) {
-        console.log(`[App] Update detected: ${remoteVersion} (Current: ${localVersion})`);
+      // Normalize comparison (ignore "v" prefix if one has it and other doesn't)
+      const normRemote = remote.startsWith('v') ? remote.substring(1) : remote;
+      const normLocal  = local.startsWith('v')  ? local.substring(1)  : local;
+
+      console.log(`[App] Version Check -> Local: ${local}, Remote: ${remote}`);
+
+      if (normRemote && normRemote !== normLocal) {
+        console.log(`[App] Update required: ${remote} != ${local}`);
         _updatePending = true;
-        showUpdateNotice(remoteVersion, data.description);
+        showUpdateNotice(remote, data.description);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[App] Update check failed:', e);
+    }
   }
 
   function showUpdateNotice(newVer, desc) {
