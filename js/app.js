@@ -876,6 +876,7 @@ const App = (() => {
   return {
     navigate, toggleSidebar, closeSidebar,
     toggleNotifications, toggleUserMenu, closeMenus,
+    toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
     runSetupNow, saveDailyRatePrompt
