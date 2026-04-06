@@ -340,23 +340,93 @@ const Rates = (() => {
 
   function _renderTable() {
     const wrap = document.getElementById('rates-table-container');
-    if (!wrap) return;
+    if (!wrap) {
+      console.error('CRITICAL: rates-table-container NOT FOUND in DOM');
+      return;
+    }
     
+    // 1. Limpieza total y Monitor de Salud
+    wrap.innerHTML = '';
+    const monitor = document.createElement('div');
+    monitor.style = 'background:#1e293b; color:#38bdf8; padding:8px 16px; font-size:10px; font-weight:800; border-radius:8px 8px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;';
+    monitor.innerHTML = `DIAGNÓSTICO: ${_rates ? _rates.length : 0} registros totales | Filtro: ${_filterDays} días | Fecha: ${Utils.todayISO()}`;
+    wrap.appendChild(monitor);
+
     try {
       if (!_rates || _rates.length === 0) {
-        wrap.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros disponibles.</div>`;
+        const empty = document.createElement('div');
+        empty.style = 'padding:40px; text-align:center; color:rgba(255,255,255,0.4); background:#070c12; border:1px solid rgba(255,255,255,0.1);';
+        empty.textContent = 'No hay registros disponibles para mostrar.';
+        wrap.appendChild(empty);
         return;
       }
 
       const filtered = _rates.slice(0, _filterDays);
       const today = Utils.todayISO();
 
-      let rowsHTML = '';
+      // 2. Crear Contenedor de Tabla
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'rates-premium-table-wrap';
+      tableWrap.style = 'display:block !important; visibility:visible !important; opacity:1 !important; background:#070c12 !important; border:1px solid rgba(255,255,255,0.1) !important; min-height:300px;';
+      
+      const table = document.createElement('table');
+      table.className = 'rates-premium-table';
+      table.style = 'width:100% !important; border-collapse:collapse !important; color:#ffffff !important;';
+
+      // 3. Encabezado
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr style="background:rgba(255,255,255,0.03);">
+          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Fecha</th>
+          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Tasa</th>
+          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Origen</th>
+          <th style="text-align:right; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Dinámica</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      // 4. Cuerpo de Tabla
+      const tbody = document.createElement('tbody');
       filtered.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        
         try {
           const isActual = (r['Fecha'] === today) || (i === 0);
-          let dynHTML = '<span style="color:rgba(255,255,255,0.2)">—</span>';
           
+          // Celda Fecha
+          const tdFecha = document.createElement('td');
+          tdFecha.style.padding = '16px 24px';
+          tdFecha.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:700; color:#fff !important;">${r['Fecha'] || '—'}</span>
+              ${isActual ? '<span class="badge-actual" style="background:#3b82f6; padding:2px 6px; border-radius:4px; font-size:9px;">ACTUAL</span>' : ''}
+            </div>
+          `;
+          tr.appendChild(tdFecha);
+
+          // Celda Tasa
+          const tdTasa = document.createElement('td');
+          tdTasa.style.padding = '16px 24px';
+          const vesVal = Utils.formatVES(r['Tasa Oficial']) || '0,00';
+          tdTasa.innerHTML = `
+            <span style="color:#64748b; font-weight:600; font-size:11px; margin-right:4px;">Bs</span>
+            <span style="font-weight:800; color:#fff !important; font-size:16px;">${vesVal}</span>
+          `;
+          tr.appendChild(tdTasa);
+
+          // Celda Fuente
+          const tdFuente = document.createElement('td');
+          tdFuente.style.padding = '16px 24px';
+          tdFuente.innerHTML = `<span style="color:rgba(255,255,255,0.4);">${r['Fuente'] || 'BCV'}</span>`;
+          tr.appendChild(tdFuente);
+
+          // Celda Dinámica
+          const tdDyn = document.createElement('td');
+          tdDyn.style.padding = '16px 24px';
+          tdDyn.style.textAlign = 'right';
+          
+          let dynLabel = '<span style="color:rgba(255,255,255,0.1)">—</span>';
           if (i < _rates.length - 1) {
             const nextVal = Utils.toNumber(_rates[i+1]['Tasa Oficial']);
             const currVal = Utils.toNumber(r['Tasa Oficial']);
@@ -365,51 +435,29 @@ const Rates = (() => {
               if (Math.abs(p) > 0.001) {
                 const color = p > 0 ? '#ef4444' : '#10b981';
                 const icon = p > 0 ? '▲' : '▼';
-                dynHTML = `<span style="color:${color}; font-weight:800;">${icon} ${Math.abs(p).toFixed(2)}%</span>`;
+                dynLabel = `<span style="color:${color}; font-weight:800;">${icon} ${Math.abs(p).toFixed(2)}%</span>`;
               }
             }
           }
+          tdDyn.innerHTML = dynLabel;
+          tr.appendChild(tdDyn);
 
-          rowsHTML += `
-            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-               <td style="padding:16px 24px;">
-                  <div style="display:flex; align-items:center; gap:12px;">
-                     <span style="font-weight:700; color:#ffffff !important;">${r['Fecha'] || '—'}</span>
-                     ${isActual ? `<span class="badge-actual">ACTUAL</span>` : ''}
-                  </div>
-               </td>
-               <td style="padding:16px 24px;">
-                  <span style="color:var(--text-muted); font-weight:600; font-size:11px;">Bs</span>
-                  <span style="font-weight:800; color:#ffffff !important; font-size:16px;">${Utils.formatVES(r['Tasa Oficial'])}</span>
-               </td>
-               <td style="padding:16px 24px;"><span style="color:rgba(255,255,255,0.5);">${r['Fuente'] || 'BCV'}</span></td>
-               <td style="padding:16px 24px; text-align:right;">${dynHTML}</td>
-            </tr>
-          `;
-        } catch(e) {
-          console.error('Error renderizando fila:', e);
+        } catch(rowErr) {
+          tr.innerHTML = `<td colspan="4" style="color:#ef4444; font-size:10px;">Error fila ${i}: ${rowErr.message}</td>`;
         }
+        
+        tbody.appendChild(tr);
       });
 
-      wrap.innerHTML = `
-        <div class="rates-premium-table-wrap" style="display:block !important; border:1px solid rgba(255,255,255,0.1) !important;">
-          <table class="rates-premium-table" style="width:100% !important; border-collapse:collapse !important; color:#ffffff !important;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.03);">
-                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">FECHA</th>
-                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">TASA</th>
-                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">ORIGEN</th>
-                <th style="text-align:right; padding:16px 24px; color:var(--text-muted); font-size:10px;">DINÁMICA</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHTML || '<tr><td colspan="4" style="text-align:center; padding:20px;">No se pudieron generar las filas.</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      `;
+      table.appendChild(tbody);
+      tableWrap.appendChild(table);
+      wrap.appendChild(tableWrap);
+
     } catch(err) {
-      wrap.innerHTML = `<div style="padding:20px; color:#ef4444; background:rgba(239,68,68,0.1); border-radius:12px;">Error en tabla: ${err.message}</div>`;
+      const errorDiv = document.createElement('div');
+      errorDiv.style = 'padding:20px; color:#f87171; background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:8px; margin-top:8px;';
+      errorDiv.textContent = 'ERROR RENDER: ' + err.message;
+      wrap.appendChild(errorDiv);
     }
   }
 
