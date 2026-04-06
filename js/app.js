@@ -776,7 +776,8 @@ const App = (() => {
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     runSetupNow,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
-    saveDailyRatePrompt
+    saveDailyRatePrompt,
+    applyUpdate, showUpdateNotice
   };
 
   // Auto-init when DOM is ready

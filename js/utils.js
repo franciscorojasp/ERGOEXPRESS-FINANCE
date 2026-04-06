@@ -516,7 +516,10 @@ const Utils = (() => {
     capitalize, initials, truncate, slugify, escapeHtml,
     groupBy, sortBy,
     stageColor, stageIcon, statusBadge, nextCorrelative,
-    // ─── Re-injected Missing Functions ────────────────────────────────────
+    cleanPhone: function(phone) {
+      if (!phone) return '';
+      return String(phone).replace(/[^\d]/g, '');
+    },
     validateRequired: function(data, fields) {
       if (!data) return fields;
       return fields.filter(f => !data[f] || String(data[f]).trim() === '');

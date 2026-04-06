@@ -681,6 +681,22 @@ const Contacts = (() => {
     applyFilter, sortBy,
     openInteractionForm, saveInteraction,
     exportCSV,
+    switchTab: (tabName, btn) => {
+      // Manage buttons
+      const buttons = btn.parentElement.querySelectorAll('.tab-btn');
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Manage panels
+      const panels = document.querySelectorAll('.tab-panel');
+      panels.forEach(p => p.style.display = 'none');
+      
+      const target = document.getElementById('tab-' + tabName);
+      if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+      }
+    },
     updateField: async (id, field, value) => {
       try {
         Utils.showToast('Actualizando...', 'info');
