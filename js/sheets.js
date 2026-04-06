@@ -191,7 +191,7 @@ const Sheets = (() => {
     findRow, findRows,
     getConfig, setConfig, getAllConfig,
     findUser, createUser,
-    nextItemNumber, nextQuoteNumber, latestRate,
+    nextQuoteNumber, latestRate,
     savePDFToDrive,
     invalidateAll
   };

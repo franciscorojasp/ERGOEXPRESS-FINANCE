@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.5",
-  "timestamp": 1775494000000,
-  "description": "Nueva funcionalidad: Asistente IA (ERGO-AI) integrado. Mejoras en la persistencia de datos y sincronización de contactos. Corrección de errores críticos de duplicación."
+  "version": "v3.1.6",
+  "timestamp": 1775495000000,
+  "description": "Hotfix v3.1.6: Corrección crítica de carga del Dashboard (Sheets Error) y ajuste del motor Gemini AI para mayor estabilidad."
 }
