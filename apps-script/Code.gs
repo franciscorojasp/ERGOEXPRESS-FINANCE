@@ -610,59 +610,57 @@ function fetchBCVRate() {
  * Comunicación con Google Gemini AI
  */
 function askGemini(req) {
-  try {
-    const apiKey = req.geminiApiKey;
-    const model  = req.model || 'gemini-1.5-flash';
-    const url    = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
-    
-    // Como v1 no soporta 'systemInstruction' nativamente en todas las configuraciones,
-    // inyectamos la identidad de ERGO-AI al inicio del historial.
-    const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
-    Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
-    ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
-    Sé profesional, amable, servicial y directo. Habla siempre en español.
-    Hoy es ${new Date().toLocaleDateString('es-VE')}.`;
+  const models = [req.model || 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+  let lastError = '';
 
-    const contents = [...req.contents];
-    // Inyectamos el rol del sistema como un par de mensajes iniciales (instrucción invisible)
-    contents.unshift({
-      role: 'user',
-      parts: [{ text: `INSTRUCCIÓN DE SISTEMA (Prioridad Máxima): ${systemPrompt}. Responde 'Entendido' para confirmar.` }]
-    });
-    contents.unshift({
-      role: 'model',
-      parts: [{ text: "Entendido. Soy ERGO-AI, tu asistente experto de ERGOEXPRESS. ¿En qué puedo ayudarte hoy?" }]
-    });
+  for (const modelId of models) {
+    try {
+      const apiKey = req.geminiApiKey;
+      const url = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${apiKey}`;
+      
+      const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
+      Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
+      ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
+      Sé profesional, amable, servicial y directo. Habla siempre en español.
+      Hoy es ${new Date().toLocaleDateString('es-VE')}.`;
 
-    const payload = {
-      contents: contents,
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+      const contents = [...req.contents];
+      contents.unshift({
+        role: 'user',
+        parts: [{ text: `INSTRUCCIÓN DE SISTEMA: ${systemPrompt}. Responde 'Entendido'.` }]
+      });
+      contents.unshift({
+        role: 'model',
+        parts: [{ text: "Entendido. Soy ERGO-AI, tu asistente experto. ¿En qué puedo ayudarte?" }]
+      });
+
+      const payload = {
+        contents: contents,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      };
+
+      const options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      const response = UrlFetchApp.fetch(url, options);
+      const resJson = JSON.parse(response.getContentText());
+
+      if (response.getResponseCode() === 200) {
+        return { success: true, answer: resJson.candidates[0].content.parts[0].text };
       }
-    };
-
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-
-    const response = UrlFetchApp.fetch(url, options);
-    const resText  = response.getContentText();
-    const resJson  = JSON.parse(resText);
-
-    if (response.getResponseCode() !== 200) {
-      return { success: false, error: resJson.error?.message || 'Error en Gemini API' };
+      
+      lastError = resJson.error?.message || 'Error desconocido';
+      console.warn(`[AI] Falló modelo ${modelId}: ${lastError}`);
+      
+    } catch (err) {
+      lastError = err.message;
+      console.error(`[AI] Error crítico con ${modelId}: ${err.message}`);
     }
-
-    const aiText = resJson.candidates[0].content.parts[0].text;
-    return { success: true, answer: aiText };
-
-  } catch (e) {
-    return { success: false, error: 'Error AI: ' + e.message };
   }
+
+  return { success: false, error: lastError };
 }

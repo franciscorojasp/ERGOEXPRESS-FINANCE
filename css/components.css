@@ -1754,3 +1754,11 @@
     z-index: 3000; /* Over bottom nav */
   }
 }
+
+/* Final Mobile AI Fix (v3.1.9) */
+.ai-chat-panel { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+.ai-messages { flex: 1 !important; overflow-y: auto !important; }
+@media (max-width: 768px) {
+  .ai-chat-panel { height: 100% !important; bottom: 0 !important; top: 0 !important; right: 0 !important; width: 100vw !important; z-index: 9999 !important; }
+  .ai-footer { padding-bottom: 30px !important; background: var(--bg-card) !important; position: sticky !important; bottom: 0 !important; }
+}

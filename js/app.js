@@ -617,7 +617,7 @@ const App = (() => {
       const data = await resp.json();
       
       const remote = (data.version || '').trim().toLowerCase();
-      const local  = (localStorage.getItem('crm_app_version') || 'v0').trim().toLowerCase();
+      const local  = (typeof Config !== 'undefined' ? Config.APP_VERSION : 'v0').trim().toLowerCase();
 
       // Normalize comparison (ignore "v" prefix if one has it and other doesn't)
       const normRemote = remote.startsWith('v') ? remote.substring(1) : remote;

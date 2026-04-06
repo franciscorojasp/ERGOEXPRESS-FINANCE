@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.8",
-  "timestamp": 1775497000000,
-  "description": "Actualización de Robustez IA v3.1.8: Migración al endpoint estable v1 con inyección de identidad para garantizar funcionamiento global del asistente."
+  "version": "v3.1.9",
+  "timestamp": 1775497200000,
+  "description": "Actualización Crítica v3.1.9: Reparación del visor móvil del Asistente IA y nuevo motor de auto-reintento para modelos Gemini Flash/Pro. Requisito: Actualizar Code.gs."
 }
