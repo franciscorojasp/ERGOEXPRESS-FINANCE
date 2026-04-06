@@ -163,11 +163,6 @@ const Sheets = (() => {
   }
 
   // ─── Next numbers (ATOMIC) ───────────────────────────────────────────────
-  async function nextItemNumber() {
-    const res = await API.call('GET_NEXT_NUMBER', { sheet: CONFIG.SHEETS.CONTACTS });
-    return res.next || 1;
-  }
-
   async function nextQuoteNumber() {
     const res = await API.call('GET_NEXT_NUMBER', { sheet: CONFIG.SHEETS.QUOTATIONS });
     return res.next || 1;

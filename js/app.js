@@ -88,6 +88,9 @@ const App = (() => {
       }
 
       _currentUser = Auth.getUser();
+      
+      // Inicializar Asistente AI
+      if (typeof AI !== 'undefined') AI.init();
 
       // 4. Initial Navigation (Render UI now!)
       const initialHash = window.location.hash.replace('#', '');
@@ -101,6 +104,15 @@ const App = (() => {
       // Fallback: If everything fails, try to show the dashboard anyway or redirect
       _handleRoute('/dashboard');
     }
+  }
+
+  /**
+   * Aplica la actualización del sistema guardando la nueva versión
+   * y recargando la página para limpiar caché.
+   */
+  function applyUpdate(newVersion) {
+    localStorage.setItem('crm_app_version', newVersion);
+    window.location.reload(true);
   }
 
   /**

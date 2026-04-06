@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.0",
-  "timestamp": 1775478000000,
-  "description": "Núcleo Elite 3.0: Automatización de tasa BCV, sistema de verificación diaria obligatoria y mejoras de seguridad en el núcleo del sistema."
+  "version": "v3.1.5",
+  "timestamp": 1775494000000,
+  "description": "Nueva funcionalidad: Asistente IA (ERGO-AI) integrado. Mejoras en la persistencia de datos y sincronización de contactos. Corrección de errores críticos de duplicación."
 }

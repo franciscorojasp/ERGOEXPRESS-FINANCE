@@ -64,6 +64,7 @@ function doPost(e) {
         case 'SYNC_TO_CALENDAR': return ok(syncToCalendar(req));
         case 'GET_NEXT_NUMBER': return ok(getNextNumber(req));
         case 'RESET_ALL_PASSWORDS': return ok(resetAllPasswords(req));
+        case 'ASK_GEMINI':     return ok(askGemini(req));
         default: return ok({ success: false, error: 'Acción desconocida o no autorizada: ' + req.action });
       }
     } catch (authErr) {
@@ -155,9 +156,11 @@ function getNextNumber(req) {
   try {
     lock.waitLock(10000); // Esperar hasta 10 segundos
     const data = sheet.getDataRange().getValues();
-    const colName = req.sheet === 'Cotizaciones' ? 'Número' : 'Item';
+    const colName = (req.sheet === 'Cotizaciones' || req.sheet === 'Cotización') ? 'Número' : 'Item';
     const idx = data[0].indexOf(colName);
-    if (idx === -1) return { success: false, error: 'Columna no encontrada' };
+    
+    // Solución definitiva: Si la hoja no tiene columna de secuencia, no damos error fatal.
+    if (idx === -1) return { success: true, next: null };
     
     let max = 0;
     for (let i = 1; i < data.length; i++) {
@@ -600,5 +603,57 @@ function fetchBCVRate() {
     return { success: false, error: 'No se pudo localizar el valor de la tasa en el HTML del BCV.' };
   } catch (err) {
     return { success: false, error: 'Error al consultar BCV: ' + err.message };
+  }
+}
+
+/**
+ * Comunicación con Google Gemini AI
+ */
+function askGemini(req) {
+  try {
+    const apiKey = req.geminiApiKey;
+    const model  = req.model || 'gemini-1.5-flash';
+    const url    = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    
+    const payload = {
+      contents: req.contents,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      },
+      systemInstruction: {
+        parts: [{ 
+          text: `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
+          Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
+          ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
+          Sé profesional, amable, servicial y directo. Habla siempre en español.
+          Si te preguntan sobre el sistema, responde basándote en que es un CRM gestionado con Google Sheets.
+          Hoy es ${new Date().toLocaleDateString('es-VE')}.`
+        }]
+      }
+    };
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const resText  = response.getContentText();
+    const resJson  = JSON.parse(resText);
+
+    if (response.getResponseCode() !== 200) {
+      return { success: false, error: resJson.error?.message || 'Error en Gemini API' };
+    }
+
+    const aiText = resJson.candidates[0].content.parts[0].text;
+    return { success: true, answer: aiText };
+
+  } catch (e) {
+    return { success: false, error: 'Error AI: ' + e.message };
   }
 }

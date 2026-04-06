@@ -17,9 +17,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- CRM Styles -->
-  <link rel="stylesheet" href="css/main.css?v=3.1.0">
-  <link rel="stylesheet" href="css/components.css?v=3.1.0">
-  <link rel="stylesheet" href="css/responsive.css?v=3.1.0">
+  <link rel="stylesheet" href="css/main.css?v=3.1.5">
+  <link rel="stylesheet" href="css/components.css?v=3.1.5">
+  <link rel="stylesheet" href="css/responsive.css?v=3.1.5">
 
   <style>
     :root.light-mode .top-header {
@@ -399,6 +399,41 @@
   </div>
 </div>
 
+<!-- ── Assistant AI Gemini (ERGO-AI) ── -->
+<div class="ai-chat-panel" id="ai-chat-panel">
+  <div class="ai-header">
+    <div class="ai-header-info">
+      <div class="ai-status-dot"></div>
+      <div>
+        <strong>ERGO-AI</strong>
+        <p>Asistente Inteligente</p>
+      </div>
+    </div>
+    <button class="ai-close-btn" onclick="AI.toggle()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="ai-messages" id="ai-messages">
+    <!-- Mensajes dinámicos -->
+  </div>
+  <div class="ai-typing" id="ai-typing" style="display:none">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="ai-footer">
+    <input type="text" id="ai-input" class="ai-input" placeholder="Pregunta algo..." onkeydown="AI.handleKey(event)">
+    <button class="ai-send-btn" onclick="AI.sendMessage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polyline points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<button class="ai-fab" id="ai-fab" onclick="AI.toggle()" title="Asistente AI">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 10 10 0 0 1 6.5 2.5a8.5 8.5 0 0 1-5.5 13.5"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+</button>
+
 
 
 <!-- ──────────────────────────────────────────── EXTERNAL LIBRARIES (CDN) -->
@@ -409,27 +444,28 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <!-- CRM Core -->
-<script src="config.js?v=3.1.0"></script>
-<script src="js/utils.js?v=3.1.0"></script>
-<script src="js/api.js?v=3.1.0"></script>
-<script src="js/auth.js?v=3.1.0"></script>
+<script src="config.js?v=3.1.5"></script>
+<script src="js/utils.js?v=3.1.5"></script>
+<script src="js/api.js?v=3.1.5"></script>
+<script src="js/auth.js?v=3.1.5"></script>
 
 <!-- CRM Modules -->
-<script src="js/sheets.js?v=3.1.0"></script>
-<script src="js/dashboard.js?v=3.1.0"></script>
-<script src="js/contacts.js?v=3.1.0"></script>
-<script src="js/products.js?v=3.1.0"></script>
-<script src="js/quotations.js?v=3.1.0"></script>
-<script src="js/quote-builder.js?v=3.1.0"></script>
-<script src="js/ReportBuilder.js?v=3.1.0"></script>
-<script src="js/pipeline.js?v=3.1.0"></script>
-<script src="js/rates.js?v=3.1.0"></script>
-<script src="js/finances.js?v=3.1.0"></script>
-<script src="js/agenda.js?v=3.1.0"></script>
-<script src="js/settings.js?v=3.1.0"></script>
+<script src="js/sheets.js?v=3.1.5"></script>
+<script src="js/dashboard.js?v=3.1.5"></script>
+<script src="js/contacts.js?v=3.1.5"></script>
+<script src="js/products.js?v=3.1.5"></script>
+<script src="js/quotations.js?v=3.1.5"></script>
+<script src="js/quote-builder.js?v=3.1.5"></script>
+<script src="js/ReportBuilder.js?v=3.1.5"></script>
+<script src="js/pipeline.js?v=3.1.5"></script>
+<script src="js/rates.js?v=3.1.5"></script>
+<script src="js/finances.js?v=3.1.5"></script>
+<script src="js/agenda.js?v=3.1.5"></script>
+<script src="js/settings.js?v=3.1.5"></script>
+<script src="js/ai.js?v=3.1.5"></script>
 
 <!-- App Router -->
-<script src="js/app.js?v=3.1.0"></script>
+<script src="js/app.js?v=3.1.5"></script>
 
 <!-- No se requiere Google Identity Services -->
 

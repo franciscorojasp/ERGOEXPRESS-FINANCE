@@ -313,9 +313,7 @@ const Contacts = (() => {
         Utils.showToast('Contacto actualizado', 'success');
       } else {
         // New contact
-        const itemNum = await Sheets.nextItemNumber();
         const newContact = {
-          'Item': itemNum,
           'ID': Utils.generateId(),
           ...data,
           'Fecha Registro': Utils.todayISO(),

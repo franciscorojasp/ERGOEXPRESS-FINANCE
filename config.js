@@ -14,7 +14,7 @@ const CONFIG = {
   API_KEY: 'ERGX2026',
 
   // ── AI Configuration (Gemini) ─────────────────────────────────────────────
-  GEMINI_API_KEY: '', // Pega tu clave de API de Google AI Studio
+  GEMINI_API_KEY: 'AIzaSyAsBBOxgvIQP6WySvA39C6c_GQEZWiKBZk', // Pega tu clave de API de Google AI Studio
   GEMINI_MODEL: 'gemini-1.5-flash',
 
   // ── Nombres de las Hojas (no cambiar si ya están creadas) ─────────────────
@@ -60,6 +60,6 @@ const CONFIG = {
     'Guárico','Lara','Mérida','Miranda','Monagas','Nueva Esparta',
     'Portuguesa','Sucre','Táchira','Trujillo','Vargas','Yaracuy','Zulia'],
 
-  APP_VERSION: '3.1.0',
+  APP_VERSION: '3.1.5',
   APP_NAME:    'ERGOEXPRESS CRM'
 };
