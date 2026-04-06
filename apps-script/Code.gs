@@ -610,32 +610,21 @@ function fetchBCVRate() {
  * Comunicación con Google Gemini AI (v1 Estable)
  */
 function askGemini(req) {
-  // Lista de modelos ordenados por prioridad (Flash -> Pro -> Legacy)
-  const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+  const apiKey = req.geminiApiKey;
+  // Lista expandida para cubrir distintos niveles de acceso
+  const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro'];
   let lastError = '';
 
   for (const modelId of models) {
     try {
-      const apiKey = req.geminiApiKey;
-      // Usamos v1beta para máxima compatibilidad con modelos 1.5 en cuentas Workspace/Pro
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-      
-      const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
-      Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
-      ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
-      Sé profesional, amable, servicial y directo. Habla siempre en español.
+      const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS.
+      Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema ERGOEXPRESS (Seguridad, Ergonomía e Higiene en Venezuela).
       Hoy es ${new Date().toLocaleDateString('es-VE')}.`;
 
-      // Inyección de identidad en el historial
       const contents = [...req.contents];
-      contents.unshift({
-        role: 'user',
-        parts: [{ text: `IDENTIDAD: ${systemPrompt}. Responde confirmando que eres ERGO-AI.` }]
-      });
-      contents.unshift({
-        role: 'model',
-        parts: [{ text: "Entendido. Soy ERGO-AI, el asistente experto de ERGOEXPRESS. ¿En qué puedo ayudarte hoy?" }]
-      });
+      contents.unshift({ role: 'user', parts: [{ text: `IDENTIDAD: ${systemPrompt}.` }] });
+      contents.unshift({ role: 'model', parts: [{ text: "Entendido. Soy ERGO-AI. ¿Cómo puedo ayudarte?" }] });
 
       const payload = {
         contents: contents,
