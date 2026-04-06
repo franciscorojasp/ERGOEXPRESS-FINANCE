@@ -20,18 +20,20 @@ const Pipeline = (() => {
             <h1 class="page-title">Leads</h1>
             <p class="page-subtitle">Gestión de prospectos para ERGOEXPRESS</p>
           </div>
-          <div class="page-actions" style="display:flex; gap:10px;">
-            <button class="btn btn-secondary" onclick="Pipeline.migrateOldStages()" title="Actualizar nombres de etapas antiguos">
+          <div class="page-header-actions">
+            <button class="btn btn-secondary" onclick="Pipeline.reload(true)" title="Recargar datos de la base de datos">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
               </svg>
+              <span class="hidden-mobile">Refrescar</span>
+            </button>
+            <button class="btn btn-secondary" onclick="Pipeline.migrateOldStages()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Actualizar BD
             </button>
-            <button class="btn btn-primary" onclick="Contacts.openForm()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span>Nuevo Lead</span>
+            <button class="btn btn-primary" onclick="Contacts.openForm()" title="Crear nuevo prospecto">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nuevo Lead
             </button>
           </div>
         </div>
@@ -98,11 +100,16 @@ const Pipeline = (() => {
     await _load();
   }
 
-  async function _load() {
+  async function _load(hard = false) {
+    const content = document.getElementById('pipeline-content');
+    if (content) content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+    
     try {
+      if (hard) Sheets.invalidateAll();
+      
       [_contacts, _quotations] = await Promise.all([
-        Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false),
-        Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS)
+        Sheets.readSheet(CONFIG.SHEETS.CONTACTS, !hard),
+        Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS, !hard)
       ]);
 
       if (!App.isAdmin()) {
@@ -113,7 +120,7 @@ const Pipeline = (() => {
       _updateCounts();
       _renderCurrentView();
     } catch(e) {
-      const content = document.getElementById('pipeline-content');
+      console.error('[Pipeline] Load error:', e);
       if (content) {
         content.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
       }
@@ -137,10 +144,20 @@ const Pipeline = (() => {
     const content = document.getElementById('pipeline-content');
     if (!content) return;
 
-    if (_view === 'kanban') {
-      _renderBoard(content);
-    } else {
-      _renderList(content);
+    try {
+      if (_view === 'kanban') {
+        _renderBoard(content);
+      } else {
+        _renderList(content);
+      }
+    } catch (e) {
+      console.error('[Pipeline] Render error:', e);
+      content.innerHTML = `
+        <div class="empty-state">
+          <p style="color:var(--error); font-weight:700;">Error al renderizar vista: ${e.message}</p>
+          <button class="btn btn-secondary btn-sm" onclick="Pipeline.reload(true)" style="margin-top:12px;">Reintentar con datos limpios</button>
+        </div>
+      `;
     }
   }
 

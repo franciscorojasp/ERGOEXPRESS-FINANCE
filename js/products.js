@@ -8,7 +8,7 @@ const Products = (() => {
   let _sortDir   = 'asc';
   let _filterSearch = '';
   let _filterCat    = '';
-
+  let _view         = localStorage.getItem('products_view') || 'list';
   async function render(container) {
     container.innerHTML = `
       <div class="fade-in">
@@ -18,6 +18,10 @@ const Products = (() => {
             <p class="page-subtitle" id="products-count">Cargando…</p>
           </div>
           <div class="page-actions">
+            <button class="btn btn-secondary" onclick="Products.render(_container, true)" title="Forzar recarga desde Sheets">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar
+            </button>
             <button class="btn btn-secondary" onclick="Products.exportCSV()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -35,17 +39,28 @@ const Products = (() => {
           </div>
         </div>
 
-        <div class="filters-bar">
-          <div class="search-input-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input class="form-input" placeholder="Buscar producto…"
-                   oninput="Products.applyFilter('search', this.value)" />
+        <div class="toolbar-enhanced" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; gap:16px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:300px; display:flex; gap:12px;">
+            <div class="search-input-wrap" style="flex:1;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input class="form-input" placeholder="Buscar producto o servicio…"
+                     oninput="Products.applyFilter('search', this.value)" />
+            </div>
+            <select class="filter-select" id="cat-filter" onchange="Products.applyFilter('cat', this.value)" style="max-width:200px;">
+              <option value="">Todas las categorías</option>
+            </select>
           </div>
-          <select class="filter-select" id="cat-filter" onchange="Products.applyFilter('cat', this.value)">
-            <option value="">Todas las categorías</option>
-          </select>
+
+          <div class="view-switcher">
+            <button class="btn btn-icon ${_view==='list'?'active':''}" onclick="Products.setView('list')" title="Vista Lista">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+            <button class="btn btn-icon ${_view==='grid'?'active':''}" onclick="Products.setView('grid')" title="Vista Tarjetas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="table-wrapper" id="products-table">
@@ -72,21 +87,30 @@ const Products = (() => {
         });
       }
 
-      _renderTable();
+      renderCurrentView();
     } catch(e) {
       const table = document.getElementById('products-table');
       if (table) table.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
     }
   }
 
-  function _renderTable() {
+  function renderCurrentView() {
+    if (_view === 'grid') _renderGrid();
+    else _renderTable();
+  }
+
+  function _getFilteredList() {
     let list = _products;
     if (_filterSearch) {
       const s = _filterSearch.toLowerCase();
       list = list.filter(p => ['Nombre','Descripción','Categoría'].some(f => (p[f]||'').toLowerCase().includes(s)));
     }
     if (_filterCat) list = list.filter(p => p['Categoría'] === _filterCat);
-    list = Utils.sortBy(list, _sortField, _sortDir);
+    return Utils.sortBy(list, _sortField, _sortDir);
+  }
+
+  function _renderTable() {
+    const list = _getFilteredList();
 
     const countEl = document.getElementById('products-count');
     if (countEl) countEl.textContent = `${list.length} de ${_products.length} productos`;
@@ -206,13 +230,83 @@ const Products = (() => {
   function _sort(field) {
     if (_sortField === field) _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
     else { _sortField = field; _sortDir = 'asc'; }
-    _renderTable();
+    renderCurrentView();
+  }
+
+  function _renderGrid() {
+    const list = _getFilteredList();
+    const countEl = document.getElementById('products-count');
+    if (countEl) countEl.textContent = `${list.length} de ${_products.length} productos`;
+
+    const tableEl = document.getElementById('products-table');
+    if (!tableEl) return;
+
+    if (!list.length) {
+      _renderEmptyState(tableEl);
+      return;
+    }
+
+    tableEl.innerHTML = `
+      <div class="product-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px; padding:4px;">
+        ${list.map(p => `
+          <div class="kanban-card product-card" onclick="Products.openForm('${p['ID']}')">
+            <div class="kanban-card-header">
+              <div class="kanban-card-title">${Utils.escapeHtml(p['Nombre'])}</div>
+              <div class="kanban-card-subtitle">${Utils.escapeHtml(p['Categoría'] || 'General')}</div>
+            </div>
+            <div class="kanban-card-body">
+              <div style="font-size:20px; font-weight:800; color:var(--primary); margin-bottom:8px;">
+                $ ${Utils.formatUSD(p['Precio USD'])}
+              </div>
+              <div class="kanban-card-info" style="font-size:13px; color:var(--text-muted); min-height:40px;">
+                ${Utils.escapeHtml(Utils.truncate(p['Descripción']||'Sin descripción', 100))}
+              </div>
+            </div>
+            <div class="kanban-card-footer">
+               <span class="kanban-tag tag-neutral">${p['Impuesto %'] || '0'}% IVA</span>
+               <div class="kanban-card-actions">
+                 <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Products.openForm('${p['ID']}')">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                 </button>
+                 ${App.isAdmin() ? `
+                 <button class="btn btn-icon-sm" style="color:var(--error);" onclick="event.stopPropagation(); Products.deleteItem('${p['ID']}')">
+                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                 </button>
+                 ` : ''}
+               </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function _renderEmptyState(container) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding:50px;">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </div>
+        <h3>Sin productos</h3>
+        <p>Agrega productos/servicios para usarlos en las cotizaciones.</p>
+        <button class="btn btn-primary" onclick="Products.openForm()" style="margin-top:12px;">Nuevo Producto</button>
+      </div>
+    `;
+  }
+
+  function setView(view) {
+    _view = view;
+    localStorage.setItem('products_view', view);
+    // Para recargar la cabecera (activo) y contenido
+    _load(); 
   }
 
   function applyFilter(type, value) {
     if (type === 'search') _filterSearch = value;
     if (type === 'cat')    _filterCat    = value;
-    _renderTable();
+    renderCurrentView();
   }
 
   function openForm(id) {
@@ -309,7 +403,7 @@ const Products = (() => {
   return {
     render, openForm, save,
     deleteItem: deleteProduct,
-    applyFilter, _sort,
+    applyFilter, _sort, setView,
     exportCSV, getAll
   };
 })();

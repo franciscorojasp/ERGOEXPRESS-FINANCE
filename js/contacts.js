@@ -9,7 +9,9 @@ const Contacts = (() => {
   let _products = [];
   let _sortField = 'Item';
   let _sortDir   = 'asc';
+  let _view      = localStorage.getItem('contacts_view') || 'list';
   let _filters   = { search: '', tipo: '', estado: '', etapa: '' };
+  let _sortables = [];
 
   // ─── List View ────────────────────────────────────────────────────────────
   async function render(container) {
@@ -20,20 +22,35 @@ const Contacts = (() => {
             <h1 class="page-title">Contactos</h1>
             <p class="page-subtitle" id="contacts-count">Cargando…</p>
           </div>
-          <div class="page-actions hidden-mobile">
-            <button class="btn btn-secondary" onclick="Contacts.exportCSV()">
+          <div class="page-header-actions">
+            <!-- Selector de Vista -->
+            <div class="view-switcher" style="margin-right:8px;">
+              <button class="btn btn-icon ${(_view==='list')?'active':''}" onclick="Contacts.setView('list')" title="Vista Lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
+              <button class="btn btn-icon ${(_view==='kanban')?'active':''}" onclick="Contacts.setView('kanban')" title="Vista Kanban">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="Contacts.render(document.getElementById('app'), true)" title="Forzar recarga desde Sheets">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar
+            </button>
+
+            <button class="btn btn-secondary hidden-mobile" onclick="Contacts.exportCSV()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Exportar CSV
+              Exportar
             </button>
             <button class="btn btn-primary" onclick="Contacts.openForm()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Nuevo Contacto
+              Nuevo
             </button>
           </div>
         </div>
@@ -78,7 +95,8 @@ const Contacts = (() => {
         const email = App.getCurrentUserEmail();
         _contacts = _contacts.filter(c => c['Vendedor Email'] === email);
       }
-      _renderTable();
+      
+      _renderCurrentView();
     } catch(e) {
       console.error('[Contacts] Load error:', e);
       const wrap = document.getElementById('contacts-table-wrap');
@@ -86,9 +104,98 @@ const Contacts = (() => {
     }
   }
 
-  function _renderTable() {
+  function _renderBoard(wrap) {
+    _sortables.forEach(s => s.destroy());
+    _sortables = [];
+
+    const filtered = _applyFilters(_contacts);
+
+    wrap.innerHTML = `
+      <div class="kanban-board" id="contacts-kanban">
+        ${CONFIG.PIPELINE_STAGES.map(stage => {
+          const cards = filtered.filter(c => c['Etapa Pipeline'] === stage);
+          return `
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title">
+                  <span class="col-dot" style="background:${Utils.stageColor(stage)};"></span>
+                  ${stage}
+                </div>
+                <span class="kanban-count">${cards.length}</span>
+              </div>
+              <div class="kanban-cards" id="col-contacts-${Utils.slugify(stage)}" data-stage="${stage}">
+                ${cards.map(c => _cardHTML(c)).join('')}
+                ${cards.length === 0 ? '<div class="kanban-empty">Sin contactos</div>' : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    // Initialize Sortable
+    CONFIG.PIPELINE_STAGES.forEach(stage => {
+      const el = document.getElementById('col-contacts-' + Utils.slugify(stage));
+      if (!el || typeof Sortable === 'undefined') return;
+      
+      _sortables.push(new Sortable(el, {
+        group: 'contacts-pipeline',
+        animation: 200,
+        ghostClass: 'kanban-drop-zone',
+        onAdd: async (evt) => {
+          const contactId = evt.item.dataset.id;
+          const newStage = evt.to.dataset.stage;
+          await Contacts.updateField(contactId, 'Etapa Pipeline', newStage);
+        }
+      }));
+    });
+  }
+
+  function _cardHTML(c) {
+    return `
+      <div class="kanban-card" data-id="${c['ID']}" onclick="App.navigate('/contacts/${c['ID']}')">
+        <div class="kanban-card-header">
+          <div class="kanban-card-title">${Utils.escapeHtml(c['Razón Social'])}</div>
+          <div class="kanban-card-subtitle">${Utils.escapeHtml(c['RIF'] || 'S/R')}</div>
+        </div>
+        <div class="kanban-card-body">
+          <div class="kanban-card-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            ${Utils.escapeHtml(c['Persona Contacto'] || '—')}
+          </div>
+          <div class="kanban-card-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            ${Utils.escapeHtml(c['Teléfonos'] || '—')}
+          </div>
+        </div>
+        <div class="kanban-card-footer">
+          ${Utils.statusBadge(c['Tipo'])}
+          <div class="kanban-card-actions">
+            <button class="btn-icon-sm" onclick="event.stopPropagation(); App.navigate('/contacts/${c['ID']}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="btn-icon-sm" onclick="event.stopPropagation(); Contacts.openForm('${c['ID']}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function _renderCurrentView() {
     const wrap = document.getElementById('contacts-table-wrap');
-    if (!wrap) return; // Zombie component check
+    if (!wrap) return;
+
+    if (_view === 'kanban') {
+      _renderBoard(wrap);
+    } else {
+      _renderTable(wrap);
+    }
+  }
+
+  function _renderTable(wrap) {
+    if (!wrap) return;
 
     const filtered = _applyFilters(_contacts);
     const sorted   = Utils.sortBy(filtered, _sortField, _sortDir);
@@ -239,9 +346,15 @@ const Contacts = (() => {
     });
   }
 
+  function setView(view) {
+    _view = view;
+    localStorage.setItem('contacts_view', view);
+    render(document.getElementById('main-content'));
+  }
+
   function applyFilter(key, value) {
     _filters[key] = value;
-    _renderTable();
+    _renderCurrentView();
   }
 
   function sortBy(field) {
@@ -251,7 +364,7 @@ const Contacts = (() => {
       _sortField = field;
       _sortDir   = 'asc';
     }
-    _renderTable();
+    _renderCurrentView();
   }
 
   // ─── Contact Form ─────────────────────────────────────────────────────────
@@ -818,6 +931,19 @@ const Contacts = (() => {
     setStage,
     openInteractionForm, saveInteraction,
     exportCSV,
-    switchTab
+    switchTab,
+    setView,
+    updateField: async (id, field, value) => {
+      try {
+        Utils.showToast('Actualizando...', 'info');
+        await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, id, { [field]: value });
+        const c = _contacts.find(x => x['ID'] === id);
+        if (c) c[field] = value;
+        Utils.showToast('Actualizado correctamente', 'success');
+        _renderCurrentView();
+      } catch(e) {
+        Utils.showToast('Error: ' + e.message, 'error');
+      }
+    }
   };
 })();
