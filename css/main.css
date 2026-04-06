@@ -2,6 +2,8 @@
 
 /* ─── Variables de Arquitectura Visual (ERGODENTAL DNA) ───────────────────── */
 :root {
+  color-scheme: dark;
+
   /* Paleta Oceánica Ejecutiva */
   --bg-dark:        #040610; 
   --bg-sidebar:     rgba(8, 12, 28, 0.98);
@@ -86,6 +88,8 @@
 
 /* ─── Modo Claro ☀️ (ERGODENTAL DNA) ───────────────────────────────────────── */
 :root.light-mode {
+  color-scheme: light;
+
   --bg-dark:        #f8fafc;
   --bg-base:        #f8fafc;
   --bg-card:        rgba(255, 255, 255, 0.95);

@@ -1,5 +1,4 @@
 {
-  "version": "v3.2.0",
-  "timestamp": 1775497800000,
-  "description": "Actualización Crítica v3.2.0: Lanzamiento del motor de IA Estable (v1) y rediseño completo de interfaz móvil (Full-Screen Overlay). Requiere actualización de Code.gs."
+  "version": "3.2.1",
+  "description": "Fix: Restauración de inicio automático y mejora de legibilidad en selectores."
 }

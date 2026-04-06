@@ -234,7 +234,7 @@ const Quotations = (() => {
         <div class="q-grid-params" style="margin-bottom:40px;">
           <div>
             <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Cliente Principal</label>
-            <select id="frm-client" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:18px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
+            <select id="frm-client" class="form-select" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:18px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
               <option value="" style="color:gray;">Selecciona un cliente...</option>
               ${State.contacts.map(c => `<option value="${c['ID']}" ${quote?.['ID Cliente']===c['ID'] ? 'selected':''}>${Utils.escapeHtml(c['Razón Social'])}</option>`).join('')}
             </select>
@@ -246,7 +246,7 @@ const Quotations = (() => {
             </div>
             <div style="width:120px;">
                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Moneda</label>
-               <select id="frm-curr" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
+               <select id="frm-curr" class="form-select" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
                   <option value="usd" ${State.editor.currency==='usd'?'selected':''}>USD</option>
                   <option value="ves" ${State.editor.currency==='ves'?'selected':''}>VES</option>
                   <option value="both" ${State.editor.currency==='both'?'selected':''}>USD/VES</option>
