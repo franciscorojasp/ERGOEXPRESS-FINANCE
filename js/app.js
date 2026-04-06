@@ -26,6 +26,9 @@ const App = (() => {
   let _currentRole  = 'vendedor';
   let _notifInterval = null;
   let _notifications = [];
+  let _updatePending = false;
+  let _lastVersion   = localStorage.getItem('crm_app_version') || 'v1345-rev6';
+
 
   // ─── Route Map ────────────────────────────────────────────────────────────
   const routes = {
@@ -105,6 +108,19 @@ const App = (() => {
     // Notification polling every 5 min
     _checkNotifications();
     _notifInterval = setInterval(_checkNotifications, 5 * 60 * 1000);
+
+    // App Update Polling every 15 min
+    _checkAppUpdate();
+    setInterval(_checkAppUpdate, 15 * 60 * 1000);
+
+    // Visibility listener for silent updates
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && _updatePending) {
+        console.log('[App] New version found while resuming. Reloading...');
+        window.location.reload();
+      }
+    });
+
 
     // Close menus on outside click
     document.addEventListener('click', e => {
@@ -279,6 +295,13 @@ const App = (() => {
   }
 
   function _handleRoute(route) {
+    // If an update is pending, we try to reload on navigation
+    if (_updatePending) {
+      console.log('[App] New version pending. Reloading on navigation...');
+      window.location.reload();
+      return;
+    }
+
     _currentRoute = route;
 
     // Match route with params
@@ -546,7 +569,33 @@ const App = (() => {
     document.getElementById('notif-panel').style.display = 'none';
   }
 
+  // ─── App Updates ────────────────────────────────────────────────────────
+  async function _checkAppUpdate() {
+    try {
+      const resp = await fetch(`version.json?t=${Date.now()}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      
+      if (data.version && data.version !== _lastVersion) {
+        console.log(`[App] Update detected: ${data.version} (Current: ${_lastVersion})`);
+        _updatePending = true;
+        
+        // If we were at rev6 and found rev7, store it for next time
+        // but only after a reload we'll definitely have it.
+        // We set it here so if they manual reload it persists.
+        localStorage.setItem('crm_app_version_new', data.version);
+      } else if (data.version) {
+        // First run or same version
+        localStorage.setItem('crm_app_version', data.version);
+        _lastVersion = data.version;
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
   // ─── Role helpers ─────────────────────────────────────────────────────────
+
   function isAdmin() {
     const role = _currentUser?.role || localStorage.getItem('crm_user_role') || _currentRole;
     return role === 'admin';
