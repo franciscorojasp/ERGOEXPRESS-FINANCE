@@ -638,4 +638,135 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* ══ STEP 27: MOBILE MORE MENU (BOTTOM SHEET) ══════════════════════ */
+  .mobile-menu-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10001;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .mobile-menu-overlay.show {
+    display: block; opacity: 1;
+  }
+
+  .mobile-more-menu {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--bg-elevated);
+    border-radius: 24px 24px 0 0;
+    padding: 20px;
+    z-index: 10002;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-bottom: none;
+  }
+  .mobile-more-menu.show {
+    transform: translateY(0);
+  }
+
+  .menu-handle {
+    width: 40px; height: 5px; background: rgba(255,255,255,0.2);
+    border-radius: 3px; margin: -10px auto 20px;
+  }
+
+  .menu-header {
+    font-size: 16px; font-weight: 800; color: var(--text-primary);
+    margin-bottom: 20px; text-align: center; letter-spacing: -0.3px;
+  }
+
+  .menu-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    padding-bottom: 20px;
+  }
+
+  .menu-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: var(--text-primary); cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .menu-item:active {
+    background: var(--bg-hover); transform: scale(0.95);
+    border-color: var(--primary-light);
+  }
+
+  .menu-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--primary-subtle); color: var(--primary-light);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .menu-icon svg { width: 24px; height: 24px; }
+  .menu-item span { font-size: 13px; font-weight: 700; }
+
 }
+
+  /*  STEP 28: PIPELINE ENHANCEMENTS  */
+  .kanban-card.elite-card {
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    border-left: 3px solid var(--primary) !important;
+  }
+  .kanban-card-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .card-rif {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    background: rgba(255,255,255,0.05) !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+  }
+  .kanban-card-details {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    font-size: 11px !important;
+    color: var(--text-secondary) !important;
+  }
+  .kanban-card-details span {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .kanban-card-quote {
+    margin-top: 4px !important;
+    padding: 8px !important;
+    background: rgba(45, 212, 191, 0.05) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border: 1px solid rgba(45, 212, 191, 0.1) !important;
+  }
+  .kanban-card-quote.empty {
+    background: transparent !important;
+    border: 1px dashed var(--border) !important;
+    justify-content: center !important;
+  }
+  .quote-amount {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: var(--primary-light) !important;
+  }
+  
+  #pipeline-search {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    outline: none !important;
+  }
+

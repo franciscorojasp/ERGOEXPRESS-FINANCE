@@ -405,8 +405,27 @@ const App = (() => {
   function closeMenus() {
     const dd    = document.getElementById('user-dropdown');
     const panel = document.getElementById('notif-panel');
+    const more  = document.getElementById('mobile-more-menu');
+    const over  = document.getElementById('mobile-menu-overlay');
     if (dd)    dd.style.display = 'none';
     if (panel) panel.style.display = 'none';
+    if (more)  more.classList.remove('show');
+    if (over)  over.classList.remove('show');
+  }
+
+  function toggleMoreMenu() {
+    const menu    = document.getElementById('mobile-more-menu');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    if (!menu) return;
+
+    const isShowing = menu.classList.toggle('show');
+    if (overlay) overlay.classList.toggle('show', isShowing);
+    
+    if (isShowing) {
+      document.body.classList.add('lock-scroll');
+    } else {
+      document.body.classList.remove('lock-scroll');
+    }
   }
 
   // ─── User Header ─────────────────────────────────────────────────────────
@@ -641,6 +660,7 @@ const App = (() => {
   window.App = {
     navigate, toggleSidebar, closeSidebar,
     toggleNotifications, toggleUserMenu, closeMenus,
+    toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     runSetupNow,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,

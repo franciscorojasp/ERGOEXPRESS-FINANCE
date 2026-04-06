@@ -16,16 +16,29 @@ const Pipeline = (() => {
         <div class="page-header">
           <div>
             <h1 class="page-title">Pipeline Comercial</h1>
-            <p class="page-subtitle">Arrastra los clientes entre etapas para actualizar su estado</p>
+            <p class="page-subtitle">Gestiona tus prospectos y cierres de venta</p>
           </div>
-          <button class="btn btn-secondary" onclick="Pipeline.reload()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.5 15a9 9 0 1 1-2.8-6.5L23 10"/>
-            </svg>
-            Actualizar
-          </button>
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="Pipeline.reload()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.5 15a9 9 0 1 1-2.8-6.5L23 10"/>
+              </svg>
+              <span class="btn-label">Actualizar</span>
+            </button>
+          </div>
         </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="card card-padded" style="margin-bottom:20px; padding:12px !important;">
+          <div class="search-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="pipeline-search" placeholder="Buscar cliente en el pipeline..." oninput="Pipeline.filter(this.value)" />
+          </div>
+        </div>
+
 
         <!-- Stats row -->
         <div class="grid-5" id="pipeline-stats" style="display:flex; gap:10px; margin-bottom:20px; overflow-x:auto;">
@@ -144,26 +157,50 @@ const Pipeline = (() => {
       : null;
 
     return `
-      <div class="kanban-card" data-id="${contact['ID']}"
+      <div class="kanban-card elite-card" data-id="${contact['ID']}"
            onclick="App.navigate('/contacts/${contact['ID']}')">
-        <div class="kanban-card-name" title="${Utils.escapeHtml(contact['Razón Social'])}">
-          ${Utils.escapeHtml(Utils.truncate(contact['Razón Social'], 28))}
+        <div class="kanban-card-top">
+          <div class="kanban-card-name" title="${Utils.escapeHtml(contact['Razón Social'])}">
+            ${Utils.escapeHtml(Utils.truncate(contact['Razón Social'], 32))}
+          </div>
+          ${contact['RIF'] ? `<span class="card-rif">${Utils.escapeHtml(contact['RIF'])}</span>` : ''}
         </div>
-        <div class="kanban-card-meta">
-          ${contact['RIF'] ? `<span>RIF: ${Utils.escapeHtml(contact['RIF'])}</span>` : ''}
-          ${contact['Persona Contacto'] ? `<span>👤 ${Utils.escapeHtml(contact['Persona Contacto'])}</span>` : ''}
-          ${contact['Estado'] ? `<span>📍 ${Utils.escapeHtml(contact['Estado'])}</span>` : ''}
-          ${lastQuote ? `
-            <div style="margin-top:6px; padding-top:6px; border-top:1px solid var(--border); display:flex; justify-content:space-between;">
-              <span style="font-size:10px;">${Utils.statusBadge(lastQuote['Estado'])}</span>
-              <span style="font-size:11px; font-weight:600; color:var(--primary-light);">
-                $ ${Utils.formatUSD(lastQuote['Total USD'])}
-              </span>
+        
+        <div class="kanban-card-details">
+          ${contact['Persona Contacto'] ? `<span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${Utils.escapeHtml(contact['Persona Contacto'])}</span>` : ''}
+          ${contact['Estado'] ? `<span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${Utils.escapeHtml(contact['Estado'])}</span>` : ''}
+        </div>
+
+        ${lastQuote ? `
+          <div class="kanban-card-quote">
+            <div class="quote-status">
+              ${Utils.statusBadge(lastQuote['Estado'])}
             </div>
-          ` : ''}
-        </div>
+            <div class="quote-amount">
+              $ ${Utils.formatUSD(lastQuote['Total USD'])}
+            </div>
+          </div>
+        ` : `
+          <div class="kanban-card-quote empty">
+            <span style="font-size:10px; opacity:0.5;">Sin cotizaciones activas</span>
+          </div>
+        `}
       </div>
     `;
+  }
+
+  function filter(query) {
+    const q = query.toLowerCase();
+    const cards = document.querySelectorAll('.kanban-card');
+    cards.forEach(card => {
+      const name = card.querySelector('.kanban-card-name').textContent.toLowerCase();
+      const rif  = card.querySelector('.card-rif')?.textContent.toLowerCase() || '';
+      if (name.includes(q) || rif.includes(q)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
   }
 
   function _totalUSD(stage) {
@@ -225,5 +262,5 @@ const Pipeline = (() => {
     if (btn) btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }
 
-  return { render, reload: _load, switchMobileStage };
+  return { render, reload: _load, switchMobileStage, filter };
 })();
