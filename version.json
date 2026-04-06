@@ -1,5 +1,5 @@
 {
-  "version": "v1345-rev10",
-  "timestamp": 1775443000000,
-  "description": "Corrección final de filtrado de fechas en Agenda y utilidad toISODate."
+  "version": "v1345-rev11",
+  "timestamp": 1775443400000,
+  "description": "Corrección de lista de clientes en Agenda (race condition) y filtrado por rol."
 }

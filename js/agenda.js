@@ -8,12 +8,18 @@ const Agenda = (() => {
   let _contacts = [];
   let _viewType = 'global'; // or 'personal'
   let _currentWeekStart = null;
-
   async function render(container) {
     if (!_currentWeekStart) {
       _currentWeekStart = _getMonday(new Date());
     }
 
+    // Show initial loading
+    container.innerHTML = `<div class="loading-spinner" style="margin-top:100px;"><div class="spinner"></div></div>`;
+    
+    // 1. Data load MUST happen before rendering to avoid empty lists
+    await _load();
+
+    // 2. Full render
     container.innerHTML = `
       <div class="fade-in">
         <div class="page-header" style="justify-content:space-between;">
@@ -40,14 +46,20 @@ const Agenda = (() => {
       </div>
     `;
 
-    await _load();
     _renderGrid();
   }
 
   async function _load() {
     const data = await Sheets.batchRead([CONFIG.SHEETS.AGENDA, CONFIG.SHEETS.CONTACTS]);
     _appointments = data[CONFIG.SHEETS.AGENDA] || [];
-    _contacts = data[CONFIG.SHEETS.CONTACTS] || [];
+    let contacts  = data[CONFIG.SHEETS.CONTACTS] || [];
+
+    // Filter contacts based on user role (just like the Contacts module)
+    if (!App.isAdmin()) {
+      const myEmail = App.getCurrentUserEmail();
+      contacts = contacts.filter(c => c['Vendedor Email'] === myEmail);
+    }
+    _contacts = contacts;
   }
 
   function _renderGrid() {
