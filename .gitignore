@@ -1,0 +1,24 @@
+# Archivos temporales de Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archivos de caché del navegador
+.DS_Store
+*.log
+*.tmp
+
+# Archivos de configuración local (si los hubiera)
+.env
+.vercel
+
+# PDF temporales
+*.pdf
+Cotizacion_*.pdf
+
+# Python / Scripts basura
+__pycache__/
+*.pyc
+migrate_data.py
+read_products.ps1
+tmp_read_headers*.ps1

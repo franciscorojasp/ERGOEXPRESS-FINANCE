@@ -1,0 +1,537 @@
+/**
+ * ERGOEXPRESS CRM — Backend en Google Apps Script
+ * 
+ * INSTRUCCIONES:
+ * 1. Abrir el Google Sheet "CRM ERGOEXPRESS"
+ * 2. Extensiones → Apps Script → pegar este código completo
+ * 3. Cambiar el API_KEY en la línea siguiente por uno propio
+ * 4. Ejecutar la función "configurarSistema" (▶ botón Play) — solo una vez
+ * 5. Implementar → Nueva implementación → Tipo: App web
+ *    · Ejecutar como: Yo (mi cuenta)
+ *    · Acceso: Cualquier usuario
+ * 6. Copiar la URL de la web app → pegar en config.js
+ */
+
+// ⚙️ Cambiar por tu clave secreta (debe coincidir con config.js)
+const API_KEY = 'ERGX2026';
+
+// ─── Cabeceras de cada hoja ──────────────────────────────────────────────────
+const HEADERS = {
+  Contactos:    ['ID','Razón Social','RIF','Persona Contacto','Teléfonos','Email','Dirección','Estado','Tipo','Fecha Registro','Notas','Etapa Pipeline','Vendedor Email'],
+  Productos:    ['ID','Nombre','Descripción','Categoría','Precio USD','Costo USD','Impuesto %'],
+  TasasCambio:  ['ID','Fecha','Tasa Oficial','Fuente'],
+  Cotizaciones: ['ID','Número','Fecha','ID Cliente','Validez Días','Estado','Total USD','Total VES','Detalle JSON','Fecha Creación','Usuario Email','Notas'],
+  Seguimiento:  ['ID','ID Cliente','Fecha','Tipo','Descripción','Próximo Seguimiento','Asunto Próximo','Etapa Pipeline','Fecha Cambio Etapa','Usuario Email'],
+  Configuracion:['Clave','Valor'],
+  Usuarios:     ['ID','Email','Nombre','Rol','Activo','Fecha Registro','Password'],
+  Finanzas_Ingresos: ['ID','Fecha','ID Cliente','Concepto','ID Cotización','Método','Referencia', 'Tasa', 'Total USD','Total VES','Estado','Vendedor Email'],
+  Finanzas_Egresos:  ['ID','Fecha','Beneficiario','Categoría','Concepto','Referencia','Método', 'Tasa', 'Total USD','Total VES','Estado','Usuario Email'],
+  Agenda:       ['ID','Fecha','Hora','ID Cliente','Asunto','Tipo','Estado','Notas','Usuario Email']
+};
+
+// ─── Punto de entrada POST ───────────────────────────────────────────────────
+function doPost(e) {
+  try {
+    const req = JSON.parse(e.postData.contents);
+    if (!req.apiKey || req.apiKey !== API_KEY) {
+      return ok({ success: false, error: 'API Key inválido' });
+    }
+    
+    // Acciones públicas (No requieren Token)
+    if (['LOGIN', 'CHECK_SETUP', 'SETUP', 'CREATE_ADMIN'].includes(req.action)) {
+      switch (req.action) {
+        case 'CHECK_SETUP':    return ok(checkSetup());
+        case 'SETUP':          return ok(setup());
+        case 'CREATE_ADMIN':   return ok(createAdmin(req));
+        case 'LOGIN':          return ok(login(req));
+      }
+    }
+
+    // Acciones protegidas (Requieren Token válido)
+    try {
+      const user = auth(req);
+      switch (req.action) {
+        case 'VALIDATE_TOKEN': return ok({ success: true, user });
+        case 'READ':           return ok(read(req));
+        case 'BATCH_READ':     return ok(batchRead(req));
+        case 'APPEND':         return ok(append(req));
+        case 'BATCH_APPEND':   return ok(batchAppend(req));
+        case 'SAVE_PDF_TO_DRIVE': return ok(savePDFToDrive(req));
+        case 'CLEAR_SHEETS':   return ok(clearSheets(req));
+        case 'UPDATE':         return ok(update(req));
+        case 'DELETE':         return ok(del(req));
+        case 'SYNC_TO_CALENDAR': return ok(syncToCalendar(req));
+        default: return ok({ success: false, error: 'Acción desconocida o no autorizada: ' + req.action });
+      }
+    } catch (authErr) {
+      return ok({ success: false, error: 'UNAUTHORIZED' });
+    }
+  } catch (err) {
+    return ok({ success: false, error: 'Error interno: ' + err.message });
+  }
+}
+
+// ─── GET: verifica que el servicio está activo ────────────────────────────────
+function doGet(e) {
+  return HtmlService.createHtmlOutput(
+    '<h2>✅ ERGOEXPRESS CRM API activa</h2><p>El servicio está funcionando correctamente.</p>'
+  );
+}
+
+function ok(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─── SEGURIDAD: Hashing SHA-256 ──────────────────────────────────────────────
+function hash(str) {
+  if (!str) return '';
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, str);
+  let hexString = '';
+  for (let i = 0; i < digest.length; i++) {
+    let byte = digest[i];
+    if (byte < 0) byte += 256;
+    let byteStr = byte.toString(16);
+    if (byteStr.length === 1) byteStr = '0' + byteStr;
+    hexString += byteStr;
+  }
+  return hexString;
+}
+
+// ─── Tokens (duración: 8 horas) ──────────────────────────────────────────────
+const TOKEN_TTL = 8 * 60 * 60 * 1000;
+
+function makeToken(email, name, role) {
+  const token = Utilities.getUuid();
+  const exp   = Date.now() + TOKEN_TTL;
+  PropertiesService.getScriptProperties()
+    .setProperty('TK:' + token, JSON.stringify({ email, name, role, exp }));
+  return token;
+}
+
+function checkToken(token) {
+  if (!token) return null;
+  const raw = PropertiesService.getScriptProperties().getProperty('TK:' + token);
+  if (!raw) return null;
+  try {
+    const d = JSON.parse(raw);
+    if (Date.now() > d.exp) {
+      PropertiesService.getScriptProperties().deleteProperty('TK:' + token);
+      return null;
+    }
+    return d;
+  } catch(e) { return null; }
+}
+
+function auth(req) {
+  const user = checkToken(req.token);
+  if (!user) throw new Error('UNAUTHORIZED');
+  return user;
+}
+
+// ─── Acciones ────────────────────────────────────────────────────────────────
+function checkSetup() {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Usuarios');
+  if (!sheet) return { success: true, needsSetup: true, hasAdmin: false };
+  const rows  = Math.max(0, sheet.getLastRow() - 1);
+  return { success: true, needsSetup: false, hasAdmin: rows > 0 };
+}
+
+// (Función setup eliminada por duplicidad, ver final del archivo)
+
+
+function getNextNumber(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet) return { success: false, error: 'Hoja no encontrada' };
+  
+  // Usamos un lock para evitar condiciones de carrera (Race Conditions)
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // Esperar hasta 10 segundos
+    const data = sheet.getDataRange().getValues();
+    const colName = req.sheet === 'Cotizaciones' ? 'Número' : 'Item';
+    const idx = data[0].indexOf(colName);
+    if (idx === -1) return { success: false, error: 'Columna no encontrada' };
+    
+    let max = 0;
+    for (let i = 1; i < data.length; i++) {
+      const val = parseInt(data[i][idx]) || 0;
+      if (val > max) max = val;
+    }
+    return { success: true, next: max + 1 };
+  } catch (e) {
+    return { success: false, error: 'Timeout obteniendo número secuencial' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function resetAllPasswords(req) {
+  const user = auth(req);
+  if (user.role !== 'admin') return { success: false, error: 'Solo administradores' };
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Usuarios');
+  const data = sh.getDataRange().getValues();
+  const h = data[0];
+  const iP = h.indexOf('Password');
+  
+  if (iP === -1) return { success: false, error: 'Columna Password no encontrada' };
+  
+  // Limpiamos todas las contraseñas para forzar el reset
+  // No las hasheamos todavia, dejamos que al entrar o al ser editados se graben
+  for (let i = 2; i <= sh.getLastRow(); i++) {
+    sh.getRange(i, iP + 1).setValue('');
+  }
+  
+  return { success: true, message: 'Todas las contraseñas han sido removidas. Use el panel de usuarios para asignar nuevas.' };
+}
+
+function createAdmin(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Usuarios');
+  if (!sheet) return { success: false, error: 'Ejecuta Setup primero' };
+
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][3] === 'admin')
+      return { success: false, error: 'Ya existe un administrador' };
+  }
+
+  const cols = HEADERS.Usuarios;
+  sheet.appendRow(cols.map(h => ({
+    ID: Utilities.getUuid(), Email: req.email, Nombre: req.name,
+    Rol: 'admin', Activo: 'SI',
+    'Fecha Registro': new Date().toISOString().split('T')[0],
+    Password: hash(req.password) // GUARDAMOS HASH
+  }[h] || '')));
+
+  _initConfig(ss);
+  const token = makeToken(req.email, req.name, 'admin');
+  return { success: true, token, user: { email: req.email, name: req.name, role: 'admin' } };
+}
+
+function _initConfig(ss) {
+  const sh = ss.getSheetByName('Configuracion');
+  if (!sh || sh.getLastRow() > 1) return;
+  const rows = [
+    ['empresa_nombre','ERGOEXPRESS, C.A.'],
+    ['empresa_rif','J-50251246-2'],
+    ['empresa_lema','SOLUCIONES EN SEGURIDAD, ERGONOMÍA, HIGIENE'],
+    ['empresa_direccion','Calle 2 Manzana F Casa Nº 12386 Brisas del Lago, San Joaquín, Carabobo, Venezuela'],
+    ['empresa_telefono1','+58 424-4736489'],
+    ['empresa_telefono2','+58 412-4116804'],
+    ['empresa_email1','ergoexpressca@gmail.com'],
+    ['empresa_email2','ergoexpress1@gmail.com'],
+    ['empresa_ciudad','Valencia'],
+    ['empresa_logo_url','assets/logo.png'],
+    ['empresa_instagram','@ergoexpress_ve'],
+    ['cotizacion_firma_nombre','Lcdo. Francisco Rojas Pineda'],
+    ['cotizacion_firma_cargo','Presidente'],
+    ['cotizacion_validez_default','5'],
+    ['cotizacion_intro','Le presentamos nuestra mejor propuesta para impulsar el éxito de su organización. Esta cotización exclusiva, diseñada para atender sus requerimientos de manera efectiva, incluye los siguientes servicios:'],
+    ['cotizacion_condiciones','1. Para el inicio de las actividades deben efectuar transferencias al Banco Provincial BBVA Cta. Cte. Nº 01080083840100593524 a nombre de ERGOEXPRESS C.A. RIF J-50251246-2.\n2. Los montos en Dólares Americanos deben cancelarse en Bolívares a la tasa BCV vigente el día de la transacción.\n3. Estos costos NO INCLUYEN gastos de envío, transporte, alimentación ni hospedaje.\n4. Precios NO INCLUYEN IVA.\n5. Emitir orden de compra y comprobantes de pago a ergoexpressca@gmail.com / ergoexpress1@gmail.com.'],
+    ['cotizacion_inicio_estudio','Definido con ustedes luego de realizado y verificado el pago de anticipo solicitado.'],
+    ['cotizacion_tiempo_ejecucion','Según plan de trabajo convenido conjuntamente. Informes entregados en 10 días hábiles tras culminar la recopilación de datos.'],
+    ['cotizacion_lugar_entrega','En sus instalaciones. Los informes de resultados serán emitidos en formato PDF.'],
+  ];
+  rows.forEach(r => sh.appendRow(r));
+}
+
+function login(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Usuarios');
+  if (!sheet || sheet.getLastRow() < 2)
+    return { success: false, error: 'NO_USERS' };
+
+  const data = sheet.getDataRange().getValues();
+  const h    = data[0];
+  const iE = h.indexOf('Email'), iP = h.indexOf('Password'),
+        iN = h.indexOf('Nombre'), iR = h.indexOf('Rol'), iA = h.indexOf('Activo');
+  const email = (req.email || '').toLowerCase().trim();
+  const hashedInput = hash(req.password); // HASHEAMOS ENTRADA
+
+  const emailInput = (req.email || '').toLowerCase().trim();
+  const passHashed = hash(req.password);
+
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (String(r[iE]).toLowerCase().trim() === emailInput) {
+      const storedPass = String(r[iP]);
+      const isCorrect = (storedPass === passHashed) || (storedPass === req.password);
+      
+      if (!isCorrect) return { success: false, error: 'Contraseña incorrecta.' };
+      if (r[iA] !== 'SI') return { success: false, error: 'Cuenta inactiva.' };
+      
+      const token = makeToken(emailInput, r[iN], r[iR]);
+      return { success: true, token, user: { email: emailInput, name: r[iN], role: r[iR] } };
+    }
+  }
+  return { success: false, error: 'Usuario no encontrado.' };
+}
+
+function read(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
+  const all  = sheet.getDataRange().getValues();
+  const hdrs = all[0];
+  const rows = all.slice(1).map((row, i) => {
+    const o = { _rowIndex: i + 2 };
+    hdrs.forEach((h, j) => { 
+      let val = row[j];
+      const dateHdrs = ['Fecha','Registro','Seguimiento','Validez'];
+      const isDateCol = dateHdrs.some(dh => h.includes(dh));
+
+      if (val instanceof Date) {
+        if (isDateCol) {
+          val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
+        } else {
+          val = String(val); // Fallback normal
+        }
+      }
+      o[h] = (val === undefined || val === null) ? '' : val; 
+    });
+    return o;
+  });
+  return { success: true, data: rows };
+}
+
+function batchRead(req) {
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const out = {};
+  for (const name of (req.sheets || [])) {
+    const sh = ss.getSheetByName(name);
+    if (!sh || sh.getLastRow() < 2) { out[name] = []; continue; }
+    const all  = sh.getDataRange().getValues();
+    const hdrs = all[0];
+    out[name]  = all.slice(1).map((row, i) => {
+      const o = { _rowIndex: i + 2 };
+      hdrs.forEach((h, j) => { 
+        let val = row[j];
+        const dateHdrs = ['Fecha','Registro','Seguimiento','Validez'];
+        const isDateCol = dateHdrs.some(dh => h.includes(dh));
+
+        if (val instanceof Date) {
+          if (isDateCol) {
+            val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
+          } else {
+            val = String(val); // Fallback normal
+          }
+        }
+        o[h] = (val === undefined || val === null) ? '' : val; 
+      });
+      return o;
+    });
+  }
+  return { success: true, data: out };
+}
+
+function append(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+  const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  
+  // Si estamos agregando un usuario, hashear el password
+  if (req.sheet === 'Usuarios' && req.data.Password) {
+    req.data.Password = hash(req.data.Password);
+  }
+  
+  sheet.appendRow(cols.map(h => {
+    if (req.data[h] === undefined) return '';
+    if (typeof req.data[h] === 'number') return req.data[h];
+    return String(req.data[h]);
+  }));
+  return { success: true };
+}
+
+function batchAppend(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+  if (!req.data || !req.data.length) return { success: true };
+  
+  const cols = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  const rows = req.data.map(row => cols.map(h => {
+    if (row[h] === undefined) return '';
+    if (typeof row[h] === 'number') return row[h];
+    return String(row[h]);
+  }));
+  
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, cols.length).setValues(rows);
+  return { success: true, count: rows.length };
+}
+
+function clearSheets(req) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetsToClear = req.sheets || ['Contactos', 'Productos', 'TasasCambio'];
+  sheetsToClear.forEach(name => {
+    const sh = ss.getSheetByName(name);
+    if (sh && sh.getLastRow() > 1) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+    }
+  });
+  return { success: true };
+}
+
+function update(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+  const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  
+  // Seguridad: Verificar que el ID en esa fila coincida con el solicitado
+  const idIdx = cols.indexOf('ID');
+  if (idIdx !== -1 && req.data.ID) {
+    const rowId = String(sheet.getRange(req.rowIndex, idIdx + 1).getValue());
+    if (rowId !== String(req.data.ID)) {
+      return { success: false, error: 'ID Mismatch: La fila ha cambiado. Por favor recargue.' };
+    }
+  }
+  
+  // Si estamos actualizando un usuario y viene el password, hashearlo
+  if (req.sheet === 'Usuarios' && req.data.Password) {
+     const data = sheet.getDataRange().getValues();
+     const h = data[0];
+     const iP = h.indexOf('Password');
+     const oldPass = data[req.rowIndex-1][iP];
+     // Solo hasheamos si el password cambió o no parece un hash
+     if (req.data.Password !== oldPass) {
+       req.data.Password = hash(req.data.Password);
+     }
+  }
+
+  const row = cols.map(h => {
+    if (req.data[h] === undefined) return '';
+    if (typeof req.data[h] === 'number') return req.data[h];
+    return String(req.data[h]);
+  });
+  
+  const rng = sheet.getRange(req.rowIndex, 1, 1, row.length);
+  rng.setValues([row]);
+  
+  // Limpiar cualquier formato forzado previo (como las fechas 1518)
+  rng.setNumberFormat("");
+  
+  return { success: true };
+}
+
+function del(req) {
+  try { auth(req); } catch(e) { return { success: false, error: 'UNAUTHORIZED' }; }
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(req.sheet);
+  if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+  sheet.deleteRow(req.rowIndex);
+  return { success: true };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Ejecutar desde el editor UNA SOLA VEZ para crear las hojas
+// ════════════════════════════════════════════════════════════════════════════
+function configurarSistema() {
+  setup();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ss.rename('CRM ERGOEXPRESS');
+  ss.setSpreadsheetLocale('es_VE');
+  // Eliminar hoja vacía por defecto
+  ['Hoja 1','Sheet1','Hoja1'].forEach(n => {
+    const sh = ss.getSheetByName(n);
+    if (sh && ss.getSheets().length > Object.keys(HEADERS).length) try { ss.deleteSheet(sh); } catch(e) {}
+  });
+  SpreadsheetApp.getUi().alert(
+    '✅ Sistema listo',
+    'El CRM ha sido configurado correctamente y las hojas de datos (incluyendo Finanzas y Agenda) están listas.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+function setup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  Object.keys(HEADERS).forEach(name => {
+    let sh = ss.getSheetByName(name);
+    if (!sh) {
+      sh = ss.insertSheet(name);
+      sh.appendRow(HEADERS[name]);
+      sh.getRange(1, 1, 1, HEADERS[name].length).setFontWeight('bold').setBackground('#f3f3f3');
+      sh.setFrozenRows(1);
+    } else {
+      // Verificar si faltan columnas
+      const existingHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+      HEADERS[name].forEach(h => {
+        if (existingHeaders.indexOf(h) === -1) {
+          sh.getRange(1, sh.getLastColumn() + 1).setValue(h).setFontWeight('bold').setBackground('#f3f3f3');
+        }
+      });
+    }
+  });
+  return { success: true };
+}
+
+function savePDFToDrive(req) {
+  try {
+    auth(req);
+    let folder;
+    const folders = DriveApp.getFoldersByName("Cotizaciones");
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder("Cotizaciones");
+    }
+    
+    const blob = Utilities.newBlob(Utilities.base64Decode(req.base64), 'application/pdf', req.filename);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return { success: true, url: file.getUrl(), id: file.getId() };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function syncToCalendar(req) {
+  try {
+    auth(req);
+    const data = req.data; // { Fecha, Hora, Asunto, Tipo, Notas, ID Cliente, Usuario Email }
+    
+    // 1. Obtener o crear el calendario compartido del CRM
+    let crmCal;
+    const cals = CalendarApp.getCalendarsByName("CRM ERGOEXPRESS");
+    if (cals.length > 0) {
+      crmCal = cals[0];
+    } else {
+      crmCal = CalendarApp.createCalendar("CRM ERGOEXPRESS");
+      crmCal.setDescription("Calendario Centralizado del CRM ERGOEXPRESS");
+    }
+    
+    // 2. Preparar fecha y hora (asumimos 1 hora de duración)
+    const start = new Date(data['Fecha'] + 'T' + (data['Hora'] || '09:00'));
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    
+    // 3. Crear el evento
+    const options = {
+      description: `Tipo: ${data['Tipo']}\nCliente: ${data['ID Cliente'] || 'Particular'}\nNotas: ${data['Notas'] || ''}\nRegistro CRM: ${data['ID']}`,
+    };
+    
+    // Agregar al creador como invitado para que le aparezca en su propio calendario (Sincronización Dual)
+    const creatorEmail = data['Usuario Email'];
+    if (creatorEmail && creatorEmail.includes('@')) {
+      options.guests = creatorEmail;
+      options.sendInvites = true;
+    }
+    
+    const event = crmCal.createEvent(
+      `[${data['Tipo'] || 'Cita'}] ${data['Asunto']}`,
+      start,
+      end,
+      options
+    );
+    
+    return { success: true, eventId: event.getId() };
+  } catch (e) {
+    return { success: false, error: 'Error Sync Calendar: ' + e.message };
+  }
+}
