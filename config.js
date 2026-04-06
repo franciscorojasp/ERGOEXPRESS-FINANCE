@@ -60,6 +60,6 @@ const CONFIG = {
     'Guárico','Lara','Mérida','Miranda','Monagas','Nueva Esparta',
     'Portuguesa','Sucre','Táchira','Trujillo','Vargas','Yaracuy','Zulia'],
 
-  APP_VERSION: '1.2.0',
+  APP_VERSION: '3.1.0',
   APP_NAME:    'ERGOEXPRESS CRM'
 };
