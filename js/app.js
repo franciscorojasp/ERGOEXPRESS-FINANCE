@@ -27,7 +27,7 @@ const App = (() => {
   let _notifInterval = null;
   let _notifications = [];
   let _updatePending = false;
-  let _lastVersion   = localStorage.getItem('crm_app_version') || 'v1345-rev12';
+  let _lastVersion   = localStorage.getItem('crm_app_version') || 'v1345-rev13';
 
 
   // ─── Route Map ────────────────────────────────────────────────────────────
@@ -590,26 +590,43 @@ const App = (() => {
   }
 
   function showUpdateNotice() {
-    if (document.getElementById('update-modal')) return;
-    Utils.showModal({
-      title: 'Actualización Disponible',
-      content: `
-        <div style="text-align:center; padding:10px 0;">
-          <div style="font-size:48px; margin-bottom:15px;">🚀</div>
-          <p style="font-size:16px; font-weight:600; color:var(--text-primary); margin-bottom:8px;">
-            ¡Hay una nueva versión del CRM lista!
-          </p>
-          <p style="font-size:14px; color:var(--text-muted);">
-            Hemos aplicado mejoras de rendimiento y corregido errores de visualización.
-          </p>
-        </div>
-      `,
-      footer: `
-        <button class="btn btn-ghost" onclick="Utils.closeModal()">Más tarde</button>
-        <button class="btn btn-primary" onclick="App.applyUpdate()">Actualizar ahora</button>
-      `,
-      size: 'sm'
-    });
+    if (document.getElementById('update-notice-floating')) return;
+    const banner = document.createElement('div');
+    banner.id = 'update-notice-floating';
+    banner.style = `
+      position: fixed;
+      left: 50%;
+      bottom: 85px;
+      transform: translateX(-50%);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+      z-index: 10001;
+      width: 90%;
+      max-width: 360px;
+      animation: appUpdateSlideUp 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    `;
+    banner.innerHTML = `
+      <div style="width:36px; height:36px; border-radius:10px; background:rgba(13, 115, 119, 0.1); display:flex; align-items:center; justify-content:center; font-size:20px;">🚀</div>
+      <div style="flex:1; overflow:hidden;">
+        <div style="font-weight:700; font-size:13px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Actualización disponible</div>
+        <div style="font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Mejoras de estabilidad listas</div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="App.applyUpdate()" style="padding:4px 10px; font-size:11px; border-radius:6px; font-weight:700;">Actualizar</button>
+      <button onclick="this.parentElement.remove()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding:2px; display:flex; align-items:center;"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <style>
+        @keyframes appUpdateSlideUp { 
+          from { transform: translate(-50%, 100px); opacity: 0; } 
+          to { transform: translate(-50%, 0); opacity: 1; } 
+        }
+      </style>
+    `;
+    document.body.appendChild(banner);
   }
 
   function applyUpdate() {
@@ -903,7 +920,8 @@ const App = (() => {
     toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
-    runSetupNow, saveDailyRatePrompt
+    runSetupNow, saveDailyRatePrompt,
+    applyUpdate, showUpdateNotice
   };
 })();
 
