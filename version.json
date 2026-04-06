@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.6",
-  "timestamp": 1775495000000,
-  "description": "Hotfix v3.1.6: Corrección crítica de carga del Dashboard (Sheets Error) y ajuste del motor Gemini AI para mayor estabilidad."
+  "version": "v3.1.7",
+  "timestamp": 1775496000000,
+  "description": "Actualización v3.1.7: Corrección del Asistente IA (Gemini) mediante re-activación del endpoint v1beta con soporte para instrucciones del sistema."
 }
