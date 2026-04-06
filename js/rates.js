@@ -327,73 +327,90 @@ const Rates = (() => {
     document.getElementById('stat-stability').textContent = stab;
   }
 
+  function _renderUI() {
+    _renderHero();
+    _renderSummary();
+    
+    // Pequeño retardo para asegurar que el DOM base esté listo
+    setTimeout(() => {
+      _renderTable();
+      _renderSparkline();
+    }, 100);
+  }
+
   function _renderTable() {
     const wrap = document.getElementById('rates-table-container');
     if (!wrap) return;
     
-    // Garantizar que rates sea un array y tenga datos
-    if (!_rates || _rates.length === 0) {
-      wrap.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted); background:rgba(255,255,255,0.02); border-radius:16px;">No hay registros de tasas disponibles en este momento.</div>`;
-      return;
-    }
+    try {
+      if (!_rates || _rates.length === 0) {
+        wrap.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros disponibles.</div>`;
+        return;
+      }
 
-    const filtered = _rates.slice(0, _filterDays);
-    const today = Utils.todayISO();
+      const filtered = _rates.slice(0, _filterDays);
+      const today = Utils.todayISO();
 
-    wrap.innerHTML = `
-      <div class="rates-premium-table-wrap">
-        <table class="rates-premium-table">
-          <thead>
-            <tr>
-              <th>FECHA DE PUBLICACIÓN</th>
-              <th>VALOR BS/$1</th>
-              <th>ORIGEN</th>
-              <th style="text-align:right;">DINÁMICA</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filtered.map((r, i) => {
-              // Si la fecha coincide con hoy O es el primer registro de la lista (el más reciente)
-              const isActual = (r['Fecha'] === today) || (i === 0);
-              let dynHTML = '<span style="color:rgba(255,255,255,0.2)">—</span>';
-              
-              // Comparar con el siguiente registro (el anterior cronológicamente)
-              if (i < _rates.length - 1) {
-                const nextVal = Utils.toNumber(_rates[i+1]['Tasa Oficial']);
-                const currVal = Utils.toNumber(r['Tasa Oficial']);
-                if (nextVal > 0) {
-                  const p = ((currVal - nextVal) / nextVal) * 100;
-                  if (Math.abs(p) > 0.001) {
-                    const color = p > 0 ? '#ef4444' : '#10b981';
-                    const icon = p > 0 ? '▲' : '▼';
-                    dynHTML = `<span style="color:${color}; font-weight:800;">${icon} ${Math.abs(p).toFixed(2)}%</span>`;
-                  }
-                }
+      let rowsHTML = '';
+      filtered.forEach((r, i) => {
+        try {
+          const isActual = (r['Fecha'] === today) || (i === 0);
+          let dynHTML = '<span style="color:rgba(255,255,255,0.2)">—</span>';
+          
+          if (i < _rates.length - 1) {
+            const nextVal = Utils.toNumber(_rates[i+1]['Tasa Oficial']);
+            const currVal = Utils.toNumber(r['Tasa Oficial']);
+            if (nextVal > 0) {
+              const p = ((currVal - nextVal) / nextVal) * 100;
+              if (Math.abs(p) > 0.001) {
+                const color = p > 0 ? '#ef4444' : '#10b981';
+                const icon = p > 0 ? '▲' : '▼';
+                dynHTML = `<span style="color:${color}; font-weight:800;">${icon} ${Math.abs(p).toFixed(2)}%</span>`;
               }
+            }
+          }
 
-              return `
-                <tr>
-                   <td>
-                      <div style="display:flex; align-items:center; gap:12px;">
-                         <span style="font-weight:700; color:#fff; letter-spacing: -0.2px;">${r['Fecha'] || '—'}</span>
-                         ${isActual ? `<span class="badge-actual">ACTUAL</span>` : ''}
-                      </div>
-                   </td>
-                   <td>
-                      <div style="display:flex; align-items:center; gap:6px;">
-                         <span style="color:var(--text-muted); font-weight:600; font-size:11px;">Bs</span>
-                         <span style="font-weight:800; color:#fff; font-size:15px;">${Utils.formatVES(r['Tasa Oficial'])}</span>
-                      </div>
-                   </td>
-                   <td><span style="color:rgba(255,255,255,0.5); font-weight:600;">${r['Fuente'] || 'BCV'}</span></td>
-                   <td style="text-align:right;">${dynHTML}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
+          rowsHTML += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+               <td style="padding:16px 24px;">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                     <span style="font-weight:700; color:#ffffff !important;">${r['Fecha'] || '—'}</span>
+                     ${isActual ? `<span class="badge-actual">ACTUAL</span>` : ''}
+                  </div>
+               </td>
+               <td style="padding:16px 24px;">
+                  <span style="color:var(--text-muted); font-weight:600; font-size:11px;">Bs</span>
+                  <span style="font-weight:800; color:#ffffff !important; font-size:16px;">${Utils.formatVES(r['Tasa Oficial'])}</span>
+               </td>
+               <td style="padding:16px 24px;"><span style="color:rgba(255,255,255,0.5);">${r['Fuente'] || 'BCV'}</span></td>
+               <td style="padding:16px 24px; text-align:right;">${dynHTML}</td>
+            </tr>
+          `;
+        } catch(e) {
+          console.error('Error renderizando fila:', e);
+        }
+      });
+
+      wrap.innerHTML = `
+        <div class="rates-premium-table-wrap" style="display:block !important; border:1px solid rgba(255,255,255,0.1) !important;">
+          <table class="rates-premium-table" style="width:100% !important; border-collapse:collapse !important; color:#ffffff !important;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.03);">
+                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">FECHA</th>
+                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">TASA</th>
+                <th style="text-align:left; padding:16px 24px; color:var(--text-muted); font-size:10px;">ORIGEN</th>
+                <th style="text-align:right; padding:16px 24px; color:var(--text-muted); font-size:10px;">DINÁMICA</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHTML || '<tr><td colspan="4" style="text-align:center; padding:20px;">No se pudieron generar las filas.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch(err) {
+      wrap.innerHTML = `<div style="padding:20px; color:#ef4444; background:rgba(239,68,68,0.1); border-radius:12px;">Error en tabla: ${err.message}</div>`;
+    }
   }
 
   async function quickSave() {
