@@ -897,7 +897,7 @@ const App = (() => {
     toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
-    runSetupNow, saveDailyRatePrompt,
+    runSetupNow, 
     applyUpdate, showUpdateNotice, saveMandatoryRate
   };
 })();
