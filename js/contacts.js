@@ -33,34 +33,17 @@ const Contacts = (() => {
             <p class="page-subtitle" id="contacts-count">Cargando…</p>
           </div>
           <div class="page-header-actions">
-            <!-- Selector de Vista -->
-            <div class="view-switcher" style="margin-right:8px;">
-              <button class="btn btn-icon ${(_view==='list')?'active':''}" onclick="Contacts.setView('list')" title="Vista Lista">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              </button>
-              <button class="btn btn-icon ${(_view==='kanban')?'active':''}" onclick="Contacts.setView('kanban')" title="Vista Kanban">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              </button>
-            </div>
-
-            <button class="btn btn-secondary" onclick="Contacts.render(null, true)" title="Forzar recarga desde Sheets">
+            <button class="btn btn-secondary" onclick="Contacts.render(null, true)" title="Sincronizar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Sincronizar
             </button>
 
-            <button class="btn btn-secondary hidden-mobile" onclick="Contacts.exportCSV()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Exportar
-            </button>
-            <button class="btn btn-primary hidden-mobile" onclick="Contacts.openForm()">
+            <button class="btn btn-primary" onclick="Contacts.openForm()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Nuevo
+              <span class="hidden-mobile">Nuevo Contacto</span>
+              <span class="show-mobile-only">Nuevo</span>
             </button>
           </div>
         </div>
@@ -116,228 +99,57 @@ const Contacts = (() => {
     }
   }
 
-  function _renderBoard(wrap) {
-    _sortables.forEach(s => s.destroy());
-    _sortables = [];
-
-    const filtered = _applyFilters(_contacts);
-
-    wrap.innerHTML = `
-      <div class="kanban-board" id="contacts-kanban">
-        ${CONFIG.PIPELINE_STAGES.map(stage => {
-          const cards = filtered.filter(c => c['Etapa Pipeline'] === stage);
-          return `
-            <div class="kanban-col">
-              <div class="kanban-col-header">
-                <div class="kanban-col-title">
-                  <span class="col-dot" style="background:${Utils.stageColor(stage)};"></span>
-                  ${stage}
-                </div>
-                <span class="kanban-count">${cards.length}</span>
-              </div>
-              <div class="kanban-cards" id="col-contacts-${Utils.slugify(stage)}" data-stage="${stage}">
-                ${cards.map(c => _cardHTML(c)).join('')}
-                ${cards.length === 0 ? '<div class="kanban-empty">Sin contactos</div>' : ''}
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-
-    // Initialize Sortable
-    CONFIG.PIPELINE_STAGES.forEach(stage => {
-      const el = document.getElementById('col-contacts-' + Utils.slugify(stage));
-      if (!el || typeof Sortable === 'undefined') return;
-      
-      _sortables.push(new Sortable(el, {
-        group: 'contacts-pipeline',
-        animation: 200,
-        ghostClass: 'kanban-drop-zone',
-        onAdd: async (evt) => {
-          const contactId = evt.item.dataset.id;
-          const newStage = evt.to.dataset.stage;
-          await Contacts.updateField(contactId, 'Etapa Pipeline', newStage);
-        }
-      }));
-    });
-  }
-
-  function _cardHTML(c) {
-    return `
-      <div class="kanban-card" data-id="${c['ID']}" onclick="App.navigate('/contacts/${c['ID']}')">
-        <div class="kanban-card-header">
-          <div class="kanban-card-title">${Utils.escapeHtml(c['Razón Social'])}</div>
-          <div class="kanban-card-subtitle">${Utils.escapeHtml(c['RIF'] || 'S/R')}</div>
-        </div>
-        <div class="kanban-card-body">
-          <div class="kanban-card-info">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            ${Utils.escapeHtml(c['Persona Contacto'] || '—')}
-          </div>
-          <div class="kanban-card-info">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            ${Utils.escapeHtml(c['Teléfonos'] || '—')}
-          </div>
-        </div>
-        <div class="kanban-card-footer">
-          ${Utils.statusBadge(c['Tipo'])}
-          <div class="kanban-card-actions">
-            <button class="btn-icon-sm" onclick="event.stopPropagation(); App.navigate('/contacts/${c['ID']}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-            <button class="btn-icon-sm" onclick="event.stopPropagation(); Contacts.openForm('${c['ID']}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   function _renderCurrentView() {
     const wrap = document.getElementById('contacts-table-wrap');
     if (!wrap) return;
 
-    if (_view === 'kanban') {
-      _renderBoard(wrap);
-    } else {
-      _renderTable(wrap);
-    }
-  }
-
-  function _renderTable(wrap) {
-    if (!wrap) return;
-
     const filtered = _applyFilters(_contacts);
-    const sorted   = Utils.sortBy(filtered, _sortField, _sortDir);
-
     const countEl = document.getElementById('contacts-count');
-    if (countEl) countEl.textContent = `${sorted.length} de ${_contacts.length} contactos`;
+    if (countEl) countEl.textContent = `${filtered.length} contactos encontrados`;
 
-    if (!sorted.length) {
-      wrap.innerHTML = `
-        <div class="empty-state" style="padding:50px;">
-          <div class="empty-state-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-            </svg>
-          </div>
-          <h3>Sin contactos</h3>
-          <p>Agrega tu primer contacto o ajusta los filtros.</p>
-          <button class="btn btn-primary" onclick="Contacts.openForm()" style="margin-top:12px;">
-            Nuevo Contacto
-          </button>
-        </div>
-      `;
+    if (filtered.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><p style="color:var(--text-muted)">No se encontraron contactos con los filtros actuales.</p></div>`;
       return;
     }
 
-    const sortIcon = (field) => {
-      if (_sortField !== field) return '';
-      return _sortDir === 'asc' ? ' ↑' : ' ↓';
-    };
-
-    const headerClick = (field) => `onclick="Contacts.sortBy('${field}')"`;
-
     wrap.innerHTML = `
-      <!-- Desktop Table -->
-      <div class="hidden-mobile">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th ${headerClick('Razón Social')}>Nombre Empresa${sortIcon('Razón Social')}</th>
-              <th ${headerClick('RIF')} style="width:120px;">RIF${sortIcon('RIF')}</th>
-              <th>Persona Contacto</th>
-              <th>Teléfono</th>
-              <th>Correo</th>
-              <th ${headerClick('Etapa Pipeline')}>Pipeline${sortIcon('Etapa Pipeline')}</th>
-              <th ${headerClick('Tipo')}>Estatus${sortIcon('Tipo')}</th>
-              <th style="width:140px; text-align:right;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sorted.map(c => `
-              <tr>
-                <td class="td-bold" style="cursor:pointer; color:var(--primary-light);"
-                    onclick="App.navigate('/contacts/${c['ID']}')">${Utils.escapeHtml(c['Razón Social'])}</td>
-                <td style="font-size:11px; font-family:monospace;">${Utils.escapeHtml(c['RIF'] || '—')}</td>
-                <td>${Utils.escapeHtml(c['Persona Contacto'] || '—')}</td>
-                <td>${Utils.escapeHtml(c['Teléfonos'] || '—')}</td>
-                <td><a href="mailto:${c['Email']}" style="color:var(--text-secondary); font-size:12px;">${Utils.escapeHtml(c['Email'] || '—')}</a></td>
-                <td>
-                  <span style="display:inline-flex; align-items:center; gap:6px;">
-                    <span style="width:7px; height:7px; border-radius:50%; background:${Utils.stageColor(c['Etapa Pipeline'])};"></span>
-                    ${Utils.escapeHtml(c['Etapa Pipeline'] || 'Sin etapa')}
-                  </span>
-                </td>
-                <td>${Utils.statusBadge(c['Tipo'])}</td>
-                <td style="text-align:right;">
-                  <div class="table-actions" style="justify-content:flex-end; gap:4px;">
-                    <button class="btn btn-icon btn-ghost" onclick="App.navigate('/contacts/${c['ID']}')" title="Visualizar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                    <button class="btn btn-icon btn-ghost" onclick="Contacts.openForm('${c['ID']}')" title="Editar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </button>
-                    <button class="btn btn-icon btn-ghost" style="color:var(--error);" onclick="Contacts.deleteItem('${c['ID']}', ${c._rowIndex})" title="Eliminar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </button>
+      <div style="display:flex; flex-direction:column; gap:12px; padding-bottom:100px;">
+        ${filtered.map(c => {
+          const stage = c['Etapa Pipeline'] || 'Nuevo';
+          return `
+            <div class="q-list-card clickable" onclick="Contacts.renderDetail(null, '${c['ID']}')">
+              <div class="q-list-content">
+                <div class="q-list-icon" style="color:var(--primary);">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="q-list-main-info">
+                  <h3 class="q-list-title">${Utils.escapeHtml(c['Razón Social'])}</h3>
+                  <div class="q-list-sub">
+                    ${Utils.escapeHtml(c['Persona Contacto'] || 'Sin contacto')} • ${c['RIF'] || 'S/RIF'}
                   </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              </div>
 
-      <!-- Mobile Data List (Cards) -->
-      <div class="data-list show-mobile-only">
-        ${sorted.map(c => `
-          <div class="mobile-card">
-            <div class="mobile-card-header" onclick="App.navigate('/contacts/${c['ID']}')">
-              <div style="flex:1;">
-                <div class="mobile-card-title">${Utils.escapeHtml(c['Razón Social'])}</div>
-                <div class="mobile-card-sub">${Utils.escapeHtml(c['RIF'] || 'Sin RIF')}</div>
-              </div>
-              <div style="text-align:right;">
-                ${Utils.statusBadge(c['Tipo'])}
-                <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">${Utils.escapeHtml(c['Estado'] || 'Vzla')}</div>
-              </div>
-            </div>
-            
-            <div class="mobile-card-body" onclick="App.navigate('/contacts/${c['ID']}')">
-              <div class="mobile-card-info">
-                <div class="mobile-card-label">Contacto</div>
-                <div class="mobile-card-value">${Utils.escapeHtml(c['Persona Contacto'] || '—')}</div>
-              </div>
-              <div class="mobile-card-info">
-                <div class="mobile-card-label">Teléfono</div>
-                <div class="mobile-card-value">${Utils.escapeHtml(c['Teléfonos'] || '—')}</div>
-              </div>
-              <div class="mobile-card-info" style="grid-column: span 2;">
-                <div class="mobile-card-label">Pipeline</div>
-                <div class="mobile-card-value" style="display:flex; align-items:center; gap:6px;">
-                  <span style="width:6px; height:6px; border-radius:50%; background:${Utils.stageColor(c['Etapa Pipeline'])};"></span>
-                  ${Utils.escapeHtml(c['Etapa Pipeline'] || 'Sin etapa')}
+              <div class="q-list-meta">
+                <div class="q-list-status-price">
+                  <span class="q-list-status" style="background:rgba(13, 115, 119, 0.1); color:var(--primary);">${stage}</span>
+                </div>
+                <div class="q-list-actions">
+                  <button class="btn btn-icon-sm" style="color:#25D366;" onclick="event.stopPropagation(); window.open('https://wa.me/${Utils.cleanPhone(c['Teléfonos'])}', '_blank')" title="WhatsApp">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-4.821 7.454c-1.893 0-3.748-.511-5.361-1.477l-.385-.228-3.991 1.047 1.065-3.893-.25-.398a10.038 10.038 0 0 1-1.531-5.312c0-5.54 4.51-10.05 10.05-10.05 2.684 0 5.207 1.046 7.104 2.943a10.003 10.003 0 0 1 2.943 7.106c0 5.54-4.51 10.05-10.05 10.05m0-21.782c-6.475 0-11.732 5.257-11.732 11.73 0 2.07.541 4.091 1.565 5.885l-1.666 6.085 6.223-1.632a11.705 11.705 0 0 0 5.61 1.444c6.473 0 11.731-5.257 11.731-11.73 0-3.136-1.22-6.084-3.436-8.301-2.215-2.216-5.163-3.435-8.295-3.435\"/></svg>
+                  </button>
+                  <div style="width:1px; height:16px; background:var(--border-light); margin:0 4px;"></div>
+                  <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Contacts.openForm('${c['ID']}')" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="btn btn-icon-sm danger-text" onclick="event.stopPropagation(); Contacts.deleteContact('${c['ID']}')" title="Eliminar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div class="mobile-card-actions">
-              <button class="btn-icon" onclick="App.navigate('/contacts/${c['ID']}')" title="Visualizar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-              <button class="btn-icon" onclick="Contacts.openForm('${c['ID']}')" title="Editar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button class="btn-icon btn-danger" onclick="Contacts.delete('${c['ID']}', ${c._rowIndex})" title="Eliminar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-              </button>
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
   }
@@ -356,12 +168,6 @@ const Contacts = (() => {
       if (etapa  && c['Etapa Pipeline'] !== etapa) return false;
       return true;
     });
-  }
-
-  function setView(view) {
-    _view = view;
-    localStorage.setItem('contacts_view', view);
-    render(document.getElementById('main-content'));
   }
 
   function applyFilter(key, value) {
@@ -543,8 +349,8 @@ const Contacts = (() => {
   }
 
   // ─── Detail View ──────────────────────────────────────────────────────────
-  // ─── Detail View: LA FICHA MAESTRO ─────────────────────────────────────────
   async function renderDetail(container, id) {
+    container = container || document.getElementById('main-content');
     container.innerHTML = `
       <div class="fade-in">
         <div class="page-header" style="margin-bottom:20px;">
@@ -649,33 +455,19 @@ const Contacts = (() => {
     `;
 
     try {
-      // Data Load
       const [allContacts, allTracking, allQuotes] = await Promise.all([
         Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false),
         Sheets.readSheet(CONFIG.SHEETS.TRACKING, false),
         Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS, false)
       ]);
 
-      const contact = allContacts.find(c => {
-        const idA = String(c.ID || '').trim();
-        const idB = String(id || '').trim();
-        return idA === idB && idA !== '';
-      });
+      const contact = allContacts.find(c => String(c.ID || '').trim() === String(id || '').trim());
 
       if (!contact) {
-         console.error('[Contacts] ID mismatch. Looking for:', id, 'Available IDs:', allContacts.map(x=>x.ID));
-         container.innerHTML = `
-           <div class="empty-state" style="padding:100px 20px;">
-             <div class="empty-state-icon">🚫</div>
-             <h3>Cliente no encontrado</h3>
-             <p class="text-muted">El ID <code>${id}</code> no coincide con ningún registro activo.</p>
-             <button class="btn btn-primary" onclick="App.navigate('/contacts')" style="margin-top:20px;">Volver a la lista</button>
-           </div>
-         `; 
+         container.innerHTML = `<div class="empty-state">Cliente no encontrado</div>`;
          return;
       }
 
-      // 1. Basic Info
       document.getElementById('detail-name').textContent = contact['Razón Social'];
       document.getElementById('detail-rif').textContent  = 'Registro ID: ' + (contact['RIF'] || 'S/R');
       document.getElementById('client-avatar').textContent = Utils.initials(contact['Razón Social']);
@@ -690,11 +482,9 @@ const Contacts = (() => {
       document.getElementById('p-legal-email').textContent = contact['Email'] || 'Sin correo';
       document.getElementById('p-legal-address').textContent = contact['Dirección'] || 'No registrada';
 
-      // 2. Metrics Calculation
       const myQuotes = allQuotes.filter(q => String(q['ID Cliente']) === String(id));
       const totalQuote = myQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
       
-      // Calculate paid (simplified for now as Finance module is separate)
       const allIncome = await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME, false);
       const myIncome = allIncome.filter(i => String(i['ID Cliente']) === String(id));
       const totalPaid = myIncome.reduce((sum, i) => sum + Utils.toNumber(i['Total USD']), 0);
@@ -703,36 +493,25 @@ const Contacts = (() => {
       document.getElementById('m-total-quote').textContent = '$ ' + Utils.formatUSD(totalQuote);
       document.getElementById('m-pending').textContent = '$ ' + Utils.formatUSD(pending > 0 ? pending : 0);
 
-      // 3. CTA Setup
       const phoneRaw = contact['Teléfonos'] || '';
       const whatsapp = Utils.formatWhatsApp(phoneRaw, contact['Dirección']);
       const phoneOnly = String(phoneRaw).replace(/\D/g, '');
 
-      if (whatsapp) {
-         document.getElementById('cta-whatsapp').onclick = () => window.open(`https://api.whatsapp.com/send?phone=${whatsapp}`, '_blank');
-      }
-      if (phoneOnly) {
-         document.getElementById('cta-call').onclick = () => window.location.href = `tel:${phoneOnly}`;
-      }
+      if (whatsapp) document.getElementById('cta-whatsapp').onclick = () => window.open(`https://api.whatsapp.com/send?phone=${whatsapp}`, '_blank');
+      if (phoneOnly) document.getElementById('cta-call').onclick = () => window.location.href = `tel:${phoneOnly}`;
       const address = contact['Dirección'];
-      if (address) {
-         document.getElementById('cta-map').onclick = () => window.open(`https://www.google.com/maps/search/${encodeURIComponent(address)}`, '_blank');
-      }
+      if (address) document.getElementById('cta-map').onclick = () => window.open(`https://www.google.com/maps/search/${encodeURIComponent(address)}`, '_blank');
 
-      // 4. Render Table/Timeline
       document.getElementById('section-history').innerHTML = _renderTimeline(allTracking.filter(t => String(t['ID Cliente']) === String(id)));
       document.getElementById('section-quotes').innerHTML = _renderContactQuotes(myQuotes);
 
-      // Header Actions
       document.getElementById('detail-actions').innerHTML = `
         <button class="btn btn-primary" onclick="Quotations.openForm({ clientId: '${id}' })">Nuevo Presupuesto</button>
         <button class="btn btn-ghost btn-icon" onclick="Contacts.openForm('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       `;
 
-      // Show content
       document.getElementById('detail-spinner').style.display = 'none';
       document.getElementById('detail-content').style.display = 'block';
-
     } catch(e) {
       console.error(e);
       document.getElementById('detail-spinner').innerHTML = `<p style="color:var(--error)">Error cargando ficha: ${e.message}</p>`;
@@ -772,23 +551,16 @@ const Contacts = (() => {
   }
 
   function switchTab(tabName, btn) {
-    // Buttons
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    // Panels
     document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
     document.getElementById('tab-' + tabName).style.display = 'block';
   }
 
-
   function _renderTimeline(items) {
-    if (!items.length) {
-      return '<div class="empty-state" style="padding:40px;"><p class="u-muted">No hay interacciones registradas.</p></div>';
-    }
-
+    if (!items.length) return '<div class="empty-state" style="padding:40px;"><p class="u-muted">No hay interacciones registradas.</p></div>';
     const sorted = [...items].sort((a,b) => b['Fecha'].localeCompare(a['Fecha']));
     const typeEmoji = { nota:'📝', llamada:'📞', email:'✉️', reunión:'🤝', visita:'🏢' };
-
     return `<div class="timeline-enterprise">
       ${sorted.map(t => `
         <div class="timeline-card">
@@ -811,37 +583,6 @@ const Contacts = (() => {
     </div>`;
   }
 
-  // ─── Set Pipeline Stage ───────────────────────────────────────────────────
-  async function setStage(contactId, stage, rowIndex) {
-    try {
-      const contact = _contacts.find(c => c['ID'] === contactId);
-      if (!contact) return;
-
-      const updated = { ...contact, 'Etapa Pipeline': stage };
-      await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contactId, updated);
-
-      // Log in tracking
-      await Sheets.appendRow(CONFIG.SHEETS.TRACKING, {
-        'ID': Utils.generateId(),
-        'ID Cliente': contactId,
-        'Fecha': Utils.todayISO(),
-        'Tipo': 'nota',
-        'Descripción': `Etapa cambiada a: ${stage}`,
-        'Próximo Seguimiento': '',
-        'Asunto Próximo': '',
-        'Etapa Pipeline': stage,
-        'Fecha Cambio Etapa': Utils.todayISO(),
-        'Usuario Email': App.getCurrentUserEmail()
-      });
-
-      Utils.showToast(`Etapa actualizada: ${stage}`, 'success');
-      renderDetail(document.getElementById('main-content'), contactId);
-    } catch(e) {
-      Utils.showToast('Error: ' + e.message, 'error');
-    }
-  }
-
-  // ─── Interaction Form ─────────────────────────────────────────────────────
   function openInteractionForm(contactId) {
     Utils.showModal({
       title: 'Registrar Interacción',
@@ -859,9 +600,9 @@ const Contacts = (() => {
               <label class="form-label">Fecha <span class="required">*</span></label>
               <input class="form-input" type="date" name="Fecha" value="${Utils.todayISO()}" required />
             </div>
+            <div class="form-group full">
               <label class="form-label">Descripción <span class="required">*</span></label>
-              <textarea class="form-textarea" name="Descripción" required
-                        placeholder="Describe la interacción…"></textarea>
+              <textarea class="form-textarea" name="Descripción" required placeholder="Describe la interacción…"></textarea>
             </div>
             <div class="form-section-title full" style="margin:0;">Próximo Seguimiento (opcional)</div>
             <div class="form-group">
@@ -913,7 +654,6 @@ const Contacts = (() => {
 
       await Sheets.appendRow(CONFIG.SHEETS.TRACKING, row);
 
-      // If stage changed, update contact
       if (data['Etapa Pipeline']) {
         const contact = _contacts.find(c => c['ID'] === contactId);
         if (contact) {
@@ -930,7 +670,6 @@ const Contacts = (() => {
     }
   }
 
-  // ─── Export CSV ───────────────────────────────────────────────────────────
   function exportCSV() {
     const visible = _applyFilters(_contacts);
     Utils.exportToCSV(visible, 'contactos-ergoexpress.csv');
@@ -938,13 +677,10 @@ const Contacts = (() => {
 
   return {
     render, renderDetail, openForm, saveForm,
-    deleteItem: deleteContact,
+    deleteContact,
     applyFilter, sortBy,
-    setStage,
     openInteractionForm, saveInteraction,
     exportCSV,
-    switchTab,
-    setView,
     updateField: async (id, field, value) => {
       try {
         Utils.showToast('Actualizando...', 'info');

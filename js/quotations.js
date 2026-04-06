@@ -51,14 +51,6 @@ const Quotations = (() => {
             <input id="q-search" style="flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text-primary); padding:10px 0;" placeholder="Buscar cliente, número o estado..." oninput="Quotations.renderCurrentView()" autocomplete="off" />
           </div>
           
-          <div class="view-switcher">
-            <button class="btn btn-icon ${State.view==='list'?'active':''}" onclick="Quotations.setView('list')" title="Vista Lista">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            </button>
-            <button class="btn btn-icon ${State.view==='kanban'?'active':''}" onclick="Quotations.setView('kanban')" title="Vista Kanban">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            </button>
-          </div>
         </div>
 
         <div id="q-list-container" style="display:flex; flex-direction:column; gap:12px;">
@@ -93,11 +85,7 @@ const Quotations = (() => {
   }
 
   function renderCurrentView() {
-    if (State.view === 'kanban') {
-      renderBoard();
-    } else {
-      renderList();
-    }
+    renderList();
   }
 
   // ─── LISTA (TIPO STRIPE DASHBOARD) ───────────────────────────────────────
@@ -766,7 +754,7 @@ const Quotations = (() => {
   // ─── EXPOSICIÓN DE API ──────────────────────────────────────────────────
   return {
     render, renderList, renderForm, saveForm, renderDetail, deleteForm, updateStatus,
-    renderCurrentView, setView,
+    renderCurrentView,
     getQuotation: (id) => State.quotes.find(x => x['ID']===id),
     getContacts: () => State.contacts,
     getConfig: () => State.config,

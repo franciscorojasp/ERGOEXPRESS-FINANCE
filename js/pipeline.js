@@ -1,83 +1,42 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   ERGOEXPRESS CRM — Pipeline Kanban
-   Drag & drop entre etapas con Sortable.js
+   ERGOEXPRESS CRM — Módulo Pipeline (Leads)
    ════════════════════════════════════════════════════════════════════════════ */
 
 const Pipeline = (() => {
   let _contacts = [];
-  let _quotations = [];
-  let _sortables = [];
-  let _view = localStorage.getItem('pipeline-view') || 'list'; // 'list' or 'kanban'
   let _stageFilter = 'Todos';
   let _searchQuery = '';
+  let _currContainer = null;
 
-  async function render(container) {
-    container.innerHTML = `
-      <div class="fade-in leads-container">
-        <!-- ── Header ── -->
+  async function render(container, force = false) {
+    if (container) _currContainer = container;
+    const target = _currContainer || document.getElementById('main-content');
+    if (!target) return;
+
+    target.innerHTML = `
+      <div class="fade-in">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Leads</h1>
-            <p class="page-subtitle">Gestión de prospectos para ERGOEXPRESS</p>
+            <h1 class="page-title">Pipeline de Leads</h1>
+            <p class="page-subtitle" id="pipeline-count">Cargando prospectos…</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-secondary" onclick="Pipeline.reload(true)" title="Recargar datos de la base de datos">
+            <button class="btn btn-secondary" onclick="Pipeline.render(null, true)" title="Sincronizar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar
+            </button>
+            <button class="btn btn-primary" onclick="Contacts.openForm()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              <span class="hidden-mobile">Refrescar</span>
-            </button>
-            <button class="btn btn-secondary" onclick="Pipeline.migrateOldStages()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Actualizar BD
-            </button>
-            <button class="btn btn-primary" onclick="Contacts.openForm()" title="Crear nuevo prospecto">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nuevo Lead
+              <span class="hidden-mobile">Nuevo Lead</span>
+              <span class="show-mobile-only">Nuevo</span>
             </button>
           </div>
         </div>
 
-        <!-- ── Toolbar ── -->
-        <div class="leads-toolbar">
-          <div class="toolbar-left">
-            <div class="search-input-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input type="text" id="pipeline-search" placeholder="Buscar por nombre, empresa o email..." 
-                     oninput="Pipeline.handleSearch(this.value)" />
-            </div>
-          </div>
-          
-          <div class="toolbar-right">
-            <select class="form-select select-sm" id="pipeline-category-filter" style="width:140px;">
-              <option value="Todos">Todos</option>
-              <option value="potencial">Potenciales</option>
-              <option value="activo">Activos</option>
-            </select>
-
-            <div class="view-switcher">
-              <button class="switcher-btn ${_view === 'list' ? 'active' : ''}" onclick="Pipeline.setView('list')" title="Vista de Lista">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                  <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                </svg>
-                <span>Lista</span>
-              </button>
-              <button class="switcher-btn ${_view === 'kanban' ? 'active' : ''}" onclick="Pipeline.setView('kanban')" title="Vista Kanban">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                <span>Kanban</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Stage Pills ── -->
-        <div class="leads-pills-row" id="leads-pills">
+        <!-- Stage Pills -->
+        <div class="leads-pills-row" id="leads-pills" style="margin-bottom:24px;">
           <button class="lead-pill ${_stageFilter === 'Todos' ? 'active' : ''}" onclick="Pipeline.setStageFilter('Todos')" data-stage="Todos">
             Todos <span class="pill-count" id="count-todos">0</span>
           </button>
@@ -90,49 +49,47 @@ const Pipeline = (() => {
           `).join('')}
         </div>
 
-        <!-- ── Content Area ── -->
-        <div id="pipeline-content">
+        <div class="toolbar-enhanced" style="margin-bottom:24px;">
+          <div class="search-input-wrap" style="max-width:400px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input class="form-input" placeholder="Buscar por nombre, empresa o email..."
+                   oninput="Pipeline.handleSearch(this.value)" />
+          </div>
+        </div>
+
+        <div id="pipeline-list-container">
           <div class="loading-spinner"><div class="spinner"></div></div>
         </div>
       </div>
     `;
 
-    await _load();
+    await _load(force);
   }
 
-  async function _load(hard = false) {
-    const content = document.getElementById('pipeline-content');
-    if (content) content.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-    
+  async function _load(force = false) {
     try {
-      if (hard) Sheets.invalidateAll();
+      _contacts = await Sheets.readSheet(CONFIG.SHEETS.CONTACTS, force);
       
-      [_contacts, _quotations] = await Promise.all([
-        Sheets.readSheet(CONFIG.SHEETS.CONTACTS, !hard),
-        Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS, !hard)
-      ]);
-
       if (!App.isAdmin()) {
         const email = App.getCurrentUserEmail();
         _contacts = _contacts.filter(c => c['Vendedor Email'] === email);
       }
 
       _updateCounts();
-      _renderCurrentView();
+      _renderCurrent();
     } catch(e) {
       console.error('[Pipeline] Load error:', e);
-      if (content) {
-        content.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
-      }
+      const container = document.getElementById('pipeline-list-container');
+      if (container) container.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
     }
   }
 
   function _updateCounts() {
-    // Total count
     const totalEl = document.getElementById('count-todos');
     if (totalEl) totalEl.textContent = _contacts.length;
 
-    // Stage counts
     CONFIG.PIPELINE_STAGES.forEach(stage => {
       const count = _contacts.filter(c => c['Etapa Pipeline'] === stage).length;
       const el = document.getElementById('count-' + Utils.slugify(stage));
@@ -140,256 +97,91 @@ const Pipeline = (() => {
     });
   }
 
-  function _renderCurrentView() {
-    const content = document.getElementById('pipeline-content');
-    if (!content) return;
+  function _renderCurrent() {
+    const wrap = document.getElementById('pipeline-list-container');
+    if (!wrap) return;
 
-    try {
-      if (_view === 'kanban') {
-        _renderBoard(content);
-      } else {
-        _renderList(content);
-      }
-    } catch (e) {
-      console.error('[Pipeline] Render error:', e);
-      content.innerHTML = `
-        <div class="empty-state">
-          <p style="color:var(--error); font-weight:700;">Error al renderizar vista: ${e.message}</p>
-          <button class="btn btn-secondary btn-sm" onclick="Pipeline.reload(true)" style="margin-top:12px;">Reintentar con datos limpios</button>
-        </div>
-      `;
-    }
-  }
+    const filtered = _contacts.filter(c => {
+      const matchesStage = (_stageFilter === 'Todos' || c['Etapa Pipeline'] === _stageFilter);
+      const q = _searchQuery.toLowerCase();
+      const matchesSearch = !q || [c['Razón Social'], c['Persona Contacto'], c['Email']].some(f => String(f||'').toLowerCase().includes(q));
+      return matchesStage && matchesSearch;
+    });
 
-  function _renderList(content) {
-    const filtered = _getFilteredContacts();
-    
+    const countEl = document.getElementById('pipeline-count');
+    if (countEl) countEl.textContent = `${filtered.length} prospectos en esta etapa`;
+
     if (filtered.length === 0) {
-      content.innerHTML = `
-        <div class="card card-padded" style="min-height:300px; display:flex; align-items:center; justify-content:center;">
-          <div class="empty-state">
-            <p style="color:var(--text-muted)">No se encontraron leads.</p>
-          </div>
-        </div>
-      `;
+      wrap.innerHTML = `<div class="empty-state"><p style="color:var(--text-muted)">No hay leads en esta selección.</p></div>`;
       return;
     }
 
-    content.innerHTML = `
-      <div class="card no-padding overflow-x">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Empresa</th>
-              <th>Puntaje</th>
-              <th>Estado</th>
-              <th>Contacto</th>
-              <th class="text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filtered.map(c => `
-              <tr onclick="App.navigate('/contacts/${c['ID']}')" style="cursor:pointer">
-                <td>
-                  <div class="td-bold">${Utils.escapeHtml(c['Razón Social'])}</div>
-                  <div style="font-size:11px; color:var(--text-muted)">${c['RIF'] || 'S/R'}</div>
-                </td>
-                <td style="font-size:13px">${Utils.escapeHtml(c['Persona Contacto'] || '—')}</td>
-                <td>
-                  <div class="score-badge">${c['Puntaje'] || '0'}</div>
-                </td>
-                <td>${Utils.statusBadge(c['Etapa Pipeline'] || 'Nuevo')}</td>
-                <td>
-                  <div style="font-size:12px">${Utils.escapeHtml(c['Email'] || '—')}</div>
-                  <div style="font-size:11px; opacity:0.7">${c['Teléfonos'] || ''}</div>
-                </td>
-                <td class="text-right">
-                  <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation(); App.navigate('/contacts/${c['ID']}')">Ver</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  function _renderBoard(content) {
-    // In Kanban view, the stage filter "Todos" means show all columns.
-    // If a specific stage is selected, maybe we just highlight it? 
-    // Usually Kanban shows everything. We'll follow the standard.
-    
-    _sortables.forEach(s => s.destroy());
-    _sortables = [];
-
-    content.innerHTML = `
-      <div class="kanban-board" id="kanban-board-inner">
-        ${CONFIG.PIPELINE_STAGES.map(stage => {
-          const cards = _contacts.filter(c => c['Etapa Pipeline'] === stage && _matchesSearch(c));
-          const usd   = _totalUSD(stage);
-          
-          return `
-            <div class="kanban-col ${stage === _stageFilter ? 'highlighted' : ''}">
-              <div class="kanban-col-header">
-                <div class="kanban-col-title">
-                  <span class="col-dot" style="background:${Utils.stageColor(stage)};"></span>
-                  ${stage}
-                </div>
-                <span class="kanban-count">${cards.length}</span>
+    wrap.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:12px; padding-bottom:100px;">
+        ${filtered.map(c => `
+          <div class="q-list-card clickable" onclick="App.navigate('/contacts/${c['ID']}')">
+            <div class="q-list-content">
+              <div class="q-list-icon" style="color:${Utils.stageColor(c['Etapa Pipeline'])};">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
               </div>
-              ${usd > 0 ? `
-                <div class="kanban-col-stats">
-                  $ ${Utils.formatUSD(usd)}
-                </div>
-              ` : ''}
-              <div class="kanban-cards" id="col-${Utils.slugify(stage)}" data-stage="${stage}">
-                ${cards.map(c => _cardHTML(c)).join('')}
-                ${cards.length === 0 ? '<div class="kanban-empty">Sin leads</div>' : ''}
+              <div class="q-list-main-info">
+                <h3 class="q-list-title">${Utils.escapeHtml(c['Razón Social'])}</h3>
+                <div class="q-list-sub">${Utils.escapeHtml(c['Persona Contacto'] || 'Sin contacto')} • ${Utils.escapeHtml(c['Email'] || 'Sin email')}</div>
               </div>
             </div>
-          `;
-        }).join('')}
+
+            <div class="q-list-meta">
+              <div class="q-list-status-price">
+                <span class="status-badge" style="background:${Utils.stageColor(c['Etapa Pipeline']) + '20'}; color:${Utils.stageColor(c['Etapa Pipeline'])}; border:1px solid ${Utils.stageColor(c['Etapa Pipeline']) + '40'};">
+                  ${c['Etapa Pipeline'] || 'Nuevo'}
+                </span>
+                ${c['Puntaje'] ? `<span class="score-badge sm">${c['Puntaje']}</span>` : ''}
+              </div>
+              <div class="q-list-actions">
+                <select class="form-select select-sm" style="width:auto; min-width:120px;" 
+                        onclick="event.stopPropagation()"
+                        onchange="Pipeline.changeStage('${c['ID']}', this.value)">
+                  <option value="" disabled selected>Cambiar Etapa...</option>
+                  ${CONFIG.PIPELINE_STAGES.map(s => `<option value="${s}" ${c['Etapa Pipeline']===s?'disabled':''}>${s}</option>`).join('')}
+                </select>
+                <button class="btn btn-icon-sm" title="Ver Detalles">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
       </div>
     `;
-
-    // Init Sortable
-    CONFIG.PIPELINE_STAGES.forEach(stage => {
-      const el = document.getElementById('col-' + Utils.slugify(stage));
-      if (!el) return;
-      const sortable = new Sortable(el, {
-        group: 'pipeline',
-        animation: 200,
-        ghostClass: 'kanban-drop-zone',
-        onAdd: async (evt) => {
-          const contactId = evt.item.dataset.id;
-          const newStage  = evt.to.dataset.stage;
-          await _moveContact(contactId, newStage);
-        }
-      });
-      _sortables.push(sortable);
-    });
-  }
-
-  function _cardHTML(contact) {
-    return `
-      <div class="kanban-card elite-card" data-id="${contact['ID']}" onclick="event.stopPropagation(); App.navigate('/contacts/${contact['ID']}')">
-        <div class="kanban-card-name">${Utils.escapeHtml(contact['Razón Social'])}</div>
-        <div class="kanban-card-sub">${Utils.escapeHtml(contact['Persona Contacto'] || '')}</div>
-        <div class="kanban-card-footer">
-          <span class="card-rif">${contact['RIF'] || ''}</span>
-          ${contact['Puntaje'] ? `<span class="score-badge sm">${contact['Puntaje']}</span>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
-  function _getFilteredContacts() {
-    return _contacts.filter(c => {
-      const matchesStage = (_stageFilter === 'Todos' || c['Etapa Pipeline'] === _stageFilter);
-      return matchesStage && _matchesSearch(c);
-    });
-  }
-
-  function _matchesSearch(c) {
-    if (!_searchQuery) return true;
-    const q = _searchQuery.toLowerCase();
-    return (
-      String(c['Razón Social'] || '').toLowerCase().includes(q) ||
-      String(c['Persona Contacto'] || '').toLowerCase().includes(q) ||
-      String(c['Email'] || '').toLowerCase().includes(q) ||
-      String(c['RIF'] || '').toLowerCase().includes(q)
-    );
-  }
-
-  function handleSearch(query) {
-    _searchQuery = query;
-    _renderCurrentView();
   }
 
   function setStageFilter(stage) {
     _stageFilter = stage;
-    // Update active class on pills
     document.querySelectorAll('.lead-pill').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.stage === stage);
     });
-    _renderCurrentView();
+    _renderCurrent();
   }
 
-  function setView(view) {
-    _view = view;
-    localStorage.setItem('pipeline-view', view);
-    // Update buttons
-    document.querySelectorAll('.switcher-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.innerHTML.includes(view === 'list' ? 'Lista' : 'Kanban'));
-    });
-    _renderCurrentView();
+  function handleSearch(query) {
+    _searchQuery = query;
+    _renderCurrent();
   }
 
-  function _totalUSD(stage) {
-    const stageContacts = _contacts.filter(c => c['Etapa Pipeline'] === stage);
-    const ids = new Set(stageContacts.map(c => c['ID']));
-    return _quotations
-      .filter(q => ids.has(q['ID Cliente']) && ['Enviada','Negociación','Aceptada'].includes(q['Estado']))
-      .reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
-  }
-
-  async function _moveContact(contactId, newStage) {
+  async function changeStage(id, newStage) {
     try {
-      const contact = _contacts.find(c => c['ID'] === contactId);
-      if (!contact || contact['Etapa Pipeline'] === newStage) return;
+      const contact = _contacts.find(c => c['ID'] === id);
+      if (!contact) return;
 
       const updated = { ...contact, 'Etapa Pipeline': newStage };
-      await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contactId, updated);
+      await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, id, updated);
       
-      contact['Etapa Pipeline'] = newStage;
-      _updateCounts();
-      Utils.showToast(`Lead movido a "${newStage}"`, 'success');
+      Utils.showToast(`Lead movido a ${newStage}`, 'success');
+      await _load(true);
     } catch(e) {
       Utils.showToast('Error: ' + e.message, 'error');
     }
   }
 
-  async function migrateOldStages() {
-    try {
-      const contacts = await Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false);
-      const mapping = {
-        'Primer contacto': 'Nuevo',
-        'Cotización enviada': 'Contactado',
-        'Negociación': 'En Negociación',
-        'Cierre ganado': 'Ganado',
-        'Cierre perdido': 'Perdido',
-        'Primer Contacto': 'Nuevo',
-        'Cotización Enviada': 'Contactado',
-        'En negociación': 'En Negociación',
-        'Ganado (Cerrado)': 'Ganado',
-        'Perdido (Cerrado)': 'Perdido'
-      };
-
-      const toUpdate = contacts.filter(c => mapping[c['Etapa Pipeline']]);
-      
-      if (toUpdate.length === 0) {
-        Utils.showToast('No se encontraron leads con etapas antiguas.', 'info');
-        return;
-      }
-
-      Utils.showToast(`Actualizando ${toUpdate.length} leads...`, 'info');
-      
-      let count = 0;
-      for (const contact of toUpdate) {
-        const newStage = mapping[contact['Etapa Pipeline']];
-        const updated = { ...contact, 'Etapa Pipeline': newStage };
-        await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contact['ID'], updated);
-        count++;
-      }
-
-      Utils.showToast(`${count} leads actualizados exitosamente.`, 'success');
-      await _load(); // Reload data
-    } catch (e) {
-      console.error('[Pipeline] Migration error:', e);
-      Utils.showToast('Error en la migración: ' + e.message, 'error');
-    }
-  }
-
-  return { render, reload: _load, handleSearch, setStageFilter, setView, migrateOldStages };
+  return { render, reload: _load, handleSearch, setStageFilter, changeStage, setView: () => {} };
 })();

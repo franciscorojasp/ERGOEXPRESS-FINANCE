@@ -66,71 +66,93 @@ const App = (() => {
 
   // ─── Initialize ───────────────────────────────────────────────────────────
   async function init() {
-    // Check stored session
+    // 1. Check stored session (Immediate)
     Auth.init();
-    const hasToken = Auth.isAuthenticated();
-
-    if (!hasToken) {
+    if (!Auth.isAuthenticated()) {
       window.location.href = 'login.html';
       return;
     }
 
-    // Validate token is still alive on server
-    const valid = await Auth.validate().catch(() => false);
-    if (!valid) {
-      window.location.href = 'login.html';
-      return;
-    }
-
-    _currentUser = Auth.getUser();
-
-    // Verify role and permissions
-    await _verifyAndSetupUser();
-
-    // Render user info in header
-    _renderUserHeader();
-
-    // Load visual settings
-    const scale = localStorage.getItem('crm_font_scale') || '1';
-    setFontScale(scale);
-
-    // Start at hash route or dashboard
-    const hash = window.location.hash.replace('#', '');
-    navigate(hash || '/dashboard');
-
-    // Check if daily rate is needed
-    await _checkDailyRate();
-
-    // Listen for hash changes
+    // 2. Setup Router Listener (Early setup)
     window.addEventListener('hashchange', () => {
       const r = window.location.hash.replace('#', '');
       _handleRoute(r || '/dashboard');
     });
 
-    // Notification polling every 5 min
-    _checkNotifications();
-    _notifInterval = setInterval(_checkNotifications, 5 * 60 * 1000);
-
-    // App Update Polling every 15 min
-    _checkAppUpdate();
-    setInterval(_checkAppUpdate, 15 * 60 * 1000);
-
-    // Visibility listener for silent updates
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && _updatePending) {
-        showUpdateNotice();
+    try {
+      // 3. User Validation (Required)
+      const valid = await Auth.validate().catch(() => false);
+      if (!valid) {
+        window.location.href = 'login.html';
+        return;
       }
-    });
 
+      _currentUser = Auth.getUser();
 
-    // Close menus on outside click
-    document.addEventListener('click', e => {
-      if (!e.target.closest('#notif-btn')  && !e.target.closest('#notif-panel'))
-        document.getElementById('notif-panel').style.display = 'none';
-      if (!e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown'))
-        document.getElementById('user-dropdown').style.display = 'none';
-    });
+      // 4. Initial Navigation (Render UI now!)
+      const initialHash = window.location.hash.replace('#', '');
+      _handleRoute(initialHash || '/dashboard');
+
+      // 5. Background / Non-Blocking Startup Tasks
+      _runSecondaryStartup();
+
+    } catch (err) {
+      console.error('[App] Init Error:', err);
+      // Fallback: If everything fails, try to show the dashboard anyway or redirect
+      _handleRoute('/dashboard');
+    }
   }
+
+  /**
+   * Tasks that can run after the initial screen has started rendering
+   */
+  async function _runSecondaryStartup() {
+    try {
+      // Verify role and permissions
+      await _verifyAndSetupUser();
+
+      // Render user info in header
+      _renderUserHeader();
+
+      // Load visual settings
+      const scale = localStorage.getItem('crm_font_scale') || '1';
+      setFontScale(scale);
+
+      // Check if daily rate is needed
+      _checkDailyRate();
+
+      // Notification polling
+      _checkNotifications();
+      if (_notifInterval) clearInterval(_notifInterval);
+      _notifInterval = setInterval(_checkNotifications, 5 * 60 * 1000);
+
+      // App Update Polling
+      _checkAppUpdate();
+      setInterval(_checkAppUpdate, 15 * 60 * 1000);
+
+      // Visibility listener
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && _updatePending) {
+          showUpdateNotice();
+        }
+      });
+
+      // Close menus on outside click
+      document.addEventListener('click', e => {
+        const notifPanel = document.getElementById('notif-panel');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        if (notifPanel && !e.target.closest('#notif-btn') && !e.target.closest('#notif-panel'))
+          notifPanel.style.display = 'none';
+        if (userDropdown && !e.target.closest('#user-menu-btn') && !e.target.closest('#user-dropdown'))
+          userDropdown.style.display = 'none';
+      });
+
+    } catch (e) {
+      console.warn('[App] Secondary startup tasks had issues:', e);
+    }
+  }
+
 
   // ─── First-time Setup ─────────────────────────────────────────────────────
   async function _runSetup() {
