@@ -42,6 +42,14 @@ const Pipeline = (() => {
 
         <!-- Stats row -->
         <div class="grid-5" id="pipeline-stats" style="display:flex; gap:10px; margin-bottom:20px; overflow-x:auto;">
+          ${CONFIG.PIPELINE_STAGES.map(s => `
+            <div class="kpi-card" id="stat-${Utils.slugify(s)}">
+              <div class="kpi-value">0</div>
+              <div class="kpi-label">${s}</div>
+            </div>
+          `).join('')}
+        </div>
+
         <!-- Mobile Stage Selector -->
         <div class="kanban-mobile-tabs show-mobile-only" id="kanban-mobile-tabs">
           ${CONFIG.PIPELINE_STAGES.map(s => `
@@ -76,8 +84,10 @@ const Pipeline = (() => {
 
       _renderBoard();
     } catch(e) {
-      document.getElementById('kanban-board').innerHTML =
-        `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
+      const board = document.getElementById('kanban-board');
+      if (board) {
+        board.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
+      }
     }
   }
 
@@ -103,6 +113,8 @@ const Pipeline = (() => {
     _sortables = [];
 
     const board = document.getElementById('kanban-board');
+    if (!board) return; // Guard against navigating away before loading finishes
+
     board.innerHTML = CONFIG.PIPELINE_STAGES.map(stage => {
       const cards = byStage[stage] || [];
       const usd   = _totalUSD(stage);
