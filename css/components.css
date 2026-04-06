@@ -1161,4 +1161,148 @@
     bottom: 0;
     right: 0;
   }
+}/*  LEADS MODULE */
+.leads-container {
+  padding: 10px 0;
+}
+
+.leads-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-switcher {
+  display: flex;
+  background: var(--bg-elevated);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+
+.switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: calc(var(--r-md) - 2px);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.switcher-btn.active {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.leads-pills-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  scrollbar-width: none;
+}
+
+.leads-pills-row::-webkit-scrollbar { display: none; }
+
+.lead-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.lead-pill:hover {
+  border-color: var(--primary);
+  background: var(--bg-hover);
+}
+
+.lead-pill.active {
+  background: var(--primary-light);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.pill-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lead-pill.active .pill-count {
+  background: rgba(255,255,255,0.2);
+}
+
+.score-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-light);
+}
+
+.score-badge.sm { font-size: 10px; padding: 1px 6px; }
+
+/* Enhanced Table and Kanban for Leads */
+.kanban-board#kanban-board-inner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.kanban-col.highlighted {
+  border: 1px solid var(--primary-light);
+  background: rgba(var(--primary-rgb), 0.02);
+  border-radius: var(--r-lg);
+}
+
+@media (max-width: 768px) {
+  .toolbar-left { min-width: 100%; order: 2; }
+  .toolbar-right { width: 100%; justify-content: space-between; order: 1; }
+  .kanban-board#kanban-board-inner {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+  .kanban-col { min-width: 85vw; }
 }

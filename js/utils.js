@@ -410,11 +410,14 @@ const Utils = (() => {
       'potencial':     'badge-warning',
       'activo':        'badge-success',
       'inactivo':      'badge-neutral',
+      'Nuevo':             'badge-warning',
+      'Contactado':        'badge-info',
+      'En Negociación':    'badge-primary',
+      'Ganado':            'badge-success',
+      'Perdido':           'badge-error',
+      // Retrocompatibilidad
       'Primer contacto':   'badge-neutral',
       'Cotización enviada': 'badge-info',
-      'Negociación':        'badge-warning',
-      'Cierre ganado':      'badge-success',
-      'Cierre perdido':     'badge-error',
     };
     const cls = map[status] || 'badge-neutral';
     return `<span class="badge ${cls}">${escapeHtml(status || '—')}</span>`;
@@ -484,22 +487,23 @@ const Utils = (() => {
   // ─── Color for pipeline stages ─────────────────────────────────────────
   function stageColor(stage) {
     const map = {
-      'Primer contacto':    '#6366f1',
-      'Cotización enviada': '#3b82f6',
-      'Negociación':        '#f59e0b',
-      'Cierre ganado':      '#10b981',
-      'Cierre perdido':     '#ef4444',
+      'Nuevo':             '#f59e0b', // Amber/Orange
+      'Contactado':        '#3b82f6', // Blue
+      'En Negociación':    '#8b5cf6', // Purple
+      'Ganado':            '#10b981', // Green
+      'Perdido':           '#ef4444', // Red
+      'Todos':             '#1f2937', // Dark Gray
     };
     return map[stage] || '#6b7280';
   }
 
   function stageIcon(stage) {
     const map = {
-      'Primer contacto':    '👋',
-      'Cotización enviada': '📋',
-      'Negociación':        '🤝',
-      'Cierre ganado':      '🏆',
-      'Cierre perdido':     '❌',
+      'Nuevo':             '✨',
+      'Contactado':        '📞',
+      'En Negociación':    '🤝',
+      'Ganado':            '🏆',
+      'Perdido':           '❌',
     };
     return map[stage] || '•';
   }

@@ -33,7 +33,7 @@ const CONFIG = {
 
   // ── Cabeceras por hoja (sincronizadas con el Apps Script) ─────────────────
   HEADERS: {
-    Contactos:    ['ID','Razón Social','RIF','Persona Contacto','Teléfonos','Email','Dirección','Estado','Tipo','Fecha Registro','Notas','Etapa Pipeline','Vendedor Email'],
+    Contactos:    ['ID','Razón Social','RIF','Persona Contacto','Teléfonos','Email','Dirección','Estado','Puntaje','Tipo','Fecha Registro','Notas','Etapa Pipeline','Vendedor Email'],
     Productos:    ['ID','Nombre','Descripción','Categoría','Precio USD','Costo USD','Impuesto %'],
     TasasCambio:  ['ID','Fecha','Tasa Oficial','Fuente'],
     Cotizaciones: ['ID','Número','Fecha','ID Cliente','Validez Días','Estado','Total USD','Total VES','Detalle JSON','Fecha Creación','Usuario Email','Notas'],
@@ -46,7 +46,7 @@ const CONFIG = {
   },
 
   // ── Catálogos ──────────────────────────────────────────────────────────────
-  PIPELINE_STAGES:  ['Primer contacto','Cotización enviada','Negociación','Cierre ganado','Cierre perdido'],
+  PIPELINE_STAGES:  ['Nuevo','Contactado','En Negociación','Ganado','Perdido'],
   CONTACT_TYPES:    ['potencial','activo','inactivo'],
   QUOTE_STATUSES:   ['Borrador','Enviada','Aceptada','Parcial','Pagada','Rechazada'],
   INTERACTION_TYPES:['nota','llamada','email','reunión','visita'],
