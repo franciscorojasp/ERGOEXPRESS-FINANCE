@@ -1,4 +1,4 @@
 {
-  "version": "3.2.1",
-  "description": "Fix: Restauración de inicio automático y mejora de legibilidad en selectores."
+  "version": "3.2.3",
+  "description": "Fix: Rescate de ERGO-AI (v1beta + Modelo Fallback) y corrección de visibilidad en vertical móvil."
 }

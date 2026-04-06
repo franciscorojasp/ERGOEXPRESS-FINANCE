@@ -610,14 +610,15 @@ function fetchBCVRate() {
  * Comunicación con Google Gemini AI (v1 Estable)
  */
 function askGemini(req) {
-  // Lista de modelos recomendados (Estables)
-  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  // Lista de modelos ordenados por prioridad (Flash -> Pro -> Legacy)
+  const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
   let lastError = '';
 
   for (const modelId of models) {
     try {
       const apiKey = req.geminiApiKey;
-      const url = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${apiKey}`;
+      // Usamos v1beta para máxima compatibilidad con modelos 1.5 en cuentas Workspace/Pro
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
       
       const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
       Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.

@@ -220,6 +220,25 @@
     text-transform: uppercase !important;
     letter-spacing: 0.2px !important;
   }
+  /* IA Assistant Mobile Fix (v3.2.3) */
+  #ai-chat-panel.ai-chat-panel {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(var(--bottom-nav-h) + 12px) !important;
+    width: auto !important;
+    height: 70vh !important;
+    max-height: 520px !important;
+    z-index: 10002 !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: var(--bg-card) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
+    display: none;
+    flex-direction: column !important;
+  }
+  #ai-chat-panel.active { display: flex !important; }
+  
   .bottom-nav-item.active { color: #2dd4bf !important; transform: translateY(-2px) !important; }
   .bottom-nav-item.active::after {
     content: '';
