@@ -607,10 +607,11 @@ function fetchBCVRate() {
 }
 
 /**
- * Comunicación con Google Gemini AI
+ * Comunicación con Google Gemini AI (v1 Estable)
  */
 function askGemini(req) {
-  const models = [req.model || 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+  // Lista de modelos recomendados (Estables)
+  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
   let lastError = '';
 
   for (const modelId of models) {
@@ -624,14 +625,15 @@ function askGemini(req) {
       Sé profesional, amable, servicial y directo. Habla siempre en español.
       Hoy es ${new Date().toLocaleDateString('es-VE')}.`;
 
+      // Inyección de identidad en el historial
       const contents = [...req.contents];
       contents.unshift({
         role: 'user',
-        parts: [{ text: `INSTRUCCIÓN DE SISTEMA: ${systemPrompt}. Responde 'Entendido'.` }]
+        parts: [{ text: `IDENTIDAD: ${systemPrompt}. Responde confirmando que eres ERGO-AI.` }]
       });
       contents.unshift({
         role: 'model',
-        parts: [{ text: "Entendido. Soy ERGO-AI, tu asistente experto. ¿En qué puedo ayudarte?" }]
+        parts: [{ text: "Entendido. Soy ERGO-AI, el asistente experto de ERGOEXPRESS. ¿En qué puedo ayudarte hoy?" }]
       });
 
       const payload = {

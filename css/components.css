@@ -1762,3 +1762,33 @@
   .ai-chat-panel { height: 100% !important; bottom: 0 !important; top: 0 !important; right: 0 !important; width: 100vw !important; z-index: 9999 !important; }
   .ai-footer { padding-bottom: 30px !important; background: var(--bg-card) !important; position: sticky !important; bottom: 0 !important; }
 }
+
+/* Móvil v3.2.0: Parche de Visibilidad Total y Z-Index Superior */
+@media (max-width: 768px) {
+  .ai-chat-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    max-height: 100svh !important;
+    border-radius: 0 !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .ai-messages {
+    flex: 1 !important;
+    min-height: 0 !important;
+    padding-bottom: 20px !important;
+  }
+  .ai-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    background: var(--bg-card) !important;
+    border-top: 1px solid var(--border) !important;
+    padding: 15px !important;
+    padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
+    z-index: 5 !important;
+  }
+  .bottom-nav { z-index: 1000 !important; } /* Forzar barra CRM por debajo */
+}

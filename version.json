@@ -1,5 +1,5 @@
 {
-  "version": "v3.1.9",
-  "timestamp": 1775497200000,
-  "description": "Actualización Crítica v3.1.9: Reparación del visor móvil del Asistente IA y nuevo motor de auto-reintento para modelos Gemini Flash/Pro. Requisito: Actualizar Code.gs."
+  "version": "v3.2.0",
+  "timestamp": 1775497800000,
+  "description": "Actualización Crítica v3.2.0: Lanzamiento del motor de IA Estable (v1) y rediseño completo de interfaz móvil (Full-Screen Overlay). Requiere actualización de Code.gs."
 }
