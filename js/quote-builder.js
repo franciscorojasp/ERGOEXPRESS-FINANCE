@@ -239,6 +239,11 @@ const QuoteBuilder = (() => {
         // Abrir WhatsApp en pestaña nueva para no perder el CRM
         window.open(`https://api.whatsapp.com/send?phone=${whatsapp}&text=${message}`, '_blank');
         Utils.showToast('Canal de WhatsApp iniciado.', 'success');
+
+        // Actualizar estado automáticamente
+        if (typeof Quotations !== 'undefined' && Quotations.updateStatus) {
+          Quotations.updateStatus(quoteId, 'Enviada');
+        }
       } else throw new Error(res.error || 'Error al guardar en Drive');
     } catch (err) {
       console.error('[WhatsApp] Error:', err);
@@ -306,6 +311,11 @@ const QuoteBuilder = (() => {
         setTimeout(() => document.body.removeChild(link), 100);
 
         Utils.showToast('Cliente de correo iniciado.', 'success');
+
+        // Actualizar estado automáticamente
+        if (typeof Quotations !== 'undefined' && Quotations.updateStatus) {
+          Quotations.updateStatus(quoteId, 'Enviada');
+        }
       } else throw new Error(res.error || 'Error al guardar en Drive');
     } catch (err) {
       console.error('Error en Email Share:', err);

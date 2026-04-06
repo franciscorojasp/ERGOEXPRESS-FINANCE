@@ -209,7 +209,7 @@ const Agenda = (() => {
         'ID': Utils.generateId(),
         ...data,
         'Estado': 'Pendiente',
-        'Usuario Email': App.getCurrentUser()?.Email || 'staff'
+        'Usuario Email': App.getCurrentUserEmail() || 'staff'
       };
       await Sheets.appendRow(CONFIG.SHEETS.AGENDA, entry);
       
@@ -223,7 +223,11 @@ const Agenda = (() => {
 
       Utils.showToast('Cita agendada correctamente', 'success');
       Utils.closeModal();
-      await render(document.getElementById('main-content'));
+      
+      // Delay refresh slightly to allow modal to close from DOM and avoid race conditions
+      setTimeout(() => {
+        App.navigate('/agenda');
+      }, 300);
     } catch(e) { 
       Utils.showToast('Error: ' + e.message, 'error'); 
     }
@@ -278,7 +282,11 @@ const Agenda = (() => {
       await Sheets.deleteRow(CONFIG.SHEETS.AGENDA, id);
       Utils.showToast('Cita eliminada', 'success');
       Utils.closeModal();
-      await render(document.getElementById('main-content'));
+      
+      // Delay refresh slightly to allow modal to close from DOM
+      setTimeout(() => {
+        App.navigate('/agenda');
+      }, 300);
     } catch(e) { Utils.showToast('Error: ' + e.message, 'error'); }
   }
 

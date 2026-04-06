@@ -388,7 +388,7 @@ const Finances = (() => {
         ...data,
         'Total VES': usd * rate,
         'Estado': 'Recibido',
-        'Vendedor Email': App.getCurrentUser()?.Email || 'staff'
+        'Vendedor Email': App.getCurrentUserEmail() || 'staff'
       };
 
       await Sheets.appendRow(CONFIG.SHEETS.FINANCE_INCOME, entry);
@@ -479,7 +479,7 @@ const Finances = (() => {
         'ID': Utils.generateId(),
         ...data,
         'Estado': 'Pagado',
-        'Usuario Email': App.getCurrentUser()?.Email || 'staff'
+        'Usuario Email': App.getCurrentUserEmail() || 'staff'
       };
       await Sheets.appendRow(CONFIG.SHEETS.FINANCE_EXPENSE, entry);
       Utils.showToast('Egreso registrado', 'success');

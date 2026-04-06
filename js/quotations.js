@@ -404,6 +404,29 @@ const Quotations = (() => {
     }
   }
 
+  // ─── ACTUALIZAR ESTADO ───────────────────────────────────────────────────
+  async function updateStatus(id, newStatus) {
+    const quote = State.quotes.find(q => q['ID'] === id);
+    if (!quote) return;
+    if (quote['Estado'] === newStatus) return;
+
+    try {
+      Utils.showToast(`Cambiando a ${newStatus}...`, 'info');
+      await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, id, { 'Estado': newStatus });
+      quote['Estado'] = newStatus;
+      
+      // Si estamos viendo el detalle de esta misma cotización, refrescar vista
+      if (document.getElementById('q-detail-marker')?.value === id) {
+        renderDetail(_container, id);
+      } else {
+        renderList();
+      }
+      Utils.showToast(`Estado actualizado a ${newStatus}`, 'success');
+    } catch (e) {
+      Utils.showToast('Error al actualizar estado: ' + e.message, 'error');
+    }
+  }
+
   // ─── VISTA EJECUTIVA (READONLY) ─────────────────────────────────────────
   async function renderDetail(container, id) {
     if (container) _container = container;
@@ -437,6 +460,13 @@ const Quotations = (() => {
     const detail = JSON.parse(q['Detalle JSON'] || '{}');
     const items = Utils.normalizeItems(detail.items);
     const sumUsd = Utils.toNumber(q['Total USD']);
+    const status = q['Estado'] || 'Borrador';
+
+    // Colores de estado
+    let stBg = 'rgba(148, 163, 184, 0.15)'; let stCol = '#64748b';
+    if(status === 'Aprobada') { stBg = 'rgba(16, 185, 129, 0.15)'; stCol = '#10b981'; }
+    if(status === 'Enviada') { stBg = 'rgba(13, 115, 119, 0.15)'; stCol = 'var(--primary)'; }
+    if(status === 'Rechazada') { stBg = 'rgba(244, 63, 94, 0.15)'; stCol = '#f43f5e'; }
 
     _container.innerHTML = `
       <style>
@@ -465,6 +495,7 @@ const Quotations = (() => {
         }
       </style>
       
+      <input type="hidden" id="q-detail-marker" value="${id}" />
       <div class="fade-in" style="max-width:1000px; margin:0 auto; padding-bottom:80px; padding-left:16px; padding-right:16px;">
         
         <!-- Header Flotante -->
@@ -473,7 +504,7 @@ const Quotations = (() => {
             <button class="btn btn-icon" style="background:transparent; border:none; color:var(--text-muted);" onclick="Quotations.render(document.getElementById('main-content'))">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             </button>
-            <span class="hidden-mobile" style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Cotización Emitida</span>
+            <span style="background:${stBg}; color:${stCol}; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">${status}</span>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
              <!-- Eliminar (Discreto) -->
@@ -492,15 +523,12 @@ const Quotations = (() => {
                WhatsApp
              </button>
 
-             <button class="btn btn-primary" style="background-color:#4285F4; border-color:#4285F4; font-weight:700; display:flex; align-items:center; gap:8px;" onclick="QuoteBuilder.shareByEmail('${q['ID']}')">
+             <button class="btn btn-primary" style="background-color:#4285F4; border-color:#4285F4; font-weight:700;" onclick="QuoteBuilder.shareByEmail('${q['ID']}')">
                <svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-               Email
              </button>
 
-             <button class="btn" style="background:var(--bg-surface); border:1px solid var(--border-light); color:var(--text-primary); font-weight:700; display:flex; align-items:center; gap:8px;" onclick="QuoteBuilder.downloadPDF('${q['ID']}')">
+             <button class="btn" style="background:var(--bg-surface); border:1px solid var(--border-light); color:var(--text-primary); font-weight:700;" onclick="QuoteBuilder.downloadPDF('${q['ID']}')">
                <svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-               <span class="hidden-mobile">Descargar PDF</span>
-               <span class="show-mobile-only">PDF</span>
              </button>
           </div>
         </div>
@@ -514,7 +542,13 @@ const Quotations = (() => {
           <div class="q-det-hdr-right">
              <div style="font-size:13px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:8px;">Monto Cerrado</div>
              <div style="font-size:48px; @media(min-width:768px){font-size:56px;} font-weight:900; letter-spacing:-2px; color:var(--success); line-height:1;">$${Utils.formatUSD(sumUsd)}</div>
-             <div style="font-size:15px; font-weight:600; color:var(--text-muted); margin-top:8px;">Ref: Bs. ${Utils.formatVES((detail.rate || 1) * sumUsd)}</div>
+             
+             <!-- Gestión de Estado Pro -->
+             <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                ${status !== 'Aprobada' ? `<button class="btn" style="font-size:11px; padding:6px 12px; border:1px solid #10b981; color:#10b981; background:transparent; font-weight:700;" onclick="Quotations.updateStatus('${q['ID']}', 'Aprobada')">Aprobar</button>` : ''}
+                ${status !== 'Rechazada' ? `<button class="btn" style="font-size:11px; padding:6px 12px; border:1px solid #f43f5e; color:#f43f5e; background:transparent; font-weight:700;" onclick="Quotations.updateStatus('${q['ID']}', 'Rechazada')">Rechazar</button>` : ''}
+                ${status !== 'Borrador' ? `<button class="btn" style="font-size:11px; padding:6px 12px; border:1px solid var(--text-muted); color:var(--text-muted); background:transparent; font-weight:700;" onclick="Quotations.updateStatus('${q['ID']}', 'Borrador')">Reset</button>` : ''}
+             </div>
           </div>
         </div>
 
@@ -558,7 +592,7 @@ const Quotations = (() => {
 
   // ─── EXPOSICIÓN DE API ──────────────────────────────────────────────────
   return {
-    render, renderList, renderForm, saveForm, renderDetail, deleteForm,
+    render, renderList, renderForm, saveForm, renderDetail, deleteForm, updateStatus,
     getQuotation: (id) => State.quotes.find(x => x['ID']===id),
     getContacts: () => State.contacts,
     getConfig: () => State.config,
