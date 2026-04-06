@@ -90,7 +90,7 @@ const App = (() => {
       _currentUser = Auth.getUser();
       
       // Inicializar Asistente AI
-      if (typeof AI !== 'undefined') AI.init();
+      // if (typeof AI !== 'undefined') AI.init(); // Desactivado v3.2.5
 
       // 4. Initial Navigation (Render UI now!)
       const initialHash = window.location.hash.replace('#', '');
@@ -617,7 +617,7 @@ const App = (() => {
       const data = await resp.json();
       
       const remote = (data.version || '').trim().toLowerCase();
-      const localVer = localStorage.getItem('crm_app_version') || (typeof CONFIG !== 'undefined' ? CONFIG.APP_VERSION : 'v0');
+      const localVer = localStorage.getItem('crm_app_version') || (typeof CONFIG !== 'undefined' ? CONFIG.APP_VERSION : '3.2.5');
       const local    = localVer.trim().toLowerCase();
 
       // Normalize comparison (ignore "v" prefix if one has it and other doesn't)

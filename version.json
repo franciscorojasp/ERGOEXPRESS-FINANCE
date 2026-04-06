@@ -1,4 +1,4 @@
 {
-  "version": "3.2.3",
-  "description": "Fix: Rescate de ERGO-AI (v1beta + Modelo Fallback) y corrección de visibilidad en vertical móvil."
+  "version": "3.2.5",
+  "description": "Estable: Remoción de asistente de IA para optimizar estabilidad y corregir bucles de inicio."
 }
