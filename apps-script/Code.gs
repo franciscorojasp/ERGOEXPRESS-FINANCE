@@ -62,6 +62,8 @@ function doPost(e) {
         case 'UPDATE':         return ok(update(req));
         case 'DELETE':         return ok(del(req));
         case 'SYNC_TO_CALENDAR': return ok(syncToCalendar(req));
+        case 'GET_NEXT_NUMBER': return ok(getNextNumber(req));
+        case 'RESET_ALL_PASSWORDS': return ok(resetAllPasswords(req));
         default: return ok({ success: false, error: 'Acción desconocida o no autorizada: ' + req.action });
       }
     } catch (authErr) {
