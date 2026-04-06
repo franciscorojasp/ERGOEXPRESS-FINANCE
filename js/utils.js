@@ -124,6 +124,18 @@ const Utils = (() => {
     return Math.round(n * p) / p;
   }
 
+  function getHour(timeStr) {
+    if (!timeStr) return -1;
+    // Handle HH:MM:SS or HH:MM or Date strings
+    const s = String(timeStr).split(':');
+    if (s.length < 2 && !String(timeStr).includes('T')) return -1;
+    
+    if (String(timeStr).includes('T')) {
+       return new Date(timeStr).getHours();
+    }
+    return parseInt(s[0]);
+  }
+
   function normalizeItems(input) {
     if (!input) return [];
     if (Array.isArray(input)) return input;
@@ -495,7 +507,7 @@ const Utils = (() => {
   // ─── Public API ────────────────────────────────────────────────────────
   return {
     generateId, todayISO, toISODate, formatDate, formatDateTime, formatDateLong,
-    daysFromNow, isOverdue, currentYear, toNumber, round, normalizeItems,
+    daysFromNow, isOverdue, currentYear, toNumber, round, getHour, normalizeItems,
     formatUSD, formatVES, formatPrice, formatNumber, usdToVes, formatWhatsApp,
     capitalize, initials, truncate, slugify, escapeHtml,
     groupBy, sortBy,

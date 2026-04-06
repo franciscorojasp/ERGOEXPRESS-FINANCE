@@ -94,7 +94,14 @@ const Agenda = (() => {
             <div class="agenda-time-cell">${time}</div>
             ${weekDates.map((date) => {
               const iso = Utils.toISODate(date);
-              const slotApps = _appointments.filter(a => a['Fecha'] === iso && String(a['Hora'] || '').startsWith(time.substring(0,2)));
+              const slotHour = parseInt(time.split(':')[0]);
+              
+              const slotApps = _appointments.filter(a => {
+                const aDate = String(a['Fecha'] || '');
+                const matchesDate = aDate.includes(iso); // Handles Date ISO strings or simple ISO
+                const matchesHour = Utils.getHour(a['Hora']) === slotHour;
+                return matchesDate && matchesHour;
+              });
               
               const filtered = _viewType === 'personal' 
                  ? slotApps.filter(a => a['Usuario Email'] === App.getCurrentUserEmail()) 

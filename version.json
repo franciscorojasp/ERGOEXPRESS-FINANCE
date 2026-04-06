@@ -1,5 +1,5 @@
 {
-  "version": "v1345-rev11",
-  "timestamp": 1775443400000,
-  "description": "Corrección de lista de clientes en Agenda (race condition) y filtrado por rol."
+  "version": "v1345-rev12",
+  "timestamp": 1775443600000,
+  "description": "Fix definitivo de visualización de Agenda (normalización de fechas y horas)."
 }
