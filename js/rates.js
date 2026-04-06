@@ -342,18 +342,13 @@ const Rates = (() => {
     const wrap = document.getElementById('rates-table-container');
     if (!wrap) return;
     
-    // 1. Limpieza y Monitor de Salud Extendido
+    // 1. Limpieza total
     wrap.innerHTML = '';
-    const monitor = document.createElement('div');
-    monitor.style = 'background:#1e293b; color:#38bdf8; padding:8px 16px; font-size:10px; font-weight:800; border-radius:12px 12px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;';
-    monitor.innerHTML = `DIAGNÓSTICO: ${_rates ? _rates.length : 0} registros | Filtro: ${_filterDays} días | Iniciando Construcción...`;
-    wrap.appendChild(monitor);
 
     try {
       if (!_rates || _rates.length === 0) {
-        monitor.innerHTML += ' [VACÍO]';
         const empty = document.createElement('div');
-        empty.style = 'padding:60px; text-align:center; color:rgba(255,255,255,0.3); background:#070c12; border:1px solid rgba(255,255,255,0.1); border-radius:0 0 12px 12px;';
+        empty.style = 'padding:60px; text-align:center; color:rgba(255,255,255,0.3); background:#0a1118; border:1px solid rgba(255,255,255,0.05); border-radius:16px;';
         empty.textContent = 'No se encontraron registros de tasas.';
         wrap.appendChild(empty);
         return;
@@ -362,95 +357,94 @@ const Rates = (() => {
       const filtered = _rates.slice(0, _filterDays);
       const today = Utils.todayISO();
 
-      // 2. Contenedor Maestro Flex
+      // 2. Contenedor Maestro Flex (Producción)
       const listContainer = document.createElement('div');
-      listContainer.style = 'display:flex !important; flex-direction:column !important; background:#071018 !important; border:1px solid rgba(255,255,255,0.1) !important; border-radius:0 0 12px 12px; overflow:hidden; opacity:1 !important; visibility:visible !important;';
+      listContainer.style = 'display:flex !important; flex-direction:column !important; background:#070c12 !important; border:1px solid rgba(255,255,255,0.05) !important; border-radius:16px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);';
       
-      // 3. Cabecera Flex
+      // 3. Cabecera Flex (Alineada con el estilo Elite 3.0)
       const header = document.createElement('div');
-      header.style = 'display:flex; padding:14px 24px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.1); color:#94a3b8; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px;';
+      header.style = 'display:flex; padding:16px 24px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05); color:#64748b; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;';
       header.innerHTML = `
         <div style="flex:2;">Fecha de Publicación</div>
-        <div style="flex:1.5;">Valor Tasa (Bs)</div>
+        <div style="flex:1.5;">Valor Tasa Oficial</div>
         <div style="flex:1;">Fuente</div>
-        <div style="flex:1; text-align:right;">Variación</div>
+        <div style="flex:1; text-align:right;">Dinámica</div>
       `;
       listContainer.appendChild(header);
 
-      // 4. Filas Flex
-      let count = 0;
+      // 4. Bucle de Filas
       filtered.forEach((r, i) => {
         try {
-          count++;
           const isActual = (r['Fecha'] === today) || (i === 0);
           const row = document.createElement('div');
-          row.style = 'display:flex; align-items:center; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.03); transition:background 0.2s;';
-          row.onmouseover = () => row.style.background = 'rgba(255,255,255,0.01)';
-          row.onmouseout = () => row.style.background = 'transparent';
+          row.style = 'display:flex; align-items:center; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.02); transition:all 0.2s;';
+          
+          row.onmouseover = () => {
+            row.style.background = 'rgba(255,255,255,0.01)';
+            row.style.paddingLeft = '28px';
+          };
+          row.onmouseout = () => {
+            row.style.background = 'transparent';
+            row.style.paddingLeft = '24px';
+          };
 
           // Columna Fecha
           const colDate = document.createElement('div');
           colDate.style = 'flex:2; display:flex; align-items:center; gap:10px;';
           colDate.innerHTML = `
-            <span style="color:#fff !important; font-weight:700; font-size:14px;">${r['Fecha'] || '—'}</span>
-            ${isActual ? '<span style="background:#3b82f6; color:#fff; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px;">ACTUAL</span>' : ''}
+            <span style="color:#ffffff !important; font-weight:700; font-size:14px; letter-spacing:-0.2px;">${r['Fecha'] || '—'}</span>
+            ${isActual ? '<span style="background:#0ea5e9; color:#fff; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px; letter-spacing:0.5px;">ACTUAL</span>' : ''}
           `;
           row.appendChild(colDate);
 
           // Columna Tasa
           const colValue = document.createElement('div');
-          colValue.style = 'flex:1.5; display:flex; align-items:center; gap:6px;';
+          colValue.style = 'flex:1.5; display:flex; align-items:center; gap:8px;';
           const vesVal = Utils.formatVES(r['Tasa Oficial']) || '0,00';
           colValue.innerHTML = `
-            <span style="color:#64748b; font-weight:600; font-size:11px;">Bs</span>
-            <span style="color:#fff !important; font-weight:900; font-size:18px; letter-spacing:-0.5px;">${vesVal}</span>
+            <span style="color:#334155; font-weight:700; font-size:12px;">Bs</span>
+            <span style="color:#ffffff !important; font-weight:900; font-size:18px; letter-spacing:-0.5px;">${vesVal}</span>
           `;
           row.appendChild(colValue);
 
           // Columna Fuente
           const colSource = document.createElement('div');
-          colSource.style = 'flex:1; color:rgba(255,255,255,0.4); font-size:12px; font-weight:600;';
+          colSource.style = 'flex:1; color:rgba(255,255,255,0.3); font-size:12px; font-weight:600;';
           colSource.textContent = r['Fuente'] || 'BCV';
           row.appendChild(colSource);
 
           // Columna Dinámica
           const colDyn = document.createElement('div');
-          colDyn.style = 'flex:1; text-align:right; font-weight:800; font-size:13px;';
+          colDyn.style = 'flex:1; text-align:right; font-weight:900; font-size:13px; letter-spacing:0.2px;';
+          
           if (i < _rates.length - 1) {
             const nextVal = Utils.toNumber(_rates[i+1]['Tasa Oficial']);
             const currVal = Utils.toNumber(r['Tasa Oficial']);
             if (nextVal > 0) {
               const p = ((currVal - nextVal) / nextVal) * 100;
               if (Math.abs(p) > 0.001) {
-                const color = p > 0 ? '#ef4444' : '#10b981';
+                const color = p > 0 ? '#f43f5e' : '#10b981';
                 const icon = p > 0 ? '▲' : '▼';
                 colDyn.style.color = color;
                 colDyn.textContent = `${icon} ${Math.abs(p).toFixed(2)}%`;
               } else {
-                colDyn.style.color = 'rgba(255,255,255,0.1)';
+                colDyn.style.color = 'rgba(255,255,255,0.05)';
                 colDyn.textContent = '—';
               }
             }
           } else {
-            colDyn.style.color = 'rgba(255,255,255,0.1)';
+            colDyn.style.color = 'rgba(255,255,255,0.05)';
             colDyn.textContent = '—';
           }
           row.appendChild(colDyn);
 
           listContainer.appendChild(row);
-        } catch(rowErr) {
-          console.error('Error render fila:', rowErr);
-        }
+        } catch(e) { console.error(e); }
       });
 
       wrap.appendChild(listContainer);
-      monitor.innerHTML = `DIAGNÓSTICO: ${_rates.length} registros | Filtro: ${_filterDays} días | Renderizado: ${count} filas OK`;
-
     } catch(err) {
-      const errorDiv = document.createElement('div');
-      errorDiv.style = 'padding:20px; color:#f87171; background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:8px; margin-top:8px;';
-      errorDiv.textContent = 'ERROR EN RENDER FLEX: ' + err.message;
-      wrap.appendChild(errorDiv);
+      console.error('Render error:', err);
     }
   }
 
