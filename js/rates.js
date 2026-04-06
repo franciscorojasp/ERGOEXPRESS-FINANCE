@@ -546,65 +546,62 @@ const Rates = (() => {
            <div style="display: inline-block; background: #0ea5e9; color: #fff; font-size: 8px; font-weight: 900; padding: 3px 10px; border-radius: 20px;">VIGENTE: ${latest['Fecha']}</div>
         </div>
 
-        <!-- Indicadores (KPIs) usando Tabla para mayor estabilidad en PDF -->
-        <table style="width: 100%; border-spacing: 8px; border-collapse: separate; margin-bottom: 20px;">
-          <tr>
-            <td style="width: 25%; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center;">
+        <!-- Indicadores (KPIs) con FLEXBOX (Evitando Tables por compatibilidad de motor PDF) -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
               <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÍNIMO MENSUAL</div>
               <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(minVal)}</div>
-            </td>
-            <td style="width: 25%; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center;">
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
               <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÁXIMO MENSUAL</div>
               <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(maxVal)}</div>
-            </td>
-            <td style="width: 25%; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center;">
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
               <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">DÍAS TRACKING</div>
               <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${mRates.length}</div>
-            </td>
-            <td style="width: 25%; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center;">
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
               <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">ESTABILIDAD</div>
               <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${stab}</div>
-            </td>
-          </tr>
-        </table>
+           </div>
+        </div>
 
-        <!-- Tabla Historial -->
+        <!-- Historial con ESTRUCTURA FLEX (Evitando Tables por compatibilidad de motor PDF) -->
         <h3 style="font-size: 12px; font-weight: 900; margin-bottom: 12px; color: #0f172a; border-left: 4px solid #0d7377; padding-left: 10px;">Historial de Movimientos (${history.length} días)</h3>
         
-        <table style="width: 100%; border-collapse: collapse; background: #ffffff;">
-          <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 10px; color: #64748b;">FECHA</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 10px; color: #64748b;">VALOR TASA</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 10px; color: #64748b;">FUENTE</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e2e8f0; font-size: 10px; color: #64748b;">DINÁMICA</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${history.map((r, i) => {
-              let diffHTML = '<span style="color:#d1d5db">—</span>';
-              if (i < history.length - 1) {
-                const nextVal = Utils.toNumber(history[i+1]['Tasa Oficial']);
-                const currVal = Utils.toNumber(r['Tasa Oficial']);
-                if (nextVal > 0) {
-                  const p = ((currVal - nextVal) / nextVal) * 100;
-                  if (Math.abs(p) > 0.001) {
-                    const color = p > 0 ? '#ef4444' : '#22c55e';
-                    diffHTML = `<span style="color: ${color}; font-weight: 800;">${p > 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(2)}%</span>`;
-                  }
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <!-- Header de Historial -->
+          <div style="display: flex; background: #f1f5f9; padding: 12px; border-bottom: 2px solid #e2e8f0; font-size: 10px; font-weight: 800; color: #64748b;">
+            <div style="width: 25%;">FECHA</div>
+            <div style="width: 35%;">VALOR TASA</div>
+            <div style="width: 20%;">FUENTE</div>
+            <div style="width: 20%; text-align: right;">DINÁMICA</div>
+          </div>
+          
+          <!-- Lista de Registros -->
+          ${history.map((r, i) => {
+            let diffHTML = '<span style="color:#d1d5db">—</span>';
+            if (i < history.length - 1) {
+              const nextVal = Utils.toNumber(history[i+1]['Tasa Oficial']);
+              const currVal = Utils.toNumber(r['Tasa Oficial']);
+              if (nextVal > 0) {
+                const p = ((currVal - nextVal) / nextVal) * 100;
+                if (Math.abs(p) > 0.001) {
+                  const color = p > 0 ? '#ef4444' : '#22c55e';
+                  diffHTML = `<span style="color: ${color}; font-weight: 800;">${p > 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(2)}%</span>`;
                 }
               }
-              return `
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 12px; font-size: 12px; font-weight: 700;">${r['Fecha']}</td>
-                  <td style="padding: 12px; font-size: 15px; font-weight: 900; color: #0d7377;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</td>
-                  <td style="padding: 12px; font-size: 11px; color: #64748b;">${r['Fuente'] || 'BCV'}</td>
-                  <td style="padding: 12px; text-align: right;">${diffHTML}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+            }
+            return `
+              <div style="display: flex; padding: 12px; border-bottom: 1px solid #f1f5f9; align-items: center; background: #ffffff;">
+                <div style="width: 25%; font-size: 11px; font-weight: 700;">${r['Fecha']}</div>
+                <div style="width: 35%; font-size: 14px; font-weight: 900; color: #0d7377;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</div>
+                <div style="width: 20%; font-size: 10px; color: #64748b;">${r['Fuente'] || 'BCV'}</div>
+                <div style="width: 20%; text-align: right; font-size: 11px;">${diffHTML}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
         
         <div style="margin-top: 30px; font-size: 8px; color: #94a3b8; text-align: justify; line-height: 1.5; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
           * Este reporte refleja el comportamiento del mercado cambiario para propósitos de análisis interno. 
