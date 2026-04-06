@@ -278,10 +278,10 @@ const Pipeline = (() => {
     if (!_searchQuery) return true;
     const q = _searchQuery.toLowerCase();
     return (
-      (c['Razón Social'] || '').toLowerCase().includes(q) ||
-      (c['Persona Contacto'] || '').toLowerCase().includes(q) ||
-      (c['Email'] || '').toLowerCase().includes(q) ||
-      (c['RIF'] || '').toLowerCase().includes(q)
+      String(c['Razón Social'] || '').toLowerCase().includes(q) ||
+      String(c['Persona Contacto'] || '').toLowerCase().includes(q) ||
+      String(c['Email'] || '').toLowerCase().includes(q) ||
+      String(c['RIF'] || '').toLowerCase().includes(q)
     );
   }
 
