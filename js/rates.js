@@ -532,46 +532,45 @@ const Rates = (() => {
     const history = _rates.slice(0, _filterDays);
     
     const html = `
-      <div style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 10px; width: 100%; box-sizing: border-box;">
+      <div style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 0; width: 100%; box-sizing: border-box;">
         
-        <div style="text-align: center; margin-bottom: 20px;">
-           <h1 style="color: #0d7377; font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase;">Reporte de Paridad Cambiaria</h1>
-           <p style="color: #64748b; font-size: 11px; font-weight: 700; margin-top: 4px;">Análisis de Tendencia — ErgoExpress Inteligencia</p>
+        <div style="text-align: center; margin-bottom: 15px; margin-top: -10px;">
+           <p style="color: #64748b; font-size: 11px; font-weight: 700; margin: 0;">Análisis de Tendencia — Inteligencia de Mercado</p>
         </div>
         
-        <!-- Bloque Tasa Actual (Compacto) -->
-        <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; text-align: center;">
-           <div style="font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px;">Tasa de Referencia Actual</div>
-           <div style="font-size: 32px; margin: 5px 0; color: #0d7377; font-weight: 900;">Bs ${Utils.formatVES(latest['Tasa Oficial'])}</div>
-           <div style="display: inline-block; background: #0ea5e9; color: #fff; font-size: 8px; font-weight: 900; padding: 3px 10px; border-radius: 20px;">VIGENTE: ${latest['Fecha']}</div>
+        <!-- Bloque Tasa Actual (Ultra Compacto) -->
+        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; text-align: center;">
+           <div style="font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Tasa de Referencia Actual</div>
+           <div style="font-size: 30px; margin: 2px 0; color: #0d7377; font-weight: 900;">Bs ${Utils.formatVES(latest['Tasa Oficial'])}</div>
+           <div style="display: inline-block; background: #0ea5e9; color: #fff; font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 4px;">ACTUALIZADO: ${latest['Fecha']}</div>
         </div>
 
-        <!-- Indicadores (KPIs) con FLEXBOX (Evitando Tables por compatibilidad de motor PDF) -->
+        <!-- Indicadores (KPIs) con FLEXBOX -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
-              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÍNIMO MENSUAL</div>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(minVal)}</div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 10px 5px; border-radius: 8px; text-align: center; margin: 0 4px;">
+              <div style="font-size: 7.5px; font-weight: 800; color: #64748b; margin-bottom: 3px;">MÍNIMO MENSUAL</div>
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(minVal)}</div>
            </div>
-           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
-              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÁXIMO MENSUAL</div>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(maxVal)}</div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 10px 5px; border-radius: 8px; text-align: center; margin: 0 4px;">
+              <div style="font-size: 7.5px; font-weight: 800; color: #64748b; margin-bottom: 3px;">MÁXIMO MENSUAL</div>
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(maxVal)}</div>
            </div>
-           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
-              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">DÍAS TRACKING</div>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${mRates.length}</div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 10px 5px; border-radius: 8px; text-align: center; margin: 0 4px;">
+              <div style="font-size: 7.5px; font-weight: 800; color: #64748b; margin-bottom: 3px;">DÍAS TRACKING</div>
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a;">${mRates.length}</div>
            </div>
-           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px 5px; border-radius: 10px; text-align: center; margin: 0 4px;">
-              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">ESTABILIDAD</div>
-              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${stab}</div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 10px 5px; border-radius: 8px; text-align: center; margin: 0 4px;">
+              <div style="font-size: 7.5px; font-weight: 800; color: #64748b; margin-bottom: 3px;">ESTABILIDAD</div>
+              <div style="font-size: 12px; font-weight: 800; color: #0f172a;">${stab}</div>
            </div>
         </div>
 
-        <!-- Historial con ESTRUCTURA FLEX (Evitando Tables por compatibilidad de motor PDF) -->
-        <h3 style="font-size: 12px; font-weight: 900; margin-bottom: 12px; color: #0f172a; border-left: 4px solid #0d7377; padding-left: 10px;">Historial de Movimientos (${history.length} días)</h3>
+        <!-- Historial Compacto -->
+        <h3 style="font-size: 11px; font-weight: 900; margin-bottom: 10px; color: #0f172a; border-left: 3px solid #0d7377; padding-left: 8px; text-transform: uppercase;">Tendencia de los últimos ${_filterDays} días</h3>
         
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
           <!-- Header de Historial -->
-          <div style="display: flex; background: #f1f5f9; padding: 12px; border-bottom: 2px solid #e2e8f0; font-size: 10px; font-weight: 800; color: #64748b;">
+          <div style="display: flex; background: #f1f5f9; padding: 8px 12px; border-bottom: 2px solid #e2e8f0; font-size: 9px; font-weight: 800; color: #64748b;">
             <div style="width: 25%;">FECHA</div>
             <div style="width: 35%;">VALOR TASA</div>
             <div style="width: 20%;">FUENTE</div>
@@ -580,7 +579,7 @@ const Rates = (() => {
           
           <!-- Lista de Registros -->
           ${history.map((r, i) => {
-            let diffHTML = '<span style="color:#d1d5db">—</span>';
+            let diffHTML = '<span style="color:#d1d5db; font-weight:400;">—</span>';
             if (i < history.length - 1) {
               const nextVal = Utils.toNumber(history[i+1]['Tasa Oficial']);
               const currVal = Utils.toNumber(r['Tasa Oficial']);
@@ -593,19 +592,19 @@ const Rates = (() => {
               }
             }
             return `
-              <div style="display: flex; padding: 12px; border-bottom: 1px solid #f1f5f9; align-items: center; background: #ffffff;">
+              <div style="display: flex; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; align-items: center; background: #ffffff;">
                 <div style="width: 25%; font-size: 11px; font-weight: 700;">${r['Fecha']}</div>
-                <div style="width: 35%; font-size: 14px; font-weight: 900; color: #0d7377;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</div>
+                <div style="width: 35%; font-size: 13px; font-weight: 800; color: #0d7377;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</div>
                 <div style="width: 20%; font-size: 10px; color: #64748b;">${r['Fuente'] || 'BCV'}</div>
-                <div style="width: 20%; text-align: right; font-size: 11px;">${diffHTML}</div>
+                <div style="width: 20%; text-align: right; font-size: 10px;">${diffHTML}</div>
               </div>
             `;
           }).join('')}
         </div>
         
-        <div style="margin-top: 30px; font-size: 8px; color: #94a3b8; text-align: justify; line-height: 1.5; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
-          * Este reporte refleja el comportamiento del mercado cambiario para propósitos de análisis interno. 
-          Los valores mostrados corresponden a la Tasa Oficial del Banco Central de Venezuela (BCV) o ajustes manuales realizados por la administración.
+        <div style="margin-top: 20px; font-size: 7.5px; color: #94a3b8; text-align: justify; line-height: 1.4; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+          * Este reporte automático analiza la volatilidad cambiaria. Los valores corresponden a la tasa oficial del BCV o ajustes administrativos registrados. 
+          Documento generado por el motor de inteligencia financiera ErgoExpress CRM.
         </div>
       </div>
     `;
