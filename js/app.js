@@ -617,7 +617,7 @@ const App = (() => {
       const data = await resp.json();
       
       const remote = (data.version || '').trim().toLowerCase();
-      const localVer = localStorage.getItem('crm_app_version') || (typeof CONFIG !== 'undefined' ? CONFIG.APP_VERSION : '3.2.5');
+      const localVer = localStorage.getItem('crm_app_version') || (typeof CONFIG !== 'undefined' ? CONFIG.APP_VERSION : '3.2.6');
       const local    = localVer.trim().toLowerCase();
 
       // Normalize comparison (ignore "v" prefix if one has it and other doesn't)
