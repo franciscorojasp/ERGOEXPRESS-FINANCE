@@ -340,23 +340,21 @@ const Rates = (() => {
 
   function _renderTable() {
     const wrap = document.getElementById('rates-table-container');
-    if (!wrap) {
-      console.error('CRITICAL: rates-table-container NOT FOUND in DOM');
-      return;
-    }
+    if (!wrap) return;
     
-    // 1. Limpieza total y Monitor de Salud
+    // 1. Limpieza y Monitor de Salud Extendido
     wrap.innerHTML = '';
     const monitor = document.createElement('div');
-    monitor.style = 'background:#1e293b; color:#38bdf8; padding:8px 16px; font-size:10px; font-weight:800; border-radius:8px 8px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;';
-    monitor.innerHTML = `DIAGNÓSTICO: ${_rates ? _rates.length : 0} registros totales | Filtro: ${_filterDays} días | Fecha: ${Utils.todayISO()}`;
+    monitor.style = 'background:#1e293b; color:#38bdf8; padding:8px 16px; font-size:10px; font-weight:800; border-radius:12px 12px 0 0; border:1px solid rgba(255,255,255,0.1); border-bottom:none;';
+    monitor.innerHTML = `DIAGNÓSTICO: ${_rates ? _rates.length : 0} registros | Filtro: ${_filterDays} días | Iniciando Construcción...`;
     wrap.appendChild(monitor);
 
     try {
       if (!_rates || _rates.length === 0) {
+        monitor.innerHTML += ' [VACÍO]';
         const empty = document.createElement('div');
-        empty.style = 'padding:40px; text-align:center; color:rgba(255,255,255,0.4); background:#070c12; border:1px solid rgba(255,255,255,0.1);';
-        empty.textContent = 'No hay registros disponibles para mostrar.';
+        empty.style = 'padding:60px; text-align:center; color:rgba(255,255,255,0.3); background:#070c12; border:1px solid rgba(255,255,255,0.1); border-radius:0 0 12px 12px;';
+        empty.textContent = 'No se encontraron registros de tasas.';
         wrap.appendChild(empty);
         return;
       }
@@ -364,69 +362,60 @@ const Rates = (() => {
       const filtered = _rates.slice(0, _filterDays);
       const today = Utils.todayISO();
 
-      // 2. Crear Contenedor de Tabla
-      const tableWrap = document.createElement('div');
-      tableWrap.className = 'rates-premium-table-wrap';
-      tableWrap.style = 'display:block !important; visibility:visible !important; opacity:1 !important; background:#070c12 !important; border:1px solid rgba(255,255,255,0.1) !important; min-height:300px;';
+      // 2. Contenedor Maestro Flex
+      const listContainer = document.createElement('div');
+      listContainer.style = 'display:flex !important; flex-direction:column !important; background:#071018 !important; border:1px solid rgba(255,255,255,0.1) !important; border-radius:0 0 12px 12px; overflow:hidden; opacity:1 !important; visibility:visible !important;';
       
-      const table = document.createElement('table');
-      table.className = 'rates-premium-table';
-      table.style = 'width:100% !important; border-collapse:collapse !important; color:#ffffff !important;';
-
-      // 3. Encabezado
-      const thead = document.createElement('thead');
-      thead.innerHTML = `
-        <tr style="background:rgba(255,255,255,0.03);">
-          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Fecha</th>
-          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Tasa</th>
-          <th style="text-align:left; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Origen</th>
-          <th style="text-align:right; padding:16px 24px; color:#94a3b8; font-size:10px; text-transform:uppercase;">Dinámica</th>
-        </tr>
+      // 3. Cabecera Flex
+      const header = document.createElement('div');
+      header.style = 'display:flex; padding:14px 24px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.1); color:#94a3b8; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px;';
+      header.innerHTML = `
+        <div style="flex:2;">Fecha de Publicación</div>
+        <div style="flex:1.5;">Valor Tasa (Bs)</div>
+        <div style="flex:1;">Fuente</div>
+        <div style="flex:1; text-align:right;">Variación</div>
       `;
-      table.appendChild(thead);
+      listContainer.appendChild(header);
 
-      // 4. Cuerpo de Tabla
-      const tbody = document.createElement('tbody');
+      // 4. Filas Flex
+      let count = 0;
       filtered.forEach((r, i) => {
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-        
         try {
+          count++;
           const isActual = (r['Fecha'] === today) || (i === 0);
-          
-          // Celda Fecha
-          const tdFecha = document.createElement('td');
-          tdFecha.style.padding = '16px 24px';
-          tdFecha.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px;">
-              <span style="font-weight:700; color:#fff !important;">${r['Fecha'] || '—'}</span>
-              ${isActual ? '<span class="badge-actual" style="background:#3b82f6; padding:2px 6px; border-radius:4px; font-size:9px;">ACTUAL</span>' : ''}
-            </div>
-          `;
-          tr.appendChild(tdFecha);
+          const row = document.createElement('div');
+          row.style = 'display:flex; align-items:center; padding:18px 24px; border-bottom:1px solid rgba(255,255,255,0.03); transition:background 0.2s;';
+          row.onmouseover = () => row.style.background = 'rgba(255,255,255,0.01)';
+          row.onmouseout = () => row.style.background = 'transparent';
 
-          // Celda Tasa
-          const tdTasa = document.createElement('td');
-          tdTasa.style.padding = '16px 24px';
+          // Columna Fecha
+          const colDate = document.createElement('div');
+          colDate.style = 'flex:2; display:flex; align-items:center; gap:10px;';
+          colDate.innerHTML = `
+            <span style="color:#fff !important; font-weight:700; font-size:14px;">${r['Fecha'] || '—'}</span>
+            ${isActual ? '<span style="background:#3b82f6; color:#fff; font-size:8px; font-weight:900; padding:2px 6px; border-radius:4px;">ACTUAL</span>' : ''}
+          `;
+          row.appendChild(colDate);
+
+          // Columna Tasa
+          const colValue = document.createElement('div');
+          colValue.style = 'flex:1.5; display:flex; align-items:center; gap:6px;';
           const vesVal = Utils.formatVES(r['Tasa Oficial']) || '0,00';
-          tdTasa.innerHTML = `
-            <span style="color:#64748b; font-weight:600; font-size:11px; margin-right:4px;">Bs</span>
-            <span style="font-weight:800; color:#fff !important; font-size:16px;">${vesVal}</span>
+          colValue.innerHTML = `
+            <span style="color:#64748b; font-weight:600; font-size:11px;">Bs</span>
+            <span style="color:#fff !important; font-weight:900; font-size:18px; letter-spacing:-0.5px;">${vesVal}</span>
           `;
-          tr.appendChild(tdTasa);
+          row.appendChild(colValue);
 
-          // Celda Fuente
-          const tdFuente = document.createElement('td');
-          tdFuente.style.padding = '16px 24px';
-          tdFuente.innerHTML = `<span style="color:rgba(255,255,255,0.4);">${r['Fuente'] || 'BCV'}</span>`;
-          tr.appendChild(tdFuente);
+          // Columna Fuente
+          const colSource = document.createElement('div');
+          colSource.style = 'flex:1; color:rgba(255,255,255,0.4); font-size:12px; font-weight:600;';
+          colSource.textContent = r['Fuente'] || 'BCV';
+          row.appendChild(colSource);
 
-          // Celda Dinámica
-          const tdDyn = document.createElement('td');
-          tdDyn.style.padding = '16px 24px';
-          tdDyn.style.textAlign = 'right';
-          
-          let dynLabel = '<span style="color:rgba(255,255,255,0.1)">—</span>';
+          // Columna Dinámica
+          const colDyn = document.createElement('div');
+          colDyn.style = 'flex:1; text-align:right; font-weight:800; font-size:13px;';
           if (i < _rates.length - 1) {
             const nextVal = Utils.toNumber(_rates[i+1]['Tasa Oficial']);
             const currVal = Utils.toNumber(r['Tasa Oficial']);
@@ -435,28 +424,32 @@ const Rates = (() => {
               if (Math.abs(p) > 0.001) {
                 const color = p > 0 ? '#ef4444' : '#10b981';
                 const icon = p > 0 ? '▲' : '▼';
-                dynLabel = `<span style="color:${color}; font-weight:800;">${icon} ${Math.abs(p).toFixed(2)}%</span>`;
+                colDyn.style.color = color;
+                colDyn.textContent = `${icon} ${Math.abs(p).toFixed(2)}%`;
+              } else {
+                colDyn.style.color = 'rgba(255,255,255,0.1)';
+                colDyn.textContent = '—';
               }
             }
+          } else {
+            colDyn.style.color = 'rgba(255,255,255,0.1)';
+            colDyn.textContent = '—';
           }
-          tdDyn.innerHTML = dynLabel;
-          tr.appendChild(tdDyn);
+          row.appendChild(colDyn);
 
+          listContainer.appendChild(row);
         } catch(rowErr) {
-          tr.innerHTML = `<td colspan="4" style="color:#ef4444; font-size:10px;">Error fila ${i}: ${rowErr.message}</td>`;
+          console.error('Error render fila:', rowErr);
         }
-        
-        tbody.appendChild(tr);
       });
 
-      table.appendChild(tbody);
-      tableWrap.appendChild(table);
-      wrap.appendChild(tableWrap);
+      wrap.appendChild(listContainer);
+      monitor.innerHTML = `DIAGNÓSTICO: ${_rates.length} registros | Filtro: ${_filterDays} días | Renderizado: ${count} filas OK`;
 
     } catch(err) {
       const errorDiv = document.createElement('div');
       errorDiv.style = 'padding:20px; color:#f87171; background:rgba(239,68,68,0.1); border:1px solid #ef4444; border-radius:8px; margin-top:8px;';
-      errorDiv.textContent = 'ERROR RENDER: ' + err.message;
+      errorDiv.textContent = 'ERROR EN RENDER FLEX: ' + err.message;
       wrap.appendChild(errorDiv);
     }
   }
