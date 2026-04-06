@@ -613,25 +613,34 @@ function askGemini(req) {
   try {
     const apiKey = req.geminiApiKey;
     const model  = req.model || 'gemini-1.5-flash';
-    const url    = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url    = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
     
+    // Como v1 no soporta 'systemInstruction' nativamente en todas las configuraciones,
+    // inyectamos la identidad de ERGO-AI al inicio del historial.
+    const systemPrompt = `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
+    Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
+    ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
+    Sé profesional, amable, servicial y directo. Habla siempre en español.
+    Hoy es ${new Date().toLocaleDateString('es-VE')}.`;
+
+    const contents = [...req.contents];
+    // Inyectamos el rol del sistema como un par de mensajes iniciales (instrucción invisible)
+    contents.unshift({
+      role: 'user',
+      parts: [{ text: `INSTRUCCIÓN DE SISTEMA (Prioridad Máxima): ${systemPrompt}. Responde 'Entendido' para confirmar.` }]
+    });
+    contents.unshift({
+      role: 'model',
+      parts: [{ text: "Entendido. Soy ERGO-AI, tu asistente experto de ERGOEXPRESS. ¿En qué puedo ayudarte hoy?" }]
+    });
+
     const payload = {
-      contents: req.contents,
+      contents: contents,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
-      },
-      systemInstruction: {
-        parts: [{ 
-          text: `Eres "ERGO-AI", el asistente experto del CRM ERGOEXPRESS. 
-          Tu objetivo es ayudar a los vendedores y administradores a gestionar el sistema.
-          ERGOEXPRESS es una empresa líder en Seguridad, Ergonomía e Higiene en Venezuela.
-          Sé profesional, amable, servicial y directo. Habla siempre en español.
-          Si te preguntan sobre el sistema, responde basándote en que es un CRM gestionado con Google Sheets.
-          Hoy es ${new Date().toLocaleDateString('es-VE')}.`
-        }]
       }
     };
 
