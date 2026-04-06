@@ -169,9 +169,14 @@ const Pipeline = (() => {
   }
 
   async function changeStage(id, newStage) {
+    if (!newStage) return;
+    
+    const selects = document.querySelectorAll(`select[onchange*="${id}"]`);
+    selects.forEach(s => s.disabled = true);
+
     try {
       const contact = _contacts.find(c => c['ID'] === id);
-      if (!contact) return;
+      if (!contact) throw new Error('Contacto no encontrado en memoria.');
 
       const updated = { ...contact, 'Etapa Pipeline': newStage };
       await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, id, updated);
@@ -179,7 +184,9 @@ const Pipeline = (() => {
       Utils.showToast(`Lead movido a ${newStage}`, 'success');
       await _load(true);
     } catch(e) {
+      console.error('[Pipeline] Error cambiando etapa:', e);
       Utils.showToast('Error: ' + e.message, 'error');
+      selects.forEach(s => s.disabled = false);
     }
   }
 

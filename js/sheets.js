@@ -55,13 +55,19 @@ const Sheets = (() => {
 
   // ─── UPDATE ───────────────────────────────────────────────────────────────
   async function updateRow(sheetName, id, obj) {
-    // 1. Fetch fresh data to get the current true rowIndex for this ID
-    const rows = await readSheet(sheetName, false);
-    const target = rows.find(r => r['ID'] === id);
-    if (!target) throw new Error('Registro no encontrado para actualización: ' + id);
+    try {
+      // 1. Fetch fresh data to get the current true rowIndex for this ID
+      const rows = await readSheet(sheetName, false);
+      const target = rows.find(r => r['ID'] === id);
+      if (!target) throw new Error('Registro no encontrado para actualización: ' + id);
 
-    await API.call('UPDATE', { sheet: sheetName, rowIndex: target._rowIndex, data: obj });
-    _invalidate(sheetName);
+      console.log(`[Sheets] Actualizando ${sheetName} ID:${id} en fila:${target._rowIndex}`);
+      await API.call('UPDATE', { sheet: sheetName, rowIndex: target._rowIndex, data: obj });
+      _invalidate(sheetName);
+    } catch (e) {
+      console.error('[Sheets] Error en updateRow:', e);
+      throw e;
+    }
   }
 
   // ─── DELETE ───────────────────────────────────────────────────────────────
