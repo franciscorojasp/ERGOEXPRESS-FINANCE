@@ -387,38 +387,46 @@ function update(req) {
   if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
   const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   
-  // Seguridad: Verificar que el ID en esa fila coincida con el solicitado
+  // 1. Obtener datos actuales de la fila (para no perder campos no enviados)
+  const currentRowValues = sheet.getRange(req.rowIndex, 1, 1, cols.length).getValues()[0];
+  const mergedData = {};
+  cols.forEach((h, i) => {
+    mergedData[h] = currentRowValues[i];
+  });
+
+  // 2. Seguridad: Verificar que el ID en esa fila coincida con el solicitado
   const idIdx = cols.indexOf('ID');
   if (idIdx !== -1 && req.data.ID) {
-    const rowId = String(sheet.getRange(req.rowIndex, idIdx + 1).getValue());
+    const rowId = String(mergedData['ID']);
     if (rowId !== String(req.data.ID)) {
-      return { success: false, error: 'ID Mismatch: La fila ha cambiado. Por favor recargue.' };
+      return { success: false, error: 'ID Mismatch: La fila ha cambiado o el ID no coincide. Por favor recargue.' };
     }
   }
   
-  // Si estamos actualizando un usuario y viene el password, hashearlo
+  // 3. Mezclar nuevos datos sobre los existentes
+  Object.keys(req.data).forEach(key => {
+    mergedData[key] = req.data[key];
+  });
+
+  // 4. Procesar Passwords (Solo si es la hoja de Usuarios)
   if (req.sheet === 'Usuarios' && req.data.Password) {
-     const data = sheet.getDataRange().getValues();
-     const h = data[0];
-     const iP = h.indexOf('Password');
-     const oldPass = data[req.rowIndex-1][iP];
-     // Solo hasheamos si el password cambió o no parece un hash
-     if (req.data.Password !== oldPass) {
-       req.data.Password = hash(req.data.Password);
-     }
+    const oldPass = currentRowValues[cols.indexOf('Password')];
+    if (req.data.Password !== oldPass) {
+      mergedData['Password'] = hash(req.data.Password);
+    }
   }
 
+  // 5. Mapear de nuevo al array de la fila
   const row = cols.map(h => {
-    if (req.data[h] === undefined) return '';
-    if (typeof req.data[h] === 'number') return req.data[h];
-    return String(req.data[h]);
+    const val = mergedData[h];
+    if (val === undefined || val === null) return '';
+    if (typeof val === 'number') return val;
+    return String(val);
   });
   
   const rng = sheet.getRange(req.rowIndex, 1, 1, row.length);
   rng.setValues([row]);
-  
-  // Limpiar cualquier formato forzado previo (como las fechas 1518)
-  rng.setNumberFormat("");
+  rng.setNumberFormat(""); // Limpiar formatos forzados
   
   return { success: true };
 }
