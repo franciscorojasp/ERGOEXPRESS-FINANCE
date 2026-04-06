@@ -234,51 +234,51 @@ const Products = (() => {
   }
 
   function _renderGrid() {
-    const list = _getFilteredList();
-    const countEl = document.getElementById('products-count');
-    if (countEl) countEl.textContent = `${list.length} de ${_products.length} productos`;
+    try {
+      const list = _getFilteredList();
+      const countEl = document.getElementById('products-count');
+      if (countEl) countEl.textContent = `${list.length} de ${_products.length} productos`;
 
-    const tableEl = document.getElementById('products-table');
-    if (!tableEl) return;
+      const tableEl = document.getElementById('products-table');
+      if (!tableEl) return;
 
-    if (!list.length) {
-      _renderEmptyState(tableEl);
-      return;
+      if (!list.length) {
+        _renderEmptyState(tableEl);
+        return;
+      }
+
+      tableEl.innerHTML = `
+        <div class="product-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; padding:4px;">
+          ${list.map(p => `
+            <div class="product-card clickable" onclick="Products.openForm('${p['ID']}')">
+              <div class="product-card-header">
+                <div class="product-card-tag">${Utils.escapeHtml(p['Categoría'] || 'General')}</div>
+                <div class="product-card-price">$ ${Utils.formatUSD(p['Precio USD'])}</div>
+              </div>
+              <div class="product-card-body">
+                <h3 class="product-card-title">${Utils.escapeHtml(p['Nombre'])}</h3>
+                <p class="product-card-desc">${Utils.escapeHtml(Utils.truncate(p['Descripción']||'—', 100))}</p>
+              </div>
+              <div class="product-card-footer">
+                <div class="product-card-stats">
+                  <span>Costo: $${Utils.formatUSD(p['Costo USD'])}</span>
+                  <span>IVA: ${p['Impuesto %'] || '0'}%</span>
+                </div>
+                <div class="product-card-actions">
+                  <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Products.openForm('${p['ID']}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } catch (err) {
+      console.error("Grid crash:", err);
+      const tableEl = document.getElementById('products-table');
+      if (tableEl) tableEl.innerHTML = `<div style="padding:20px; color:var(--error);">Error al cargar Cuadrícula: ${err.message}</div>`;
     }
-
-    tableEl.innerHTML = `
-      <div class="product-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px; padding:4px;">
-        ${list.map(p => `
-          <div class="kanban-card product-card" onclick="Products.openForm('${p['ID']}')">
-            <div class="kanban-card-header">
-              <div class="kanban-card-title">${Utils.escapeHtml(p['Nombre'])}</div>
-              <div class="kanban-card-subtitle">${Utils.escapeHtml(p['Categoría'] || 'General')}</div>
-            </div>
-            <div class="kanban-card-body">
-              <div style="font-size:20px; font-weight:800; color:var(--primary); margin-bottom:8px;">
-                $ ${Utils.formatUSD(p['Precio USD'])}
-              </div>
-              <div class="kanban-card-info" style="font-size:13px; color:var(--text-muted); min-height:40px;">
-                ${Utils.escapeHtml(Utils.truncate(p['Descripción']||'Sin descripción', 100))}
-              </div>
-            </div>
-            <div class="kanban-card-footer">
-               <span class="kanban-tag tag-neutral">${p['Impuesto %'] || '0'}% IVA</span>
-               <div class="kanban-card-actions">
-                 <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Products.openForm('${p['ID']}')">
-                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                 </button>
-                 ${App.isAdmin() ? `
-                 <button class="btn btn-icon-sm" style="color:var(--error);" onclick="event.stopPropagation(); Products.deleteItem('${p['ID']}')">
-                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                 </button>
-                 ` : ''}
-               </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
   }
 
   function _renderEmptyState(container) {

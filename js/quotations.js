@@ -98,34 +98,49 @@ const Quotations = (() => {
     listDiv.innerHTML = filtered.map(q => {
       const client = State.contacts.find(c => c['ID'] === q['ID Cliente']);
       const st = q['Estado'] || 'Borrador';
+      
+      // Colores de estado (Estabilizados)
       let bdgBg = 'rgba(148, 163, 184, 0.1)'; let bdgCol = '#94a3b8';
       if(st === 'Aprobada') { bdgBg = 'rgba(16, 185, 129, 0.1)'; bdgCol = '#10b981'; }
       if(st === 'Enviada') { bdgBg = 'rgba(13, 115, 119, 0.1)'; bdgCol = 'var(--primary)'; }
       if(st === 'Rechazada') { bdgBg = 'rgba(244, 63, 94, 0.1)'; bdgCol = '#f43f5e'; }
 
       return `
-        <div class="clickable" onclick="Quotations.renderDetail(null, '${q['ID']}')" style="background:var(--bg-surface); border:1px solid var(--border-light); border-radius:16px; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; box-shadow:0 2px 8px rgba(0,0,0,0.01); position:relative;" onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='var(--primary-dim)';" onmouseout="this.style.transform='none'; this.style.borderColor='var(--border-light)';">
-          <div style="display:flex; align-items:center; gap:20px; flex:1;">
-            <div style="background:var(--bg-dark); border-radius:12px; padding:12px; border:1px solid var(--border-light); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+        <div class="q-list-card clickable" onclick="Quotations.renderDetail(null, '${q['ID']}')">
+          <div class="q-list-content">
+            <div class="q-list-icon">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
-            <div style="flex:1;">
-              <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:4px;">${Utils.escapeHtml(client?.['Razón Social'] || 'Desconocido')}</h3>
-              <div style="font-size:13px; color:var(--text-muted); font-weight:500;">ERGOX-${String(q['Número']).padStart(6,'0')} • ${Utils.formatDate(q['Fecha'])}</div>
+            <div class="q-list-main-info">
+              <h3 class="q-list-title">${Utils.escapeHtml(client?.['Razón Social'] || 'Desconocido')}</h3>
+              <div class="q-list-sub">ERGOX-${String(q['Número']).padStart(6,'0')} • ${Utils.formatDate(q['Fecha'])}</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:24px;">
-            <span style="background:${bdgBg}; color:${bdgCol}; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase;">${st}</span>
-            <div style="text-align:right; min-width:100px;">
-               <div style="font-size:18px; font-weight:800; color:var(--text-primary);">$${Utils.formatUSD(q['Total USD'])}</div>
+
+          <div class="q-list-meta">
+            <div class="q-list-status-price">
+              <span class="q-list-status" style="background:${bdgBg}; color:${bdgCol};">${st}</span>
+              <div class="q-list-price">$${Utils.formatUSD(q['Total USD'])}</div>
             </div>
             
-            <!-- Acciones Explícitas -->
-            <div style="display:flex; gap:8px;">
+            <div class="q-list-actions">
+               <!-- Comunicación -->
+               <button class="btn btn-icon-sm" style="color:#25D366;" onclick="event.stopPropagation(); QuoteBuilder.shareByWhatsApp('${q['ID']}')" title="WhatsApp">
+                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-4.821 7.454c-1.893 0-3.748-.511-5.361-1.477l-.385-.228-3.991 1.047 1.065-3.893-.25-.398a10.038 10.038 0 0 1-1.531-5.312c0-5.54 4.51-10.05 10.05-10.05 2.684 0 5.207 1.046 7.104 2.943a10.003 10.003 0 0 1 2.943 7.106c0 5.54-4.51 10.05-10.05 10.05m0-21.782c-6.475 0-11.732 5.257-11.732 11.73 0 2.07.541 4.091 1.565 5.885l-1.666 6.085 6.223-1.632a11.705 11.705 0 0 0 5.61 1.444c6.473 0 11.731-5.257 11.731-11.73 0-3.136-1.22-6.084-3.436-8.301-2.215-2.216-5.163-3.435-8.295-3.435\"/></svg>
+               </button>
+               <button class="btn btn-icon-sm" style="color:#4285F4;" onclick="event.stopPropagation(); QuoteBuilder.shareByEmail('${q['ID']}')" title="Email">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+               </button>
+               <button class="btn btn-icon-sm" onclick="event.stopPropagation(); QuoteBuilder.downloadPDF('${q['ID']}')" title="PDF">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+               </button>
+
+               <div style="width:1px; height:16px; background:var(--border-light); margin:0 4px;"></div>
+
                <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Quotations.renderForm('${q['ID']}')" title="Editar">
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                </button>
-               <button class="btn btn-icon-sm" style="color:var(--error);" onclick="event.stopPropagation(); Quotations.deleteForm('${q['ID']}')" title="Eliminar">
+               <button class="btn btn-icon-sm danger-text" onclick="event.stopPropagation(); Quotations.deleteForm('${q['ID']}')" title="Eliminar">
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                </button>
             </div>
@@ -458,80 +473,98 @@ const Quotations = (() => {
   }
 
   function renderBoard() {
-    const listDiv = document.getElementById('q-list-container');
-    if (!listDiv) return;
+    try {
+      const listDiv = document.getElementById('q-list-container');
+      if (!listDiv) return;
 
-    _sortables.forEach(s => s.destroy());
-    _sortables = [];
+      _sortables.forEach(s => s.destroy());
+      _sortables = [];
 
-    const searchVal = document.getElementById('q-search')?.value.toLowerCase() || '';
-    const filtered = State.quotes.filter(q => {
-      const cName = (State.contacts.find(x => x['ID'] === q['ID Cliente'])?.['Razón Social'] || '').toLowerCase();
-      return String(q['Número']).includes(searchVal) || cName.includes(searchVal) || (q['Estado']||'').toLowerCase().includes(searchVal);
-    });
+      const searchVal = document.getElementById('q-search')?.value.toLowerCase() || '';
+      const filtered = State.quotes.filter(q => {
+        const cName = (State.contacts.find(x => x['ID'] === q['ID Cliente'])?.['Razón Social'] || '').toLowerCase();
+        return String(q['Número']).includes(searchVal) || cName.includes(searchVal) || (q['Estado']||'').toLowerCase().includes(searchVal);
+      });
 
-    const lanes = ['Borrador', 'Enviada', 'Aprobada', 'Rechazada', 'Facturada'];
-    
-    listDiv.innerHTML = `
-      <div class="kanban-board" id="quotes-kanban">
-        ${lanes.map(lane => {
-          const cards = filtered.filter(q => (q['Estado'] || 'Borrador') === lane);
-          const total = cards.reduce((s, q) => s + Utils.toNumber(q['Total USD']), 0);
-          return `
-            <div class="kanban-col">
-              <div class="kanban-col-header">
-                <div class="kanban-col-title">${lane}</div>
-                <span class="kanban-count">${cards.length}</span>
+      const lanes = ['Borrador', 'Enviada', 'Aprobada', 'Rechazada', 'Facturada'];
+      
+      listDiv.innerHTML = `
+        <div class="kanban-board" id="quotes-kanban">
+          ${lanes.map(lane => {
+            const cards = filtered.filter(q => (q['Estado'] || 'Borrador') === lane);
+            const total = cards.reduce((s, q) => s + Utils.toNumber(q['Total USD']), 0);
+            return `
+              <div class="kanban-col">
+                <div class="kanban-col-header">
+                  <div class="kanban-col-title">${lane}</div>
+                  <span class="kanban-count">${cards.length}</span>
+                </div>
+                <div class="kanban-col-stats">$ ${Utils.formatUSD(total)}</div>
+                <div class="kanban-cards" id="col-quotes-${Utils.slugify(lane)}" data-status="${lane}">
+                  ${cards.map(q => _qCardHTML(q)).join('')}
+                  ${cards.length === 0 ? '<div class="kanban-empty">Sin cotizaciones</div>' : ''}
+                </div>
               </div>
-              <div class="kanban-col-stats">$ ${Utils.formatUSD(total)}</div>
-              <div class="kanban-cards" id="col-quotes-${Utils.slugify(lane)}" data-status="${lane}">
-                ${cards.map(q => _qCardHTML(q)).join('')}
-                ${cards.length === 0 ? '<div class="kanban-empty">Sin cotizaciones</div>' : ''}
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
+            `;
+          }).join('')}
+        </div>
+      `;
 
-    // Init Sortable
-    lanes.forEach(lane => {
-      const el = document.getElementById('col-quotes-' + Utils.slugify(lane));
-      if (!el || typeof Sortable === 'undefined') return;
-      _sortables.push(new Sortable(el, {
-        group: 'quotes-status',
-        animation: 200,
-        ghostClass: 'kanban-drop-zone',
-        onAdd: async (evt) => {
-          const quoteId = evt.item.dataset.id;
-          const newStatus = evt.to.dataset.status;
-          await Quotations.updateStatus(quoteId, newStatus);
-        }
-      }));
-    });
+      // Init Sortable
+      lanes.forEach(lane => {
+        const el = document.getElementById('col-quotes-' + Utils.slugify(lane));
+        if (!el || typeof Sortable === 'undefined') return;
+        _sortables.push(new Sortable(el, {
+          group: 'quotes-status',
+          animation: 200,
+          ghostClass: 'kanban-drop-zone',
+          onAdd: async (evt) => {
+            const quoteId = evt.item.dataset.id;
+            const newStatus = evt.to.dataset.status;
+            await Quotations.updateStatus(quoteId, newStatus);
+          }
+        }));
+      });
+    } catch (err) {
+      console.error("Board crash:", err);
+      const listDiv = document.getElementById('q-list-container');
+      if (listDiv) listDiv.innerHTML = `<div style="padding:20px; color:var(--error);">Error al cargar Tablero: ${err.message}</div>`;
+    }
   }
 
   function _qCardHTML(q) {
     const client = State.contacts.find(c => c['ID'] === q['ID Cliente']);
+    const st = q['Estado'] || 'Borrador';
+    
+    let tagClass = 'tag-muted';
+    if(st === 'Aprobada') tagClass = 'tag-success';
+    if(st === 'Enviada') tagClass = 'tag-warning';
+
     return `
-      <div class="kanban-card" data-id="${q['ID']}" onclick="Quotations.renderDetail(null, '${q['ID']}')">
+      <div class="kanban-card quote-kanban-card" data-id="${q['ID']}" onclick="Quotations.renderDetail(null, '${q['ID']}')">
         <div class="kanban-card-header">
           <div class="kanban-card-title">${Utils.escapeHtml(client?.['Razón Social'] || 'Desconocido')}</div>
           <div class="kanban-card-subtitle">ERGOX-${String(q['Número']).padStart(6,'0')}</div>
         </div>
         <div class="kanban-card-body">
-          <div class="kanban-card-info" style="font-size:18px; font-weight:800; color:var(--primary);">$ ${Utils.formatUSD(q['Total USD'])}</div>
+          <div class="kanban-card-price">$ ${Utils.formatUSD(q['Total USD'])}</div>
           <div class="kanban-card-info">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             ${Utils.formatDate(q['Fecha'])}
           </div>
         </div>
         <div class="kanban-card-footer">
-          <span class="kanban-tag tag-muted">${q['Estado'] || 'Borrador'}</span>
+          <span class="kanban-tag ${tagClass}">${st}</span>
           <div class="kanban-card-actions">
-            <button class="btn-icon-sm" onclick="event.stopPropagation(); Quotations.renderForm('${q['ID']}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
+             <button class="btn-icon-sm" style="color:#25D366;" onclick="event.stopPropagation(); QuoteBuilder.shareByWhatsApp('${q['ID']}')">
+               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-4.821 7.454c-1.893 0-3.748-.511-5.361-1.477l-.385-.228-3.991 1.047 1.065-3.893-.25-.398a10.038 10.038 0 0 1-1.531-5.312c0-5.54 4.51-10.05 10.05-10.05 2.684 0 5.207 1.046 7.104 2.943a10.003 10.003 0 0 1 2.943 7.106c0 5.54-4.51 10.05-10.05 10.05m0-21.782c-6.475 0-11.732 5.257-11.732 11.73 0 2.07.541 4.091 1.565 5.885l-1.666 6.085 6.223-1.632a11.705 11.705 0 0 0 5.61 1.444c6.473 0 11.731-5.257 11.731-11.73 0-3.136-1.22-6.084-3.436-8.301-2.215-2.216-5.163-3.435-8.295-3.435\"/></svg>
+             </button>
+             <button class="btn-icon-sm" style="color:#4285F4;" onclick="event.stopPropagation(); QuoteBuilder.shareByEmail('${q['ID']}')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+             </button>
+             <button class="btn-icon-sm" onclick="event.stopPropagation(); Quotations.renderForm('${q['ID']}')">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+             </button>
           </div>
         </div>
       </div>

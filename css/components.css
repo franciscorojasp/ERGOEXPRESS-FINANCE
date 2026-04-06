@@ -1409,3 +1409,144 @@
   color: var(--primary);
 }
 
+
+/*  OPTIMIZED QUOTATION CARDS (MOBILE FIRST)  */
+.q-list-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+  position: relative;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 768px) {
+  .q-list-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+  }
+}
+
+.q-list-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-dim);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.04);
+}
+
+.q-list-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.q-list-icon {
+  background: var(--bg-dark);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.q-list-main-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.q-list-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.q-list-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.q-list-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .q-list-meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+  }
+}
+
+.q-list-status-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .q-list-status-price {
+    flex-direction: row;
+    min-width: 180px;
+    justify-content: flex-end;
+  }
+}
+
+.q-list-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.q-list-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.q-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+@media (min-width: 768px) {
+  .q-list-actions {
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.quote-kanban-card .kanban-card-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.danger-text { color: var(--error) !important; }
