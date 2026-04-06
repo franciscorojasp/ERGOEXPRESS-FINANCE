@@ -81,7 +81,7 @@ const Agenda = (() => {
           <div class="agenda-row">
             <div class="agenda-time-cell">${time}</div>
             ${weekDates.map((date) => {
-              const iso = Utils.formatDate(date, 'yyyy-MM-dd');
+              const iso = Utils.toISODate(date);
               const slotApps = _appointments.filter(a => a['Fecha'] === iso && String(a['Hora'] || '').startsWith(time.substring(0,2)));
               
               const filtered = _viewType === 'personal' 

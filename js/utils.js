@@ -17,6 +17,17 @@ const Utils = (() => {
     return new Date().toISOString().split('T')[0];
   }
 
+  /**
+   * Genera una cadena YYYY-MM-DD sin desfases de zona horaria (basado en fecha local)
+   */
+  function toISODate(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   function formatDate(dateStr) {
     if (!dateStr) return '—';
     // If it's already an ISO or has a T, don't append T00:00:00
@@ -483,7 +494,7 @@ const Utils = (() => {
 
   // ─── Public API ────────────────────────────────────────────────────────
   return {
-    generateId, todayISO, formatDate, formatDateTime, formatDateLong,
+    generateId, todayISO, toISODate, formatDate, formatDateTime, formatDateLong,
     daysFromNow, isOverdue, currentYear, toNumber, round, normalizeItems,
     formatUSD, formatVES, formatPrice, formatNumber, usdToVes, formatWhatsApp,
     capitalize, initials, truncate, slugify, escapeHtml,
