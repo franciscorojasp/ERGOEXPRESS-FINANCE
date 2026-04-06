@@ -31,6 +31,44 @@
       border-color: #e2e8f0;
       color: #0f172a;
     }
+
+    /* Selection Indicator for View Switcher */
+    .view-switcher .btn.active {
+      background: var(--primary) !important;
+      color: #fff !important;
+      box-shadow: 0 4px 12px var(--primary-dim);
+    }
+
+    /* Responsive Visibility Utilities */
+    .hidden-mobile { display: inline-flex !important; }
+    .show-mobile-only { display: none !important; }
+
+    @media (max-width: 768px) {
+      .hidden-mobile { display: none !important; }
+      .show-mobile-only { display: flex !important; }
+      .fab.show-mobile-only { display: flex !important; }
+    }
+
+    /* FAB Positioning Fix */
+    .fab {
+      position: fixed !important;
+      bottom: 24px !important;
+      right: 24px !important;
+      z-index: 9999 !important;
+      width: 56px;
+      height: 56px;
+      border-radius: 28px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .fab:active { transform: scale(0.9); }
   </style>
 </head>
 <body>

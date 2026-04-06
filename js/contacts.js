@@ -80,15 +80,17 @@ const Contacts = (() => {
           </select>
         </div>
 
-        <!-- Table -->
-        <div class="table-wrapper" id="contacts-table-wrap">
+        <!-- Table / Grid Container -->
+        <div id="contacts-table-wrap" style="min-height: 200px;">
+          <div class="loading-spinner"><div class="spinner"></div></div>
+        </div>
 
-      <!-- Mobile FAB (Single button for mobile) -->
-      <button class="fab show-mobile-only" onclick="Contacts.openForm()" title="Nuevo Contacto">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="24" height="24">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
+        <!-- Mobile FAB -->
+        <button class="fab show-mobile-only" onclick="Contacts.openForm()" title="Nuevo Contacto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="24" height="24">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
       </div>
     `;
     await _loadContacts();
