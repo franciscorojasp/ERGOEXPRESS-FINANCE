@@ -6,7 +6,7 @@ const Rates = (() => {
   let _rates = [];
   let _currContainer = null;
   let _chart = null;
-  let _filterDays = 30;
+  let _filterDays = 7;
 
   async function render(container, force = false) {
     if (container) _currContainer = container;
@@ -195,11 +195,8 @@ const Rates = (() => {
       _rates = await Sheets.readSheet(CONFIG.SHEETS.RATES, force);
       if (!Array.isArray(_rates)) _rates = [];
 
-      // IMPORTANTE: Invertimos primero para que, a igualdad de fecha,
-      // el registro que estaba más abajo en el Excel (más nuevo) quede Arriba tras el sort.
       _rates.reverse();
 
-      // Robustez en el ordenamiento por fecha
       _rates.sort((a, b) => {
         const parseDate = (d) => {
           if (!d) return 0;
@@ -223,11 +220,13 @@ const Rates = (() => {
   }
 
   function _renderUI() {
-    // Ordenamos las llamadas para que la tabla no dependa del éxito del gráfico
     _renderHero();
     _renderSummary();
-    _renderTable();
-    _renderSparkline();
+    
+    setTimeout(() => {
+      _renderTable();
+      _renderSparkline();
+    }, 100);
   }
 
   function _renderHero() {
@@ -246,11 +245,11 @@ const Rates = (() => {
       const vP = Utils.toNumber(prev['Tasa Oficial']);
       const diffP = ((vL - vP) / vP) * 100;
       const isUp = diffP > 0;
-      const arrow = isUp ? '▲' : (diffP < 0 ? '▼' : '');
+      const Arrow = isUp ? '▲' : (diffP < 0 ? '▼' : '');
       const color = isUp ? '#ef4444' : (diffP < 0 ? '#10b981' : 'var(--text-muted)');
       
       badgeWrap.innerHTML = `
-        <div style="color:${color}; font-weight:900; font-size:18px; letter-spacing:-0.5px;">${arrow} ${Math.abs(diffP).toFixed(2)}%</div>
+        <div style="color:${color}; font-weight:900; font-size:18px; letter-spacing:-0.5px;">${Arrow} ${Math.abs(diffP).toFixed(2)}%</div>
         <div style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase; margin-top:2px; letter-spacing:0.5px;">vs. cierre ayer</div>
       `;
     }
@@ -259,7 +258,6 @@ const Rates = (() => {
   function _renderSparkline() {
     const canvas = document.getElementById('hero-sparkline-canvas');
     if (!canvas) return;
-    // Tomar los últimos 15 registros para el sparkline (en orden cronológico)
     const history = [..._rates].reverse().slice(-15);
     const values = history.map(r => Utils.toNumber(r['Tasa Oficial']));
     const labels = history.map(r => r['Fecha']);
@@ -327,22 +325,10 @@ const Rates = (() => {
     document.getElementById('stat-stability').textContent = stab;
   }
 
-  function _renderUI() {
-    _renderHero();
-    _renderSummary();
-    
-    // Pequeño retardo para asegurar que el DOM base esté listo
-    setTimeout(() => {
-      _renderTable();
-      _renderSparkline();
-    }, 100);
-  }
-
   function _renderTable() {
     const wrap = document.getElementById('rates-table-container');
     if (!wrap) return;
     
-    // 1. Limpieza total
     wrap.innerHTML = '';
 
     try {
@@ -357,11 +343,9 @@ const Rates = (() => {
       const filtered = _rates.slice(0, _filterDays);
       const today = Utils.todayISO();
 
-      // 2. Contenedor Maestro Flex (Producción)
       const listContainer = document.createElement('div');
       listContainer.style = 'display:flex !important; flex-direction:column !important; background:#070c12 !important; border:1px solid rgba(255,255,255,0.05) !important; border-radius:16px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);';
       
-      // 3. Cabecera Flex (Alineada con el estilo Elite 3.0)
       const header = document.createElement('div');
       header.style = 'display:flex; padding:16px 24px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05); color:#64748b; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px;';
       header.innerHTML = `
@@ -372,7 +356,6 @@ const Rates = (() => {
       `;
       listContainer.appendChild(header);
 
-      // 4. Bucle de Filas
       filtered.forEach((r, i) => {
         try {
           const isActual = (r['Fecha'] === today) || (i === 0);
@@ -388,7 +371,6 @@ const Rates = (() => {
             row.style.paddingLeft = '24px';
           };
 
-          // Columna Fecha
           const colDate = document.createElement('div');
           colDate.style = 'flex:2; display:flex; align-items:center; gap:10px;';
           colDate.innerHTML = `
@@ -397,7 +379,6 @@ const Rates = (() => {
           `;
           row.appendChild(colDate);
 
-          // Columna Tasa
           const colValue = document.createElement('div');
           colValue.style = 'flex:1.5; display:flex; align-items:center; gap:8px;';
           const vesVal = Utils.formatVES(r['Tasa Oficial']) || '0,00';
@@ -407,13 +388,11 @@ const Rates = (() => {
           `;
           row.appendChild(colValue);
 
-          // Columna Fuente
           const colSource = document.createElement('div');
           colSource.style = 'flex:1; color:rgba(255,255,255,0.3); font-size:12px; font-weight:600;';
           colSource.textContent = r['Fuente'] || 'BCV';
           row.appendChild(colSource);
 
-          // Columna Dinámica
           const colDyn = document.createElement('div');
           colDyn.style = 'flex:1; text-align:right; font-weight:900; font-size:13px; letter-spacing:0.2px;';
           
@@ -464,7 +443,6 @@ const Rates = (() => {
         'Fuente': 'Manual'
       });
       
-      // Limpiar caché y recargar
       localStorage.removeItem('cached_rates');
       Utils.showToast('Tasa actualizada correctamente', 'success');
       inp.value = '';
@@ -479,9 +457,7 @@ const Rates = (() => {
     _filterDays = days; 
     _renderTable(); 
     
-    // Actualizar visualmente los botones de filtro
     document.querySelectorAll('.history-filters .filter-chip').forEach(btn => {
-      // Si el texto del botón contiene el número de días o coincide con la lógica
       const btnText = btn.textContent.toLowerCase();
       if (btnText.includes(days.toString())) {
         btn.classList.add('active');
@@ -532,42 +508,109 @@ const Rates = (() => {
     const latest = _rates[0];
     if (!latest) return Utils.showToast('No hay datos para exportar', 'warning');
     
-    // Simular un reporte premium
+    // 1. Calcular estadísticas para el reporte (siguiendo lógica de _renderSummary)
+    const now = new Date();
+    const m = now.getMonth();
+    const y = now.getFullYear();
+    const mRates = _rates.filter(r => {
+      const d = new Date(r['Fecha']);
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+    const vals = mRates.map(r => Utils.toNumber(r['Tasa Oficial']));
+    const minVal = vals.length ? Math.min(...vals) : 0;
+    const maxVal = vals.length ? Math.max(...vals) : 0;
+    let stab = 'Alta';
+    if (vals.length > 2) {
+      const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+      const std = Math.sqrt(vals.reduce((a,b)=>a+Math.pow(b-mean,2), 0) / vals.length);
+      const cv = std/mean;
+      if (cv > 0.01) stab = 'Media';
+      if (cv > 0.03) stab = 'Baja';
+    }
+
+    // 2. Filtrar historial según selección actual
+    const history = _rates.slice(0, _filterDays);
+    
     const html = `
-      <div style="font-family: sans-serif; color: #1e293b; padding: 40px;">
-        <h1 style="color: #0ea5e9; margin-bottom: 8px;">Reporte de Paridad Cambiaria</h1>
-        <p style="color: #64748b; margin-bottom: 32px;">ErgoExpress CRM - Inteligencia Financiera</p>
+      <div style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 25px;">
+           <h1 style="color: #0d7377; font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Reporte de Paridad Cambiaria</h1>
+           <p style="color: #64748b; font-size: 11px; font-weight: 600; margin-top: 4px;">Análisis de Tendencia — ErgoExpress Inteligencia</p>
+        </div>
         
-        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 40px;">
-           <span style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Tasa de Referencia Actual</span>
-           <h2 style="font-size: 48px; margin: 8px 0; color: #0f172a;">Bs ${Utils.formatVES(latest['Tasa Oficial'])}</h2>
-           <p style="margin: 0; color: #334155; font-weight: 600;">Válida para: ${latest['Fecha']}</p>
+        <!-- Bloque Tasa Principal -->
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 25px; text-align: center;">
+           <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px;">Tasa de Referencia Actual</span>
+           <h2 style="font-size: 32px; margin: 8px 0; color: #0d7377; font-weight: 900;">Bs ${Utils.formatVES(latest['Tasa Oficial'])}</h2>
+           <div style="display: inline-block; background: #0ea5e9; color: #fff; font-size: 9px; font-weight: 900; padding: 3px 10px; border-radius: 20px;">VIGENTE: ${latest['Fecha']}</div>
         </div>
 
-        <h3 style="margin-bottom: 16px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">Historial Reciente</h3>
-        <table style="width: 100%; border-collapse: collapse;">
+        <!-- Cuadrícula de Indicadores (KPIs) -->
+        <div style="display: flex; gap: 10px; margin-bottom: 30px;">
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÍNIMO MENSUAL</div>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(minVal)}</div>
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">MÁXIMO MENSUAL</div>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">Bs ${Utils.formatVES(maxVal)}</div>
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">DÍAS TRACKING</div>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${mRates.length}</div>
+           </div>
+           <div style="flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 8px; font-weight: 800; color: #64748b; margin-bottom: 4px;">ESTABILIDAD</div>
+              <div style="font-size: 13px; font-weight: 800; color: #0f172a;">${stab}</div>
+           </div>
+        </div>
+
+        <!-- Tabla Historial -->
+        <h3 style="font-size: 12px; font-weight: 900; margin-bottom: 12px; color: #0f172a; border-left: 4px solid #0d7377; padding-left: 10px;">Historial de Movimientos (${_filterDays} días)</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
           <thead>
-            <tr style="text-align: left; color: #64748b; font-size: 11px;">
-              <th style="padding: 12px;">FECHA</th>
-              <th style="padding: 12px;">VALOR</th>
-              <th style="padding: 12px;">FUENTE</th>
+            <tr style="background: #f1f5f9; text-align: left;">
+              <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">FECHA</th>
+              <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">VALOR TASA</th>
+              <th style="padding: 10px; border-bottom: 2px solid #e2e8f0;">FUENTE</th>
+              <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: right;">DINÁMICA</th>
             </tr>
           </thead>
           <tbody>
-            ${_rates.slice(0, 10).map(r => `
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 12px; font-weight: 600;">${r['Fecha']}</td>
-                <td style="padding: 12px;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</td>
-                <td style="padding: 12px; color: #64748b;">${r['Fuente'] || 'BCV'}</td>
-              </tr>
-            `).join('')}
+            ${history.map((r, i) => {
+              let diffHTML = '—';
+              if (i < history.length - 1) {
+                const nextVal = Utils.toNumber(history[i+1]['Tasa Oficial']);
+                const currVal = Utils.toNumber(r['Tasa Oficial']);
+                if (nextVal > 0) {
+                  const p = ((currVal - nextVal) / nextVal) * 100;
+                  if (Math.abs(p) > 0.001) {
+                    const color = p > 0 ? '#ef4444' : '#22c55e';
+                    diffHTML = `<span style="color: ${color}; font-weight: 800;">${p > 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(2)}%</span>`;
+                  }
+                }
+              }
+              return `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 10px; font-weight: 700;">${r['Fecha']}</td>
+                  <td style="padding: 10px;">Bs ${Utils.formatVES(r['Tasa Oficial'])}</td>
+                  <td style="padding: 10px; color: #64748b;">${r['Fuente'] || 'BCV'}</td>
+                  <td style="padding: 10px; text-align: right;">${diffHTML}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
+        
+        <div style="margin-top: 30px; font-size: 9px; color: #94a3b8; text-align: justify; line-height: 1.5; font-style: italic;">
+          * Este reporte refleja el comportamiento del mercado cambiario para propósitos de análisis interno. 
+          Los valores mostrados corresponden a la Tasa Oficial del Banco Central de Venezuela (BCV) o ajustes manuales realizados por la administración.
+        </div>
       </div>
     `;
     await ReportBuilder.generateEliteReport({ 
       title: 'Reporte de Tasas BCV', 
-      filename: `Tasas_BCV_${Utils.todayISO()}.pdf`, 
+      filename: `Reporte_Tasas_${Utils.todayISO()}.pdf`, 
       contentHTML: html 
     });
   }
