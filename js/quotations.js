@@ -15,19 +15,34 @@ const Quotations = (() => {
   let _sortables = [];
 
   // ─── INICIALIZACIÓN ───────────────────────────────────────────────────────
-  async function render(container) {
-    _container = container;
-    
-    _container.innerHTML = `
+  async function render(container, force = false) {
+    if (container) _container = container;
+    const target = _container || document.getElementById('main-content');
+    if (!target) return;
+
+    if (force) {
+      target.innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Sincronizando con Google Cloud...</p></div>`;
+      // No explicit load needed here if we call setView later, 
+      // but let's ensure we refresh data.
+      await Promise.all([Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS), Sheets.readSheet(CONFIG.SHEETS.CONTACTS)]);
+    }
+
+    target.innerHTML = `
       <div class="fade-in" style="max-width:1200px; margin:0 auto; padding:20px 0;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
           <div>
             <h1 style="font-size:32px; font-weight:800; letter-spacing:-1px; color:var(--text-primary); margin:0;">Cotizaciones</h1>
             <p style="color:var(--text-muted); font-size:15px; margin-top:4px;">Cierre de negocios y acuerdos comerciales.</p>
           </div>
-          <button class="btn btn-primary" style="border-radius:12px; padding:12px 24px; font-weight:700; font-size:14px; box-shadow:0 8px 16px var(--primary-dim);" onclick="Quotations.renderForm()">
-            + Nuevo Documento
-          </button>
+          <div style="display:flex; gap:12px;">
+            <button class="btn btn-secondary" onclick="Quotations.render(null, true)" title="Sincronizar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sincronizar
+            </button>
+            <button class="btn btn-primary hidden-mobile" style="border-radius:12px; padding:12px 24px; font-weight:700; font-size:14px;" onclick="Quotations.renderForm()">
+              + Nuevo
+            </button>
+          </div>
         </div>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; gap:16px; flex-wrap:wrap;">
@@ -49,6 +64,13 @@ const Quotations = (() => {
         <div id="q-list-container" style="display:flex; flex-direction:column; gap:12px;">
           <div class="loading-spinner"><div class="spinner"></div></div>
         </div>
+
+        <!-- Mobile FAB -->
+        <button class="fab show-mobile-only" onclick="Quotations.renderForm()" title="Nuevo Presupuesto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="24" height="24">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
       </div>
     `;
 
@@ -65,7 +87,8 @@ const Quotations = (() => {
       
       renderCurrentView();
     } catch (e) {
-      document.getElementById('q-list-container').innerHTML = `<div style="color:var(--error); padding:20px;">Fallo crítico de red: ${e.message}</div>`;
+      const listEnv = document.getElementById('q-list-container');
+      if (listEnv) listEnv.innerHTML = `<div style="color:var(--error); padding:20px;">Fallo crítico de red: ${e.message}</div>`;
     }
   }
 

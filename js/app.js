@@ -27,7 +27,7 @@ const App = (() => {
   let _notifInterval = null;
   let _notifications = [];
   let _updatePending = false;
-  let _lastVersion   = localStorage.getItem('crm_app_version') || 'v1345-rev6';
+  let _lastVersion   = localStorage.getItem('crm_app_version') || 'v1345-rev12';
 
 
   // ─── Route Map ────────────────────────────────────────────────────────────
@@ -59,7 +59,9 @@ const App = (() => {
   };
 
   function content() {
-    return document.getElementById('main-content');
+    const el = document.getElementById('main-content');
+    if (!el) console.warn('[App] Container main-content not found');
+    return el;
   }
 
   // ─── Initialize ───────────────────────────────────────────────────────────
@@ -116,8 +118,7 @@ const App = (() => {
     // Visibility listener for silent updates
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && _updatePending) {
-        console.log('[App] New version found while resuming. Reloading...');
-        window.location.reload();
+        showUpdateNotice();
       }
     });
 
@@ -579,19 +580,42 @@ const App = (() => {
       if (data.version && data.version !== _lastVersion) {
         console.log(`[App] Update detected: ${data.version} (Current: ${_lastVersion})`);
         _updatePending = true;
-        
-        // If we were at rev6 and found rev7, store it for next time
-        // but only after a reload we'll definitely have it.
-        // We set it here so if they manual reload it persists.
         localStorage.setItem('crm_app_version_new', data.version);
+        showUpdateNotice(); // Show immediately if just detected
       } else if (data.version) {
-        // First run or same version
         localStorage.setItem('crm_app_version', data.version);
         _lastVersion = data.version;
       }
-    } catch (e) {
-      // Silent fail
-    }
+    } catch (e) {}
+  }
+
+  function showUpdateNotice() {
+    if (document.getElementById('update-modal')) return;
+    Utils.showModal({
+      title: 'Actualización Disponible',
+      content: `
+        <div style="text-align:center; padding:10px 0;">
+          <div style="font-size:48px; margin-bottom:15px;">🚀</div>
+          <p style="font-size:16px; font-weight:600; color:var(--text-primary); margin-bottom:8px;">
+            ¡Hay una nueva versión del CRM lista!
+          </p>
+          <p style="font-size:14px; color:var(--text-muted);">
+            Hemos aplicado mejoras de rendimiento y corregido errores de visualización.
+          </p>
+        </div>
+      `,
+      footer: `
+        <button class="btn btn-ghost" onclick="Utils.closeModal()">Más tarde</button>
+        <button class="btn btn-primary" onclick="App.applyUpdate()">Actualizar ahora</button>
+      `,
+      size: 'sm'
+    });
+  }
+
+  function applyUpdate() {
+    const newVer = localStorage.getItem('crm_app_version_new');
+    if (newVer) localStorage.setItem('crm_app_version', newVer);
+    window.location.reload(true);
   }
 
   // ─── Role helpers ─────────────────────────────────────────────────────────

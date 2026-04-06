@@ -12,10 +12,20 @@ const Contacts = (() => {
   let _view      = localStorage.getItem('contacts_view') || 'list';
   let _filters   = { search: '', tipo: '', estado: '', etapa: '' };
   let _sortables = [];
+  let _currContainer = null;
 
   // ─── List View ────────────────────────────────────────────────────────────
-  async function render(container) {
-    container.innerHTML = `
+  async function render(container, force = false) {
+    if (container) _currContainer = container;
+    const target = _currContainer || document.getElementById('main-content');
+    if (!target) return;
+
+    if (force) {
+      target.innerHTML = `<div class="loading-spinner" style="margin:100px auto;"><div class="spinner"></div><p>Sincronizando con Google Sheets...</p></div>`;
+      await _loadContacts();
+    }
+
+    target.innerHTML = `
       <div class="fade-in">
         <div class="page-header">
           <div>
@@ -33,7 +43,7 @@ const Contacts = (() => {
               </button>
             </div>
 
-            <button class="btn btn-secondary" onclick="Contacts.render(document.getElementById('app'), true)" title="Forzar recarga desde Sheets">
+            <button class="btn btn-secondary" onclick="Contacts.render(null, true)" title="Forzar recarga desde Sheets">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Sincronizar
             </button>
@@ -46,7 +56,7 @@ const Contacts = (() => {
               </svg>
               Exportar
             </button>
-            <button class="btn btn-primary" onclick="Contacts.openForm()">
+            <button class="btn btn-primary hidden-mobile" onclick="Contacts.openForm()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
@@ -73,8 +83,8 @@ const Contacts = (() => {
         <!-- Table -->
         <div class="table-wrapper" id="contacts-table-wrap">
 
-      <!-- Mobile FAB -->
-      <button class="fab visible-mobile" onclick="Contacts.openForm()" title="Nuevo Contacto">
+      <!-- Mobile FAB (Single button for mobile) -->
+      <button class="fab show-mobile-only" onclick="Contacts.openForm()" title="Nuevo Contacto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="24" height="24">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>

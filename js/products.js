@@ -9,8 +9,18 @@ const Products = (() => {
   let _filterSearch = '';
   let _filterCat    = '';
   let _view         = localStorage.getItem('products_view') || 'list';
-  async function render(container) {
-    container.innerHTML = `
+  let _currContainer = null;
+  async function render(container, force = false) {
+    if (container) _currContainer = container;
+    const target = _currContainer || document.getElementById('main-content');
+    if (!target) return;
+
+    if (force) {
+      target.innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Actualizando catálogo...</p></div>`;
+      await _load();
+    }
+
+    target.innerHTML = `
       <div class="fade-in">
         <div class="page-header">
           <div>
@@ -18,11 +28,11 @@ const Products = (() => {
             <p class="page-subtitle" id="products-count">Cargando…</p>
           </div>
           <div class="page-actions">
-            <button class="btn btn-secondary" onclick="Products.render(_container, true)" title="Forzar recarga desde Sheets">
+            <button class="btn btn-secondary" onclick="Products.render(null, true)" title="Sincronizar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               Sincronizar
             </button>
-            <button class="btn btn-secondary" onclick="Products.exportCSV()">
+            <button class="btn btn-secondary hidden-mobile" onclick="Products.exportCSV()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -30,11 +40,11 @@ const Products = (() => {
               </svg>
               Exportar
             </button>
-            <button class="btn btn-primary" onclick="Products.openForm()">
+            <button class="btn btn-primary hidden-mobile" onclick="Products.openForm()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Nuevo Producto
+              Nuevo
             </button>
           </div>
         </div>
@@ -66,6 +76,13 @@ const Products = (() => {
         <div class="table-wrapper" id="products-table">
           <div class="loading-spinner"><div class="spinner"></div></div>
         </div>
+
+        <!-- Mobile FAB -->
+        <button class="fab show-mobile-only" onclick="Products.openForm()" title="Nuevo Producto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="24" height="24">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
       </div>
     `;
 
@@ -80,6 +97,7 @@ const Products = (() => {
       const cats = [...new Set(_products.map(p => p['Categoría']).filter(Boolean))].sort();
       const sel  = document.getElementById('cat-filter');
       if (sel) {
+        sel.innerHTML = '<option value="">Todas las categorías</option>';
         cats.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c; opt.textContent = c;

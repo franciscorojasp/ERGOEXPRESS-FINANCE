@@ -1,5 +1,5 @@
 {
-  "version": "v1345-rev12",
-  "timestamp": 1775443600000,
-  "description": "Fix definitivo de visualización de Agenda (normalización de fechas y horas)."
+  "version": "v1345-rev13",
+  "timestamp": 1775478000000,
+  "description": "Estabilización Crítica: Bloqueo de bucle de actualización, corrección de renderizado en contenedores principales y eliminación de botones duplicados."
 }
