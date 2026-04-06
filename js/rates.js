@@ -134,16 +134,16 @@ const Rates = (() => {
         .adjust-subtitle { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
         .adjust-input-group { display: flex; gap: 12px; margin-top: auto; }
         .adjust-input-group input { 
-          flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
           border-radius: 10px; padding: 14px 18px; color: #fff; font-weight: 800; font-size: 18px; outline: none;
           transition: all 0.2s;
         }
         .adjust-input-group input:focus { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
         .btn-adjust-check { 
-          border: none; border-radius: 10px; width: 56px; 
-          display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;
+          transition: transform 0.2s, background 0.2s; 
         }
-        .btn-adjust-check:hover { transform: scale(1.05); }
+        .btn-adjust-check:hover { transform: scale(1.05); background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; }
+        .btn-adjust-check:active { transform: scale(0.95); }
         
         .rates-summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .summary-item { display: flex; align-items: center; gap: 16px; background: #0a1118; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s; }
@@ -159,7 +159,7 @@ const Rates = (() => {
         .filter-chip.active { background: #0ea5e9; color: #fff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
 
         /* Table Styling */
-        .rates-premium-table-wrap { background: #070c12; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
+        .rates-premium-table-wrap { background: #070c12; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-top: 10px; }
         .rates-premium-table { width: 100%; border-collapse: collapse; }
         .rates-premium-table th { 
           text-align: left; padding: 16px 24px; font-size: 10px; font-weight: 800; color: var(--text-muted); 
@@ -190,19 +190,40 @@ const Rates = (() => {
   async function _load(force = false) {
     try {
       _rates = await Sheets.readSheet(CONFIG.SHEETS.RATES, force);
-      // Garantizar orden descendente por fecha
+      
+      if (!Array.isArray(_rates)) _rates = [];
+
+      // Robustez en el ordenamiento por fecha
       _rates.sort((a, b) => {
-        const dateA = new Date(a['Fecha']);
-        const dateB = new Date(b['Fecha']);
-        if (dateA.getTime() !== dateB.getTime()) return dateB - dateA;
-        // Si la fecha es igual, el ID más alto o el orden de fila (aunque no lo tengamos explícito aquí en el array crudo)
-        return 0;
+        const parseDate = (d) => {
+          if (!d) return 0;
+          if (d instanceof Date) return d.getTime();
+          const s = String(d).trim();
+          
+          // Intentar parsear YYYY-MM-DD
+          if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s).getTime();
+          
+          // Intentar parsear DD/MM/YYYY
+          const partsSl = s.split('/');
+          if (partsSl.length === 3) {
+            return new Date(partsSl[2], partsSl[1]-1, partsSl[0]).getTime();
+          }
+          
+          const t = new Date(s).getTime();
+          return isNaN(t) ? 0 : t;
+        };
+
+        const timeA = parseDate(a['Fecha']);
+        const timeB = parseDate(b['Fecha']);
+        
+        return timeB - timeA;
       });
+
       _renderUI();
     } catch(e) {
       console.error('[Rates] Load error:', e);
       const container = document.getElementById('rates-table-container');
-      if (container) container.innerHTML = `<div class="empty-state"><p style="color:var(--error)">Error: ${e.message}</p></div>`;
+      if (container) container.innerHTML = `<div class="empty-state" style="padding:40px; text-align:center;"><p style="color:var(--error)">Error al cargar datos: ${e.message}</p></div>`;
     }
   }
 
@@ -310,11 +331,18 @@ const Rates = (() => {
   function _renderTable() {
     const wrap = document.getElementById('rates-table-container');
     if (!wrap) return;
+    
+    // Garantizar que rates sea un array y tenga datos
+    if (!_rates || _rates.length === 0) {
+      wrap.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted); background:rgba(255,255,255,0.02); border-radius:16px;">No hay registros de tasas disponibles en este momento.</div>`;
+      return;
+    }
+
     const filtered = _rates.slice(0, _filterDays);
     const today = Utils.todayISO();
 
     wrap.innerHTML = `
-      <div class="rates-premium-table-wrap fade-in">
+      <div class="rates-premium-table-wrap">
         <table class="rates-premium-table">
           <thead>
             <tr>
@@ -326,7 +354,8 @@ const Rates = (() => {
           </thead>
           <tbody>
             ${filtered.map((r, i) => {
-              const isActual = r['Fecha'] === today || i === 0;
+              // Si la fecha coincide con hoy O es el primer registro de la lista (el más reciente)
+              const isActual = (r['Fecha'] === today) || (i === 0);
               let dynHTML = '<span style="color:rgba(255,255,255,0.2)">—</span>';
               
               // Comparar con el siguiente registro (el anterior cronológicamente)
@@ -347,7 +376,7 @@ const Rates = (() => {
                 <tr>
                    <td>
                       <div style="display:flex; align-items:center; gap:12px;">
-                         <span style="font-weight:700; color:#fff; letter-spacing: -0.2px;">${r['Fecha']}</span>
+                         <span style="font-weight:700; color:#fff; letter-spacing: -0.2px;">${r['Fecha'] || '—'}</span>
                          ${isActual ? `<span class="badge-actual">ACTUAL</span>` : ''}
                       </div>
                    </td>
@@ -357,11 +386,11 @@ const Rates = (() => {
                          <span style="font-weight:800; color:#fff; font-size:15px;">${Utils.formatVES(r['Tasa Oficial'])}</span>
                       </div>
                    </td>
-                   <td><span style="color:rgba(255,255,255,0.5); font-weight:600;">${r['Fuente'] || 'Servidor'}</span></td>
+                   <td><span style="color:rgba(255,255,255,0.5); font-weight:600;">${r['Fuente'] || 'BCV'}</span></td>
                    <td style="text-align:right;">${dynHTML}</td>
                 </tr>
               `;
-            }).join('') || '<tr><td colspan="4" class="text-center" style="padding:40px; color:var(--text-muted);">No se encontraron registros en este periodo.</td></tr>'}
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -370,6 +399,7 @@ const Rates = (() => {
 
   async function quickSave() {
     const inp = document.getElementById('quick-rate-input');
+    if (!inp) return;
     const valStr = inp.value.replace(',', '.');
     const val = parseFloat(valStr);
     if (isNaN(val) || val <= 0) return Utils.showToast('Ingrese un valor numérico válido', 'warning');
@@ -382,11 +412,14 @@ const Rates = (() => {
         'Tasa Oficial': val, 
         'Fuente': 'Manual'
       });
+      
+      // Limpiar caché y recargar
       localStorage.removeItem('cached_rates');
       Utils.showToast('Tasa actualizada correctamente', 'success');
       inp.value = '';
       await _load(true);
     } catch(e) { 
+      console.error('[Rates] quickSave error:', e);
       Utils.showToast('Error al actualizar: ' + e.message, 'error'); 
     }
   }
@@ -394,10 +427,17 @@ const Rates = (() => {
   function setFilter(days) { 
     _filterDays = days; 
     _renderTable(); 
-    // Actualizar botones de filtro
-    document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
-    // Encontrar el botón correcto por texto (solución rápida ya que render() recrea el HTML)
-    // Pero como render() se llama en renderTable no es necesario si lo hacemos así
+    
+    // Actualizar visualmente los botones de filtro
+    document.querySelectorAll('.history-filters .filter-chip').forEach(btn => {
+      // Si el texto del botón contiene el número de días o coincide con la lógica
+      const btnText = btn.textContent.toLowerCase();
+      if (btnText.includes(days.toString())) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
 
   function openForm() {
