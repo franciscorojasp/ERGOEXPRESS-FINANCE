@@ -333,5 +333,46 @@ const Pipeline = (() => {
     }
   }
 
-  return { render, reload: _load, handleSearch, setStageFilter, setView };
+  async function migrateOldStages() {
+    try {
+      const contacts = await Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false);
+      const mapping = {
+        'Primer contacto': 'Nuevo',
+        'Cotización enviada': 'Contactado',
+        'Negociación': 'En Negociación',
+        'Cierre ganado': 'Ganado',
+        'Cierre perdido': 'Perdido',
+        'Primer Contacto': 'Nuevo',
+        'Cotización Enviada': 'Contactado',
+        'En negociación': 'En Negociación',
+        'Ganado (Cerrado)': 'Ganado',
+        'Perdido (Cerrado)': 'Perdido'
+      };
+
+      const toUpdate = contacts.filter(c => mapping[c['Etapa Pipeline']]);
+      
+      if (toUpdate.length === 0) {
+        Utils.showToast('No se encontraron leads con etapas antiguas.', 'info');
+        return;
+      }
+
+      Utils.showToast(`Actualizando ${toUpdate.length} leads...`, 'info');
+      
+      let count = 0;
+      for (const contact of toUpdate) {
+        const newStage = mapping[contact['Etapa Pipeline']];
+        const updated = { ...contact, 'Etapa Pipeline': newStage };
+        await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contact['ID'], updated);
+        count++;
+      }
+
+      Utils.showToast(`${count} leads actualizados exitosamente.`, 'success');
+      await _load(); // Reload data
+    } catch (e) {
+      console.error('[Pipeline] Migration error:', e);
+      Utils.showToast('Error en la migración: ' + e.message, 'error');
+    }
+  }
+
+  return { render, reload: _load, handleSearch, setStageFilter, setView, migrateOldStages };
 })();
