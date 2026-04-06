@@ -108,8 +108,8 @@ const Rates = (() => {
               <button class="filter-chip ${_filterDays === 90 ? 'active' : ''}" onclick="Rates.setFilter(90)" style="border-radius: 8px;">90 Días</button>
            </div>
         </div>
-        <div id="rates-table-container">
-           <div class="loading-spinner" style="margin: 40px auto;"><div class="spinner"></div></div>
+        <div id="rates-table-container" style="min-height: 300px; border: 1px solid rgba(255,255,255,0.03); border-radius: 16px;">
+           <div class="loading-spinner" style="margin: 80px auto;"><div class="spinner"></div></div>
         </div>
       </div>
 
@@ -159,7 +159,10 @@ const Rates = (() => {
         .filter-chip.active { background: #0ea5e9; color: #fff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
 
         /* Table Styling */
-        .rates-premium-table-wrap { background: #070c12; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; margin-top: 10px; }
+        .rates-premium-table-wrap { 
+           background: #070c12; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); 
+           overflow: hidden; margin-top: 10px; min-height: 400px; display: block;
+        }
         .rates-premium-table { width: 100%; border-collapse: collapse; }
         .rates-premium-table th { 
           text-align: left; padding: 16px 24px; font-size: 10px; font-weight: 800; color: var(--text-muted); 
@@ -190,8 +193,11 @@ const Rates = (() => {
   async function _load(force = false) {
     try {
       _rates = await Sheets.readSheet(CONFIG.SHEETS.RATES, force);
-      
       if (!Array.isArray(_rates)) _rates = [];
+
+      // IMPORTANTE: Invertimos primero para que, a igualdad de fecha,
+      // el registro que estaba más abajo en el Excel (más nuevo) quede Arriba tras el sort.
+      _rates.reverse();
 
       // Robustez en el ordenamiento por fecha
       _rates.sort((a, b) => {
@@ -199,46 +205,40 @@ const Rates = (() => {
           if (!d) return 0;
           if (d instanceof Date) return d.getTime();
           const s = String(d).trim();
-          
-          // Intentar parsear YYYY-MM-DD
           if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s).getTime();
-          
-          // Intentar parsear DD/MM/YYYY
           const partsSl = s.split('/');
-          if (partsSl.length === 3) {
-            return new Date(partsSl[2], partsSl[1]-1, partsSl[0]).getTime();
-          }
-          
+          if (partsSl.length === 3) return new Date(partsSl[2], partsSl[1]-1, partsSl[0]).getTime();
           const t = new Date(s).getTime();
           return isNaN(t) ? 0 : t;
         };
-
-        const timeA = parseDate(a['Fecha']);
-        const timeB = parseDate(b['Fecha']);
-        
-        return timeB - timeA;
+        return parseDate(b['Fecha']) - parseDate(a['Fecha']);
       });
 
       _renderUI();
     } catch(e) {
       console.error('[Rates] Load error:', e);
       const container = document.getElementById('rates-table-container');
-      if (container) container.innerHTML = `<div class="empty-state" style="padding:40px; text-align:center;"><p style="color:var(--error)">Error al cargar datos: ${e.message}</p></div>`;
+      if (container) container.innerHTML = `<div class="empty-state" style="padding:40px; text-align:center;"><p style="color:var(--error)">Error crítico: ${e.message}</p></div>`;
     }
   }
 
   function _renderUI() {
+    // Ordenamos las llamadas para que la tabla no dependa del éxito del gráfico
     _renderHero();
     _renderSummary();
     _renderTable();
+    _renderSparkline();
   }
 
   function _renderHero() {
     const latest = _rates[0];
     const prev   = _rates[1];
     if (!latest) return;
+    
     const valEl = document.getElementById('hero-main-value');
-    if (valEl) valEl.innerHTML = `<span class="currency-symbol">Bs</span>${Utils.formatVES(latest['Tasa Oficial'])}`;
+    if (valEl) {
+       valEl.innerHTML = `<span class="currency-symbol">Bs</span>${Utils.formatVES(latest['Tasa Oficial'])}`;
+    }
     
     const badgeWrap = document.getElementById('hero-badge-wrap');
     if (badgeWrap && prev) {
@@ -254,7 +254,6 @@ const Rates = (() => {
         <div style="font-size:9px; color:var(--text-muted); font-weight:800; text-transform:uppercase; margin-top:2px; letter-spacing:0.5px;">vs. cierre ayer</div>
       `;
     }
-    _renderSparkline();
   }
 
   function _renderSparkline() {
