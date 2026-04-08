@@ -39,6 +39,12 @@
   --shadow-lg:      0 20px 60px -15px rgba(0, 0, 0, 0.8);
   --shadow-sm:      0 8px 30px rgba(0, 0, 0, 0.5);
 
+  /* Arquitectura de Simetría Elite */
+  --dash-gap:       24px;
+  --section-p:      24px;
+  --r-card:         16px;
+  --r-pill:         50px;
+
   /* Radios & Transiciones */
   --r-md: 12px;
   --r-lg: 16px;
@@ -212,6 +218,117 @@ body::before {
 
 .kpi-trend.up { color: var(--success); }
 .kpi-trend.down { color: var(--error); }
+
+/* ─── Dashboard Elite Layout (Order & Symmetry) ────────────────────────── */
+.dash-layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dash-gap);
+  padding: 0 0 var(--section-p) 0;
+}
+
+.dash-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.dash-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--dash-gap);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--dash-gap);
+}
+
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-card:hover {
+  transform: translateY(-4px);
+  background: var(--bg-hover);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--primary-dim);
+  color: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-icon svg { width: 24px; height: 24px; }
+
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.kpi-meta {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1400px) {
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 992px) {
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .grid-5 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .dash-header-section { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .dash-header-controls { width: 100%; border-top: 1px solid var(--border); padding-top: 16px; }
+}
 
 /* ─── App Layout ─────────────────────────────────────────────────────────── */
 .app-shell {

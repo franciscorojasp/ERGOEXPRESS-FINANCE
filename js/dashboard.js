@@ -18,14 +18,14 @@ const Dashboard = (() => {
       return;
     }
     container.innerHTML = `
-      <div class="fade-in">
-        <!-- Welcome -->
-        <div class="page-header">
+      <div class="fade-in dash-layout-wrapper">
+        <!-- Welcome Section -->
+        <div class="dash-header-section">
           <div>
             <h1 class="page-title">Analytics Avanzado</h1>
             <p class="page-subtitle" id="dash-greeting">Cargando inteligencia comercial…</p>
           </div>
-          <div style="display:flex; gap:12px; align-items:center;">
+          <div class="dash-header-controls">
             <div class="period-select-wrapper">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <select id="dash-period" class="period-select" onchange="Dashboard.reload()">
@@ -39,7 +39,7 @@ const Dashboard = (() => {
                 <option value="todo">Histórico Total</option>
               </select>
             </div>
-            <button class="btn btn-secondary" onclick="Dashboard.reload()" title="Sincronizar Datos">
+            <button class="btn btn-secondary btn-icon-only" onclick="Dashboard.reload()" title="Sincronizar Datos">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <polyline points="23 4 23 10 17 10"/>
                 <path d="M20.5 15a9 9 0 1 1-2.8-6.5L23 10"/>
@@ -254,8 +254,8 @@ const Dashboard = (() => {
       // Upcoming follow-ups
       _renderUpcoming(tracking, isAdmin, userEmail);
 
-      // Recent quotes
-      _renderRecentQuotes(myQuotations, contacts);
+      // Recent quotes - Fixed ReferenceError
+      _renderRecentQuotes(quotations, contacts);
 
     } catch(e) {
       console.error('[Dashboard] Load error:', e);
