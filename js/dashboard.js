@@ -6,6 +6,12 @@
 const Dashboard = (() => {
   let _charts = {};
 
+  // Configuración de Excelencia Visual para Gráficos
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+    Chart.defaults.color = 'rgba(148, 163, 184, 0.8)'; // text-muted variable
+  }
+
   async function render(container) {
     if (!container) {
       console.warn('[Dashboard] Render abortado: Contenedor no encontrado.');
