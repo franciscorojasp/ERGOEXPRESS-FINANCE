@@ -39,16 +39,20 @@
   --shadow-lg:      0 20px 60px -15px rgba(0, 0, 0, 0.8);
   --shadow-sm:      0 8px 30px rgba(0, 0, 0, 0.5);
 
-  /* Arquitectura de Simetría Elite */
-  --dash-gap:       24px;
-  --section-p:      24px;
-  --r-card:         16px;
-  --r-pill:         50px;
-
-  /* Radios & Transiciones */
-  --r-md: 12px;
-  --r-lg: 16px;
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Tallas & Arquitectura Visual Elite */
+  --sidebar-w:           260px;
+  --sidebar-w-collapsed: 72px;
+  --header-h:            64px;
+  --dash-gap:            24px;
+  --section-p:           24px;
+  --r-card:              16px;
+  --r-md:                12px;
+  --r-lg:                16px;
+  --r-pill:              50px;
+  
+  --transition:          all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --t-med:               0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --t-fast:              0.15s ease;
 }
 
 /* ─── TEMA CLARO (☀️ Light) ─── */
@@ -189,29 +193,42 @@ body::before {
 .period-select-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--bg-hover);
-  padding: 4px 12px;
-  border-radius: var(--pill, 50px);
+  gap: 10px;
+  background: var(--bg-surface);
+  padding: 6px 16px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border);
+  transition: var(--transition);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.period-select-wrapper:hover {
+  border-color: var(--primary-light);
+  background: var(--bg-hover);
+}
+
+.period-select-wrapper svg {
+  color: var(--primary-light);
+  flex-shrink: 0;
 }
 
 .period-select {
-  background: var(--bg-hover);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: none;
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
-  outline: none;
   cursor: pointer;
-  padding: 8px 16px;
-  border-radius: var(--r-pill);
-  transition: var(--transition);
+  outline: none;
+  padding-right: 8px;
+  font-family: var(--font) !important;
 }
 
-.period-select:hover {
-  border-color: var(--primary-light);
-  background: var(--primary-dim);
+.period-select option {
+  background: var(--bg-modal);
+  color: var(--text-primary);
+  padding: 10px;
 }
 
 .kpi-trend {
@@ -348,10 +365,26 @@ body::before {
   min-height: 100vh;
   min-height: calc(var(--vh, 1vh) * 100);
   transition: grid-template-columns var(--t-med);
+  overflow: hidden;
 }
 
 .app-shell.sidebar-collapsed {
   grid-template-columns: var(--sidebar-w-collapsed) 1fr;
+}
+
+/* Sincronización de ancho del contenido principal */
+.main-content {
+  grid-area: main;
+  background: var(--bg-base);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--section-p);
+  overflow-y: auto;
+  position: relative;
+  z-index: 5;
+  transition: padding var(--t-med);
+  width: 100%; /* Asegura que tome todo el espacio del grid */
 }
 
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
@@ -603,18 +636,7 @@ body::before {
   z-index: 100;
 }
 
-.main-content {
-  grid-area: main;
-  background: var(--bg-body);
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  overflow-y: auto;
-  position: relative;
-  z-index: 5;
-  transition: padding var(--t-med);
-}
+/* .main-content se definió arriba cerca de .app-shell para mantener la simetría del grid */
 
 @media (max-width: 768px) {
   .main-content {

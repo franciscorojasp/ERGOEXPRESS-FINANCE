@@ -138,6 +138,22 @@ const App = (() => {
       const scale = localStorage.getItem('crm_font_scale') || '1';
       setFontScale(scale);
 
+      // Restaurar estado de Sidebar (Persistencia de Excelencia)
+      const isCollapsed = localStorage.getItem('crm_sidebar_collapsed') === 'true';
+      if (isCollapsed && window.innerWidth >= 768) {
+        const shell = document.querySelector('.app-shell');
+        const sidebar = document.getElementById('sidebar');
+        if (shell) shell.classList.add('sidebar-collapsed');
+        if (sidebar) {
+          sidebar.classList.add('collapsed');
+          const icons = sidebar.querySelectorAll('.icon-collapse, .icon-expand');
+          if (icons.length === 2) {
+            icons[0].style.display = 'none';
+            icons[1].style.display = 'block';
+          }
+        }
+      }
+
       // Check if daily rate is needed
       _checkDailyRate();
 
