@@ -16,55 +16,51 @@ const Accounts = (() => {
 
     try {
       container.innerHTML = `
-        <div class="module-header fade-in">
+        <div class="page-header fade-in">
           <div>
-            <h1 class="module-title">Gestión de Cuentas</h1>
-            <p class="module-subtitle">Control centralizado de accesos y perfiles del equipo</p>
+            <h1 class="page-title">Gestión de <span>Cuentas</span></h1>
+            <p class="page-subtitle">Control administrativo de accesos y perfiles del equipo</p>
           </div>
-          <div class="module-actions" style="gap:12px;">
-            <button class="btn btn-outline" onclick="Accounts.runMaintenance()" title="Reparar IDs y normalizar estados">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-              </svg>
-              <span>Reparar Sistema</span>
+          <div class="page-actions">
+            <button class="header-btn header-btn-wide" onclick="Accounts.runMaintenance()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              Reparar Sistema
             </button>
-            <button class="btn btn-primary" onclick="Accounts.showAddModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
-              </svg>
+            <button class="btn btn-primary" onclick="Accounts.showAddModal()" style="height:44px; padding:0 24px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="margin-right:8px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
               Nuevo Usuario
             </button>
           </div>
         </div>
 
-        <div class="card fade-in" style="margin-bottom:20px; padding:16px;">
-          <div style="position:relative;">
-            <input type="text" id="account-search" class="form-control" placeholder="Buscar por nombre o email..." 
-                   oninput="Accounts.handleSearch(this.value)" style="padding-left:40px; height:48px; border-radius:10px;">
-            <div style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
+        <div class="card fade-in" style="margin-bottom:24px;">
+          <div style="padding:16px;">
+            <div style="position:relative; width:100%; max-width:500px;">
+              <input type="text" id="account-search" class="form-input" placeholder="Filtrar por nombre o correo..." 
+                     oninput="Accounts.handleSearch(this.value)" style="padding-left:42px; height:48px;">
+              <div style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="card fade-in">
-          <div class="table-container">
-            <table class="data-table">
+          <div class="table-wrapper" style="width:100%; overflow-x:auto;">
+            <table class="data-table" style="width:100%; border-collapse:collapse;">
               <thead>
                 <tr>
-                  <th>Usuario</th>
-                  <th>Información de Contacto</th>
-                  <th>Rol</th>
+                  <th style="padding:16px;">Colaborador</th>
+                  <th>Credenciales</th>
+                  <th>Nivel de Acceso</th>
                   <th>Estado</th>
-                  <th style="text-align:right">Acciones</th>
+                  <th style="text-align:right; padding-right:16px;">Acciones</th>
                 </tr>
               </thead>
               <tbody id="accounts-list">
-                <tr><td colspan="5" style="padding:60px; text-align:center;">
-                  <div class="spinner" style="margin:0 auto 15px;"></div>
-                  Sincronizando equipo...
+                <tr><td colspan="5" style="padding:100px 20px; text-align:center;">
+                  <div class="spinner" style="margin:0 auto 20px;"></div>
+                  <div style="color:var(--text-secondary); font-weight:600;">Sincronizando perfiles de seguridad...</div>
                 </td></tr>
               </tbody>
             </table>
@@ -259,29 +255,32 @@ const Accounts = (() => {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay fade-in';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width:500px; padding:0; overflow:hidden; border-radius:16px;">
-        <div style="background:var(--bg-elevated); padding:24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-          <h3 style="margin:0; color:white; font-size:1.25rem;">Editar Perfil Administrativo</h3>
-          <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()">
+      <div class="modal-content" style="max-width:550px; padding:0; overflow:hidden; border-radius:20px; border:1px solid var(--border); background: var(--bg-modal);">
+        <div style="background:rgba(255,255,255,0.03); padding:28px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="margin:0; color:white; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;">Editar Colaborador</h3>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--text-muted);">Actualice la información de perfil del usuario</p>
+          </div>
+          <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()" style="background:rgba(255,255,255,0.05);">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         
-        <div style="padding:28px;">
-          <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+        <div style="padding:32px;">
+          <div style="display:grid; grid-template-columns: 1fr; gap:24px;">
             <div class="form-group">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Nombre del Colaborador</label>
-              <input type="text" id="edit-acc-name" class="form-control" value="${u.Nombre || ''}" style="height:48px; font-size:15px;">
+              <label class="form-label" style="font-weight:700; color:white; margin-bottom:10px; display:block; font-size:14px;">Nombre del Colaborador</label>
+              <input type="text" id="edit-acc-name" class="form-input" value="${u.Nombre || ''}" style="height:52px; font-size:16px; background:rgba(255,255,255,0.02);">
             </div>
             <div class="form-group">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Correo Electrónico</label>
-              <input type="email" id="edit-acc-email" class="form-control" value="${u.Email || ''}" style="height:48px; font-size:15px;">
+              <label class="form-label" style="font-weight:700; color:white; margin-bottom:10px; display:block; font-size:14px;">Correo Electrónico</label>
+              <input type="email" id="edit-acc-email" class="form-input" value="${u.Email || ''}" style="height:52px; font-size:16px; background:rgba(255,255,255,0.02);">
             </div>
           </div>
 
-          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
-            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="height:44px; padding:0 24px;">Cancelar</button>
-            <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}', ${u._rowIndex})" style="height:44px; padding:0 24px; font-weight:700;">Guardar Cambios</button>
+          <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:40px; padding-top:20px; border-top:1px solid var(--border);">
+            <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()" style="height:48px; min-width:120px;">Cancelar</button>
+            <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}', ${u._rowIndex})" style="height:48px; min-width:160px; font-weight:800; box-shadow: 0 4px 15px var(--primary-dim);">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -308,47 +307,52 @@ const Accounts = (() => {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay fade-in';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width:600px; padding:0; overflow:hidden; border-radius:16px; box-shadow: var(--shadow-lg);">
-        <div style="background:var(--bg-elevated); padding:24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+      <div class="modal-content" style="max-width:650px; padding:0; overflow:hidden; border-radius:24px; border:1px solid rgba(255,255,255,0.1); background: var(--bg-modal); box-shadow: 0 30px 60px rgba(0,0,0,0.6);">
+        <div style="background:rgba(255,255,255,0.02); padding:32px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <h3 style="margin:0; color:white; font-size:1.25rem;">Nuevo Colaborador</h3>
-            <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Configure los accesos para un nuevo miembro del equipo</p>
+            <h3 style="margin:0; color:white; font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">Nuevo Colaborador</h3>
+            <p style="margin:6px 0 0; font-size:14px; color:var(--text-muted);">Configure los accesos para un nuevo miembro del equipo</p>
           </div>
-          <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()" style="background:rgba(255,255,255,0.05); border-radius:12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
-        <form id="new-user-form" onsubmit="Accounts.registerUser(event)" style="padding:28px;">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="form-group" style="grid-column: span 2;">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Nombre Completo</label>
-              <input type="text" name="Nombre" class="form-control" placeholder="Ej: Francisco Rojas" required style="height:48px; font-size:15px;">
+        <form id="new-user-form" onsubmit="Accounts.registerUser(event)" style="padding:40px;">
+          <div style="display:flex; flex-direction:column; gap:32px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:white; margin-bottom:12px; display:block; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Nombre Completo del Usuario</label>
+              <input type="text" name="Nombre" class="form-input" placeholder="Ej: Francisco Rojas" required style="height:56px; font-size:16px; background:rgba(255,255,255,0.03);">
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:white; margin-bottom:12px; display:block; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Correo Electrónico</label>
+                <input type="email" name="Email" class="form-input" placeholder="email@ergoexpress.com" required style="height:56px; font-size:16px; background:rgba(255,255,255,0.03);">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:white; margin-bottom:12px; display:block; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Rol en el Sistema</label>
+                <select name="Rol" class="form-select" style="height:56px; font-size:16px; background:rgba(255,255,255,0.03); color:white;">
+                  <option value="vendedor" style="background:#0a0f25;">Vendedor Elite</option>
+                  <option value="admin" style="background:#0a0f25;">Administrador Maestro</option>
+                </select>
+              </div>
             </div>
             
             <div class="form-group">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Correo Corporativo</label>
-              <input type="email" name="Email" class="form-control" placeholder="email@ergoexpress.com" required style="height:48px; font-size:15px;">
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Rol del Sistema</label>
-              <select name="Rol" class="form-control" style="height:48px; font-size:15px;">
-                <option value="vendedor">Vendedor Elite</option>
-                <option value="admin">Administrador Maestro</option>
-              </select>
-            </div>
-            
-            <div class="form-group" style="grid-column: span 2;">
-              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Contraseña de Acceso</label>
-              <input type="password" name="Password" class="form-control" placeholder="Mínimo 6 caracteres" required style="height:48px; font-size:15px;">
-              <p style="margin:6px 0 0; font-size:11px; color:var(--text-muted);">⚠️ La contraseña será encriptada automáticamente al guardar.</p>
+              <label class="form-label" style="font-weight:700; color:white; margin-bottom:12px; display:block; font-size:14px; text-transform:uppercase; letter-spacing:1px;">Establecer Contraseña de Acceso</label>
+              <input type="password" name="Password" class="form-input" placeholder="••••••••" required style="height:56px; font-size:16px; background:rgba(255,255,255,0.03);">
+              <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color:var(--warning);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:500;">La contraseña será encriptada automáticamente de forma segura.</span>
+              </div>
             </div>
           </div>
 
-          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px; padding-top:20px; border-top:1px solid var(--border-color);">
-            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="height:44px; padding:0 24px;">Descartar</button>
-            <button type="submit" class="btn btn-primary" style="height:44px; padding:0 24px; font-weight:700;">Crear Cuenta</button>
+          <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:40px; padding-top:24px; border-top:1px solid var(--border);">
+            <button type="button" class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()" style="height:52px; min-width:140px; font-weight:600;">Cancelar</button>
+            <button type="submit" class="btn btn-primary" style="height:52px; min-width:200px; font-weight:800; font-size:16px; box-shadow: 0 10px 20px var(--primary-dim);">Finalizar Registro</button>
           </div>
         </form>
       </div>

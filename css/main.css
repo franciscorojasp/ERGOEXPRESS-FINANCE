@@ -1575,3 +1575,51 @@ body.lock-scroll {
   box-shadow: 0 0 8px var(--primary);
 }
 
+
+/* ─── Premium Modal System (v3.5) ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(4, 7, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.modal-content {
+  background: #0f172a; /* Slate 900 for premium feel */
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: modalPremiumPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPremiumPop {
+  0% { opacity: 0; transform: scale(0.9) translateY(40px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.form-group { margin-bottom: 24px; }
+.form-label { 
+  font-size: 12px; font-weight: 700; color: #94a3b8; 
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block;
+}
+.form-input, .form-select {
+  width: 100%; height: 54px; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+  padding: 0 18px; color: white; font-size: 16px; transition: all 0.3s;
+}
+.form-input:focus, .form-select:focus {
+  background: rgba(255,255,255,0.06); border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-dim); outline: none;
+}
