@@ -70,6 +70,43 @@ const Utils = (() => {
     return daysFromNow(dateStr) < 0;
   }
 
+  /**
+   * Retorna un objeto { start, end } (YYYY-MM-DD) basado en un periodo predefinido.
+   * Útil para filtrar dashboards y reportes.
+   */
+  function getDateRange(period) {
+    const now = new Date();
+    const end = toISODate(now);
+    let start;
+
+    switch (period) {
+      case 'hoy':
+        start = end;
+        break;
+      case 'semanal':
+        start = toISODate(new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)));
+        break;
+      case 'quincenal':
+        start = toISODate(new Date(now.getTime() - (15 * 24 * 60 * 60 * 1000)));
+        break;
+      case 'mensual':
+        start = toISODate(new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)));
+        break;
+      case 'trimestral':
+        start = toISODate(new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000)));
+        break;
+      case 'semestral':
+        start = toISODate(new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000)));
+        break;
+      case 'anual':
+        start = toISODate(new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000)));
+        break;
+      default: // histórico / todo
+        start = '2020-01-01';
+    }
+    return { start, end };
+  }
+
   function currentYear() {
     return new Date().getFullYear();
   }

@@ -209,9 +209,42 @@ body::before {
 }
 
 .chart-container {
-  height: 220px;
+  height: 300px;
   position: relative;
 }
+
+.period-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-hover);
+  padding: 4px 12px;
+  border-radius: var(--pill, 50px);
+  border: 1px solid var(--border);
+}
+
+.period-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.kpi-trend {
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.kpi-trend.up { color: var(--success); }
+.kpi-trend.down { color: var(--error); }
 
 /* ─── App Layout ─────────────────────────────────────────────────────────── */
 .app-shell {
@@ -698,6 +731,13 @@ body::before {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 20px !important;
+    width: 100% !important;
+  }
+
+  .grid-5 {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 16px !important;
     width: 100% !important;
   }
 

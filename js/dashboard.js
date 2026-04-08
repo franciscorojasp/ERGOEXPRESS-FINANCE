@@ -16,21 +16,35 @@ const Dashboard = (() => {
         <!-- Welcome -->
         <div class="page-header">
           <div>
-            <h1 class="page-title">¡Bienvenido al CRM!</h1>
-            <p class="page-subtitle" id="dash-greeting">Cargando datos…</p>
+            <h1 class="page-title">Analytics Avanzado</h1>
+            <p class="page-subtitle" id="dash-greeting">Cargando inteligencia comercial…</p>
           </div>
-          <button class="btn btn-secondary" onclick="Dashboard.reload()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.5 15a9 9 0 1 1-2.8-6.5L23 10"/>
-            </svg>
-            Actualizar
-          </button>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div class="period-select-wrapper">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <select id="dash-period" class="period-select" onchange="Dashboard.reload()">
+                <option value="hoy">Hoy</option>
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual" selected>Mensual (30d)</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+                <option value="todo">Histórico Total</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary" onclick="Dashboard.reload()" title="Sincronizar Datos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.5 15a9 9 0 1 1-2.8-6.5L23 10"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- KPIs -->
-        <div class="grid-4" id="kpi-grid">
-          ${[1,2,3,4].map(() => `
+        <div class="grid-5" id="kpi-grid">
+          ${[1,2,3,4,5].map(() => `
             <div class="kpi-card" style="animation: pulse 1.5s ease infinite;">
               <div class="kpi-label">Cargando…</div>
               <div class="kpi-value">—</div>
@@ -44,14 +58,13 @@ const Dashboard = (() => {
             <div class="card-header">
               <h3 class="card-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                  <path d="M21 3H3v18h18V3z"/><path d="M21 9H3"/><path d="M21 15H3"/>
-                  <path d="M12 3v18"/>
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                 </svg>
-                Cotizaciones por Estado
+                Tendencia de Ventas (USD)
               </h3>
             </div>
             <div class="card-body chart-container">
-              <canvas id="chart-quotes"></canvas>
+              <canvas id="chart-trending"></canvas>
             </div>
           </div>
 
@@ -129,10 +142,19 @@ const Dashboard = (() => {
       const userEmail = App.getCurrentUserEmail();
       const isAdmin   = App.isAdmin();
 
-      const myContacts   = isAdmin ? contacts   : contacts.filter(c => c['Vendedor Email'] === userEmail);
-      const myQuotations = isAdmin ? quotations : quotations.filter(q => q['Usuario Email'] === userEmail);
+      // Period Handling
+      const period = document.getElementById('dash-period')?.value || 'mensual';
+      const range  = Utils.getDateRange(period);
+      
+      const filteredContacts = isAdmin ? contacts : contacts.filter(c => c['Vendedor Email'] === userEmail);
+      const filteredQuotes   = (isAdmin ? quotations : quotations.filter(q => q['Usuario Email'] === userEmail))
+        .filter(q => {
+          if (period === 'todo') return true;
+          const date = q['Fecha Creación'] || q['Fecha'];
+          return date >= range.start && date <= range.end;
+        });
 
-      // Check if view still exists (race condition guard)
+      // Check if view still exists
       const greetingEl = document.getElementById('dash-greeting');
       if (!greetingEl) return;
 
@@ -141,37 +163,42 @@ const Dashboard = (() => {
       const greeting = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
       const user = Auth.getUser();
       greetingEl.textContent =
-        `${greeting}, ${user?.name || 'Usuario'} · ${Utils.formatDateLong(Utils.todayISO())}`;
+        `${greeting}, ${user?.name || 'Usuario'} · Periodo: ${period.toUpperCase()}`;
 
       // Latest rate
       const latestRate = rates.length
         ? [...rates].sort((a,b) => new Date(b['Fecha']) - new Date(a['Fecha']))[0]
         : null;
 
-      // KPIs
-      const totalContacts  = myContacts.length;
-      const activeContacts = myContacts.filter(c => c['Tipo'] === 'activo').length;
-      const totalQuotes    = myQuotations.length;
-      const acceptedQuotes = myQuotations.filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado'])).length;
-      const totalRevenue   = myQuotations
-        .filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']))
-        .reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+      // KPIs Calculation
+      const totalContacts  = filteredContacts.length;
+      const totalQuotes    = filteredQuotes.length;
+      
+      // Ventas Reales (Aceptadas, Facturadas, etc)
+      const acceptedQuotes = filteredQuotes.filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
+      const totalRevenue   = acceptedQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+      
+      // Volumen Ofertado (Exposición total en el mercado)
+      const offeredQuotes = filteredQuotes.filter(q => ['Enviada', 'Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
+      const offeredVolume = offeredQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+
       const convRate = totalQuotes > 0
-        ? Math.round((acceptedQuotes / totalQuotes) * 100)
+        ? Math.round((acceptedQuotes.length / totalQuotes) * 100)
         : 0;
 
       const currency = App.getCurrency();
       const rate = latestRate ? Utils.toNumber(latestRate['Tasa Oficial']) : 0;
       const displayTotal = currency === 'VES' && rate > 0 ? totalRevenue * rate : totalRevenue;
+      const displayOffered = currency === 'VES' && rate > 0 ? offeredVolume * rate : offeredVolume;
       const symbol = currency === 'USD' ? '$' : 'Bs.';
 
       document.getElementById('kpi-grid').innerHTML = `
         <div class="kpi-card">
-          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Contactos</div>
             <div class="kpi-value">${totalContacts}</div>
-            <div class="kpi-meta">${activeContacts} activos</div>
+            <div class="kpi-meta">En cartera total</div>
           </div>
         </div>
 
@@ -180,16 +207,25 @@ const Dashboard = (() => {
           <div class="kpi-content">
             <div class="kpi-label">Cotizaciones</div>
             <div class="kpi-value">${totalQuotes}</div>
-            <div class="kpi-meta">${acceptedQuotes} aceptadas</div>
+            <div class="kpi-meta">${offeredQuotes.length} en mercado</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon" style="color:var(--accent); background:var(--accent-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
+          <div class="kpi-content">
+            <div class="kpi-label">Volumen Ofertado</div>
+            <div class="kpi-value" style="color:var(--accent);">${symbol} ${currency === 'USD' ? Utils.formatUSD(displayOffered) : Utils.formatVES(displayOffered)}</div>
+            <div class="kpi-meta">Exposición Comercial</div>
           </div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--success); background:var(--success-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="kpi-content">
-            <div class="kpi-label">Ventas (${currency})</div>
+            <div class="kpi-label">Ingresos Reales</div>
             <div class="kpi-value u-primary">${symbol} ${currency === 'USD' ? Utils.formatUSD(displayTotal) : Utils.formatVES(displayTotal)}</div>
-            <div class="kpi-meta">Aceptadas + Facturadas</div>
+            <div class="kpi-meta">${acceptedQuotes.length} cerradas</div>
           </div>
         </div>
 
@@ -198,18 +234,16 @@ const Dashboard = (() => {
           <div class="kpi-content">
             <div class="kpi-label">Conversión</div>
             <div class="kpi-value">${convRate}%</div>
-            <div class="kpi-meta">
-              ${latestRate ? `BCV: Bs. ${Utils.formatVES(latestRate['Tasa Oficial'])}` : 'Sin tasa'}
-            </div>
+            <div class="kpi-meta">Cierres / Total</div>
           </div>
         </div>
       `;
 
       // Charts
-      const c = document.getElementById('chart-quotes');
+      const c = document.getElementById('chart-trending');
       if (!c) return;
-      _renderQuoteChart(myQuotations);
-      _renderPipelineChart(myContacts);
+      _renderTrendingChart(filteredQuotes);
+      _renderPipelineChart(filteredContacts);
 
       // Upcoming follow-ups
       _renderUpcoming(tracking, isAdmin, userEmail);
@@ -227,42 +261,75 @@ const Dashboard = (() => {
     }
   }
 
-  function _renderQuoteChart(quotations) {
-    const canvas = document.getElementById('chart-quotes');
+  function _renderTrendingChart(quotations) {
+    const canvas = document.getElementById('chart-trending');
     if (!canvas) return;
 
-    const statusCounts = {};
-    CONFIG.QUOTE_STATUSES.forEach(s => { statusCounts[s] = 0; });
-    quotations.forEach(q => {
-      if (statusCounts[q['Estado']] !== undefined) statusCounts[q['Estado']]++;
-    });
+    // Agrupar ventas aceptadas por fecha
+    const salesByDate = {};
+    quotations
+      .filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']))
+      .forEach(q => {
+        const date = q['Fecha Creación'] || q['Fecha'];
+        if (!date) return;
+        salesByDate[date] = (salesByDate[date] || 0) + Utils.toNumber(q['Total USD']);
+      });
 
-    if (_charts.quotes) _charts.quotes.destroy();
+    const labels = Object.keys(salesByDate).sort();
+    const data   = labels.map(l => salesByDate[l]);
 
-    _charts.quotes = new Chart(canvas, {
-      type: 'doughnut',
+    if (_charts.trending) _charts.trending.destroy();
+
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(13, 115, 119, 0.4)');
+    gradient.addColorStop(1, 'rgba(13, 115, 119, 0)');
+
+    _charts.trending = new Chart(canvas, {
+      type: 'line',
       data: {
-        labels: Object.keys(statusCounts),
+        labels: labels.map(l => Utils.formatDate(l)),
         datasets: [{
-          data: Object.values(statusCounts),
-          backgroundColor: ['#6b7280','#3b82f6','#10b981','#ef4444','#0d7377'],
-          borderWidth: 2,
-          borderColor: 'rgba(25, 35, 50, 0.8)',
-          hoverOffset: 8,
-          borderRadius: 4
+          label: 'Ventas (USD)',
+          data: data,
+          borderColor: '#2dd4bf',
+          borderWidth: 3,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#0d7377',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#8fa0b0', font: { size: 11, family: 'Inter' }, boxWidth: 10, padding: 15 }
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(15, 24, 38, 0.9)',
+            callbacks: {
+              label: (ctx) => ` $ ${Utils.formatUSD(ctx.raw)}`
+            }
           }
         },
-        cutout: '70%',
-        animation: { duration: 1500, easing: 'easeOutQuart' }
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#8fa0b0', font: { size: 10 } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            ticks: { 
+              color: '#8fa0b0', 
+              font: { size: 10 },
+              callback: (v) => '$' + v
+            }
+          }
+        }
       }
     });
   }
@@ -283,40 +350,33 @@ const Dashboard = (() => {
     _charts.pipeline = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: CONFIG.PIPELINE_STAGES.map(s => s.split(' ')[0] + '…'),
+        labels: CONFIG.PIPELINE_STAGES,
         datasets: [{
           label: 'Contactos',
           data:  Object.values(stageCounts),
-          backgroundColor: 'rgba(13, 115, 119, 0.6)',
-          borderColor: '#14a8ad',
-          borderWidth: 1,
-          borderRadius: 6,
-          borderSkipped: false,
-          hoverBackgroundColor: '#14a8ad'
+          backgroundColor: (ctx) => {
+            const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444'];
+            return colors[ctx.dataIndex % colors.length] + '99';
+          },
+          borderColor: (ctx) => {
+            const colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444'];
+            return colors[ctx.dataIndex % colors.length];
+          },
+          borderWidth: 2,
+          borderRadius: 8
         }]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(15, 24, 38, 0.9)',
-            titleFont: { size: 12, weight: 'bold' },
-            bodyFont: { size: 12 },
-            padding: 10,
-            cornerRadius: 8,
-            displayColors: false,
-            callbacks: {
-              title: (items) => CONFIG.PIPELINE_STAGES[items[0].dataIndex]
-            }
-          }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#8fa0b0', font: { size: 10 } } },
-          y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#8fa0b0', font: { size: 10 }, stepSize: 1 } }
-        },
-        animation: { duration: 1500, easing: 'easeOutQuart' }
+          x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#8fa0b0', stepSize: 1 } },
+          y: { grid: { display: false }, ticks: { color: '#f8fafc', font: { weight: '600' } } }
+        }
       }
     });
   }
