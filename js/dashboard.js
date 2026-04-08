@@ -50,7 +50,7 @@ const Dashboard = (() => {
 
         <!-- KPIs -->
         <div class="grid-KPIs" id="kpi-grid">
-          ${[1,2,3,4,5,6].map(() => `
+          ${[1,2,3,4,5,6,7,8].map(() => `
             <div class="kpi-card" style="animation: pulse 1.5s ease infinite;">
               <div class="kpi-label">Cargando…</div>
               <div class="kpi-value">—</div>
@@ -200,15 +200,31 @@ const Dashboard = (() => {
         ? Math.round((acceptedQuotes.length / totalQuotes) * 100)
         : 0;
 
+      // KPI 7: Volumen Aprobado (Estado "Aprobada")
+      const approvedQuotes = filteredQuotes.filter(q => q['Estado'] === 'Aprobada');
+      const approvedVolume = approvedQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+
+      // KPI 8: Datos para Distribución (Pie Chart)
+      const statusCounts = {};
+      filteredQuotes.forEach(q => {
+        const s = q['Estado'] || 'Borrador';
+        if (!statusCounts[s]) statusCounts[s] = { count: 0, total: 0 };
+        statusCounts[s].count++;
+        statusCounts[s].total += Utils.toNumber(q['Total USD']);
+      });
+
       const currency = App.getCurrency();
       const rate = latestRate ? Utils.toNumber(latestRate['Tasa Oficial']) : 0;
       const displayTotal = currency === 'VES' && rate > 0 ? totalRevenue * rate : totalRevenue;
       const displayOffered = currency === 'VES' && rate > 0 ? offeredVolume * rate : offeredVolume;
+      const displayApproved = currency === 'VES' && rate > 0 ? approvedVolume * rate : approvedVolume;
       const displayCash = currency === 'VES' && rate > 0 ? totalCashIn * rate : totalCashIn;
       const symbol = currency === 'USD' ? '$' : 'Bs.';
+      const currencyCode = App.getCurrency();
 
       document.getElementById('kpi-grid').className = 'grid-KPIs';
       document.getElementById('kpi-grid').innerHTML = `
+        <!-- 1: Contactos -->
         <div class="kpi-card">
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
           <div class="kpi-content">
@@ -218,6 +234,7 @@ const Dashboard = (() => {
           </div>
         </div>
 
+        <!-- 2: Cotizaciones -->
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--info); background:var(--info-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="kpi-content">
@@ -227,6 +244,7 @@ const Dashboard = (() => {
           </div>
         </div>
 
+        <!-- 3: Volumen Ofertado -->
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--accent); background:var(--accent-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
           <div class="kpi-content">
@@ -236,6 +254,7 @@ const Dashboard = (() => {
           </div>
         </div>
 
+        <!-- 4: Ventas Cerradas -->
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--primary-light); background:var(--primary-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
           <div class="kpi-content">
@@ -245,35 +264,57 @@ const Dashboard = (() => {
           </div>
         </div>
 
+        <!-- 5: Recaudo Real -->
         <div class="kpi-card" style="border:1px solid var(--success); background:rgba(16, 185, 129, 0.05);">
           <div class="kpi-icon" style="color:var(--success); background:var(--success-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Recaudo Real</div>
-            <div class="kpi-value" style="color:var(--success); font-size:20px;">${symbol} ${Utils.formatNumber(displayCash)}</div>
-            <div class="kpi-meta">Efectivo en caja</div>
+            <div class="kpi-value u-success" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayCash)}</div>
+            <div class="kpi-meta">Efectivo en periodo</div>
           </div>
         </div>
 
+        <!-- 6: Conversión -->
         <div class="kpi-card">
-          <div class="kpi-icon" style="color:var(--warning); background:var(--warning-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="kpi-icon" style="color:var(--warning); background:var(--warning-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Conversión</div>
-            <div class="kpi-value">${convRate}%</div>
-            <div class="kpi-meta">Eficiencia comercial</div>
+            <div class="kpi-value" style="color:var(--warning);">${convRate}%</div>
+            <div class="kpi-meta">Quotes vs Aceptadas</div>
+          </div>
+        </div>
+
+        <!-- 7: Volumen Aprobado (NEW) -->
+        <div class="kpi-card" style="border:1px solid #3b82f6; background:rgba(59, 130, 246, 0.05);">
+          <div class="kpi-icon" style="color:#3b82f6; background:rgba(59, 130, 246, 0.1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
+          <div class="kpi-content">
+            <div class="kpi-label">Volumen Aprobado</div>
+            <div class="kpi-value" style="color:#3b82f6; font-size:20px;">${symbol} ${Utils.formatNumber(displayApproved)}</div>
+            <div class="kpi-meta">${approvedQuotes.length} aprobadas</div>
+          </div>
+        </div>
+
+        <!-- 8: Distribución Pie Card (NEW) -->
+        <div class="kpi-card pie-card">
+          <div class="kpi-label" style="margin-bottom:8px; width:100%; text-align:center;">Distribución</div>
+          <div class="pie-container">
+            <canvas id="mini-pie-chart"></canvas>
           </div>
         </div>
       `;
 
       // Charts
-      const c = document.getElementById('chart-trending');
-      if (!c) return;
-      _renderTrendingChart(filteredQuotes);
-      _renderPipelineChart(filteredContacts);
+      const canvasT = document.getElementById('chart-trending');
+      if (canvasT) {
+        _renderTrendingChart(filteredQuotes);
+        _renderPipelineChart(filteredContacts);
+        _renderMiniPieChart(statusCounts, currencyCode);
+      }
 
       // Upcoming follow-ups
       _renderUpcoming(tracking, isAdmin, userEmail);
 
-      // Recent quotes - Fixed ReferenceError
+      // Recent quotes
       _renderRecentQuotes(quotations, contacts);
 
     } catch(e) {
@@ -466,6 +507,73 @@ const Dashboard = (() => {
         </div>
       `;
     }).join('');
+  }
+
+  function _renderMiniPieChart(statusCounts, currency) {
+    const ctx = document.getElementById('mini-pie-chart');
+    if (!ctx) return;
+    
+    if (_charts.miniPie) _charts.miniPie.destroy();
+    
+    const labels = Object.keys(statusCounts);
+    const data = labels.map(l => statusCounts[l].count);
+    const totals = labels.map(l => statusCounts[l].total);
+    const totalCount = data.reduce((a, b) => a + b, 0);
+    const symbol = currency === 'USD' ? '$' : 'Bs.';
+    
+    // Paleta Ejecutiva (Sugerencia)
+    const colorMap = {
+      'Aprobada': '#3b82f6',
+      'Aceptada': '#10b981',
+      'Enviada':  '#f59e0b',
+      'Facturada':'#6366f1',
+      'Pagada':   '#8b5cf6',
+      'Borrador': '#94a3b8',
+      'Rechazada':'#ef4444',
+      'Vencida':  '#64748b'
+    };
+    const colors = labels.map(l => colorMap[l] || '#cbd5e1');
+
+    _charts.miniPie = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors,
+          borderWidth: 1,
+          borderColor: 'rgba(0,0,0,0.1)'
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleFont: { size: 12, weight: 'bold' },
+            bodyFont: { size: 11 },
+            padding: 12,
+            displayColors: true,
+            callbacks: {
+              label: (item) => {
+                const label = item.label;
+                const val = data[item.dataIndex];
+                const pct = ((val / totalCount) * 100).toFixed(1);
+                const usd = totals[item.dataIndex];
+                return [
+                  ` Cantidad: ${val}`,
+                  ` Porcentaje: ${pct}%`,
+                  ` Total: ${symbol} ${Utils.formatNumber(usd)}`
+                ];
+              }
+            }
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 800, easing: 'easeOutQuart' }
+      }
+    });
   }
 
   function reload() {

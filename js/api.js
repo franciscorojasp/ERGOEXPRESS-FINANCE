@@ -20,29 +20,48 @@ const API = (() => {
     });
 
     // ▸ Content-Type: text/plain evita el preflight CORS en Apps Script
-    const res = await fetch(url, {
-      method:   'POST',
-      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
-      body,
-      redirect: 'follow'
-    });
+    try {
+      const res = await fetch(url, {
+        method:   'POST',
+        headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+        body,
+        redirect: 'follow'
+      });
 
-    if (!res.ok) throw new Error(`Error HTTP ${res.status}: ${res.statusText}`);
-
-    const data = await res.json();
-
-    // Si el token expiró, limpiar sesión y redirigir
-    if (!data.success && (data.error === 'UNAUTHORIZED' || data.error === 'TOKEN_EXPIRED')) {
-      localStorage.clear();
-      if (!window.location.href.includes('index.html')) {
-        window.location.href = 'index.html';
+      if (!res.ok) {
+        console.error(`[API ERROR] HTTP ${res.status}: ${res.statusText}`, { url, action });
+        throw new Error(`Error HTTP ${res.status}: ${res.statusText}`);
       }
-      throw new Error('Sesión expirada. Inicia sesión de nuevo.');
+
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('[API ERROR] Failed to parse JSON response:', text);
+        throw new Error('La respuesta del servidor no es un JSON válido.');
+      }
+
+      // Si el token expiró, limpiar sesión y redirigir
+      if (!data.success && (data.error === 'UNAUTHORIZED' || data.error === 'TOKEN_EXPIRED')) {
+        console.warn('[API] Session expired or unauthorized');
+        localStorage.clear();
+        if (!window.location.href.includes('index.html')) {
+          window.location.href = 'index.html';
+        }
+        throw new Error('Sesión expirada. Inicia sesión de nuevo.');
+      }
+
+      if (!data.success) {
+        console.error('[API ERROR] Backend reported failure:', data.error, { action });
+        throw new Error(data.error || 'Error desconocido del servidor');
+      }
+
+      return data;
+    } catch (err) {
+      console.error('[API FATAL]', err);
+      throw err;
     }
-
-    if (!data.success) throw new Error(data.error || 'Error desconocido del servidor');
-
-    return data;
   }
 
   return { call };

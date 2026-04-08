@@ -279,7 +279,7 @@ body::before {
 
 .grid-KPIs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--dash-gap);
 }
 
@@ -353,11 +353,33 @@ body::before {
   .grid-5 { grid-template-columns: repeat(2, 1fr); }
 }
 
+@media (max-width: 1200px) {
+  .grid-KPIs { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
   .grid-5 { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
+  .grid-KPIs { grid-template-columns: 1fr; }
   .dash-header-section { flex-direction: column; align-items: flex-start; gap: 20px; }
   .dash-header-controls { width: 100%; border-top: 1px solid var(--border); padding-top: 16px; }
+}
+
+/* 📊 Mini Pie Chart Card */
+.pie-card {
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.pie-container {
+  width: 100%;
+  height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ─── App Layout ─────────────────────────────────────────────────────────── */

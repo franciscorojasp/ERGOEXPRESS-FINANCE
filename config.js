@@ -48,7 +48,7 @@ const CONFIG = {
   // ── Catálogos ──────────────────────────────────────────────────────────────
   PIPELINE_STAGES:  ['Nuevo','Contactado','En Negociación','Ganado','Perdido'],
   CONTACT_TYPES:    ['potencial','activo','inactivo'],
-  QUOTE_STATUSES:   ['Borrador','Enviada','Aceptada','Facturada','Parcial','Pagada','Rechazada','Vencida'],
+  QUOTE_STATUSES:   ['Borrador','Enviada','Aprobada','Aceptada','Facturada','Parcial','Pagada','Rechazada','Vencida'],
   INTERACTION_TYPES:['nota','llamada','email','reunión','visita'],
   USER_ROLES:       ['admin','vendedor'],
   PAYMENT_METHODS:  ['Zelle','Pago Móvil','Efectivo USD','Efectivo VES','Transferencia','Binance','Banesco Panamá'],
@@ -61,7 +61,7 @@ const CONFIG = {
     'Guárico','Lara','Mérida','Miranda','Monagas','Nueva Esparta',
     'Portuguesa','Sucre','Táchira','Trujillo','Vargas','Yaracuy','Zulia'],
 
-  APP_VERSION: '3.2.8',
+  APP_VERSION: '3.2.7',
   APP_NAME:    'ERGOEXPRESS CRM',
   GEMINI_MODEL: 'gemini-1.5-flash'
 };
