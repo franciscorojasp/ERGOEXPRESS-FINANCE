@@ -11,7 +11,10 @@ const QuoteBuilder = (() => {
     const currencyMode = detail.currencyMode || 'usd';
     const rate = Utils.toNumber(detail.rate) || 0;
     
-    const totalUSD = Utils.round(items.reduce((sum, it) => sum + (Utils.toNumber(it.qty) * Utils.toNumber(it.price)), 0));
+    const netUSD = Utils.round(items.reduce((sum, it) => sum + (Utils.toNumber(it.qty) * Utils.toNumber(it.price)), 0));
+    const applyTax = detail.applyTax || false;
+    const taxUSD = applyTax ? Utils.round(netUSD * 0.16) : 0;
+    const totalUSD = Utils.round(netUSD + taxUSD);
     const totalVES = Utils.round(totalUSD * rate);
     
     const num = String(quote['Número'] || '0').padStart(6,'0');
@@ -105,14 +108,26 @@ const QuoteBuilder = (() => {
         <!-- TOTALS -->
         <div style="display:flex; justify-content:flex-end; margin-bottom:8mm; margin-top:6mm;">
           <div style="width:80mm;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding-right:5px;">
-              <span style="font-size:10px; color:${colorMuted}; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Neto USD</span>
-              <span style="font-size:12px; font-weight:900; color:${colorText};">$${Utils.formatUSD(totalUSD)}</span>
-            </div>
+            
+            ${applyTax ? `
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px; padding-right:5px;">
+                <span style="font-size:10px; color:${colorMuted}; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Sub-Total USD</span>
+                <span style="font-size:11px; font-weight:800; color:${colorText}; font-variant-numeric:tabular-nums;">$${Utils.formatUSD(netUSD)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding-right:5px;">
+                <span style="font-size:10px; color:${colorMuted}; font-weight:800; text-transform:uppercase; letter-spacing:1px;">IVA (16%) USD</span>
+                <span style="font-size:11px; font-weight:800; color:${colorText}; font-variant-numeric:tabular-nums;">$${Utils.formatUSD(taxUSD)}</span>
+              </div>
+            ` : `
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding-right:5px;">
+                <span style="font-size:10px; color:${colorMuted}; font-weight:800; text-transform:uppercase; letter-spacing:1px;">Neto USD</span>
+                <span style="font-size:12px; font-weight:900; color:${colorText}; font-variant-numeric:tabular-nums;">$${Utils.formatUSD(totalUSD)}</span>
+              </div>
+            `}
             
             <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:3px solid ${colorPrimary};">
                <span style="font-size:14px; color:${colorText}; font-weight:900; text-transform:uppercase; letter-spacing:1px;">TOTAL</span>
-               <span style="font-size:28px; font-weight:950; color:${colorPrimary}; line-height:1; letter-spacing:-1px;">$${Utils.formatUSD(totalUSD)}</span>
+               <span style="font-size:28px; font-weight:950; color:${colorPrimary}; line-height:1; letter-spacing:-1px; font-variant-numeric:tabular-nums;">$${Utils.formatUSD(totalUSD)}</span>
             </div>
             
             ${(currencyMode==='both' || currencyMode==='ves') ? `

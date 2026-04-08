@@ -244,14 +244,20 @@ const Quotations = (() => {
                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Fecha</label>
                <input id="frm-date" type="date" value="${quote ? quote['Fecha'] : Utils.todayISO()}" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'" />
             </div>
-            <div style="width:120px;">
-               <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Moneda</label>
-               <select id="frm-curr" class="form-select" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
-                  <option value="usd" ${State.editor.currency==='usd'?'selected':''}>USD</option>
-                  <option value="ves" ${State.editor.currency==='ves'?'selected':''}>VES</option>
-                  <option value="both" ${State.editor.currency==='both'?'selected':''}>USD/VES</option>
-               </select>
-            </div>
+            <div class="frm-group no-shrink" style="flex:1;">
+            <label class="frm-label">Moneda Impresión</label>
+            <select id="frm-curr" class="frm-input">
+              <option value="usd" ${cCode==='usd'?'selected':''}>USD (Dólares)</option>
+              <option value="ves" ${cCode==='ves'?'selected':''}>VES (Bolívares)</option>
+            </select>
+          </div>
+
+          <div class="frm-group no-shrink" style="flex:1; display:flex; align-items:flex-end;">
+            <label class="frm-label" style="display:flex; align-items:center; cursor:pointer; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:8px; border:1px solid var(--border-light); width:100%; height:42px;">
+              <input type="checkbox" id="frm-tax" style="margin-right:10px; width:18px; height:18px; accent-color:var(--primary);" ${detail.applyTax?'checked':''}>
+              <span style="font-size:13px; font-weight:600;">Aplicar IVA (16%)</span>
+            </label>
+          </div>
           </div>
         </div>
 
@@ -290,6 +296,12 @@ const Quotations = (() => {
         <datalist id="sys-products-list">${State.products.map(p => `<option value="${Utils.escapeHtml(p['Nombre'])}">`).join('')}</datalist>
       </div>
     `;
+
+    container.innerHTML = html;
+
+    // Listeners para recálculo inmediato
+    document.getElementById('frm-tax').addEventListener('change', _recalculateGrandTotal);
+    document.getElementById('frm-curr').addEventListener('change', _recalculateGrandTotal);
 
     const tbody = document.getElementById('grid-tbody');
     if (tbody) {
@@ -393,11 +405,23 @@ const Quotations = (() => {
   }
 
   function _recalculateGrandTotal() {
-    const sum = Utils.round(State.editor.items.reduce((s, it) => s + (Utils.toNumber(it.qty) * Utils.toNumber(it.price)), 0));
+    const net = Utils.round(State.editor.items.reduce((s, it) => s + (Utils.toNumber(it.qty) * Utils.toNumber(it.price)), 0));
+    const applyTax = document.getElementById('frm-tax')?.checked || false;
+    const tax = applyTax ? Utils.round(net * 0.16) : 0;
+    const total = Utils.round(net + tax);
+
     const g = document.getElementById('grid-grand-total');
     if (g) {
-      g.textContent = `$${Utils.formatUSD(sum)}`;
-      g.style.color = sum > 0 ? 'var(--success)' : 'var(--primary)';
+      if (applyTax) {
+        g.innerHTML = `
+          <div style="font-size:12px; font-weight:400; color:var(--text-muted); text-align:right;">Subtotal: $${Utils.formatUSD(net)}</div>
+          <div style="font-size:12px; font-weight:400; color:var(--text-muted); text-align:right;">IVA (16%): $${Utils.formatUSD(tax)}</div>
+          <div style="margin-top:4px;">$${Utils.formatUSD(total)}</div>
+        `;
+      } else {
+        g.textContent = `$${Utils.formatUSD(net)}`;
+      }
+      g.style.color = total > 0 ? 'var(--success)' : 'var(--primary)';
     }
   }
 
@@ -429,12 +453,13 @@ const Quotations = (() => {
         'ID Cliente': clientId,
         'Validez Días': 5,
         'Estado': State.editor.id ? State.quotes.find(x => x['ID']===State.editor.id)['Estado'] : 'Borrador',
-        'Total USD': totalUSD,
-        'Total VES': Utils.round(totalUSD * State.rate),
+        'Total USD': Utils.round(totalNet + (applyTax ? totalNet * 0.16 : 0)),
+        'Total VES': Utils.round((totalNet + (applyTax ? totalNet * 0.16 : 0)) * State.rate),
         'Detalle JSON': JSON.stringify({
           items: validItems,
           intro: document.getElementById('frm-intro').value,
           currencyMode: currCode,
+          applyTax: applyTax,
           rate: State.rate
         }),
         'Notas': '',

@@ -303,6 +303,15 @@ const Contacts = (() => {
       return;
     }
 
+    // Validación de RIF (opcional si se llena)
+    if (data['RIF']) {
+      if (!Utils.validateRIF(data['RIF'])) {
+        Utils.showToast('El formato del RIF es inválido (Ej: J-12345678-9)', 'danger');
+        return;
+      }
+      data['RIF'] = Utils.formatRIF(data['RIF']); // Asegurar formato estándar
+    }
+
     try {
       if (id) {
         // Update existing

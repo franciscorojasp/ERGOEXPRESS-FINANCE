@@ -198,6 +198,46 @@ const Utils = (() => {
   }
 
   /**
+   * Valida un RIF de Venezuela (J-XXXXXXXX-X)
+   * @param {string} rif 
+   * @returns {boolean}
+   */
+  function validateRIF(rif) {
+    if (!rif) return false;
+    const regex = /^([VJEGPC])[-]?(\d{8})[-]?(\d)$/i;
+    const match = rif.toUpperCase().replace(/\s/g, '').match(regex);
+    if (!match) return false;
+
+    const letra = match[1];
+    const numero = match[2];
+    const digitoVerificador = parseInt(match[3]);
+
+    const letrasMap = { V: 4, E: 8, J: 12, G: 20, C: 24, P: 28 };
+    const pesos = [3, 2, 7, 6, 5, 4, 3, 2];
+    
+    let suma = letrasMap[letra];
+    for (let i = 0; i < 8; i++) {
+      suma += parseInt(numero[i]) * pesos[i];
+    }
+
+    const residuo = suma % 11;
+    let resultado = 11 - residuo;
+    if (resultado >= 10) resultado = 0;
+
+    return resultado === digitoVerificador;
+  }
+
+  /**
+   * Formatea un RIF para que siempre tenga el guionado correcto
+   */
+  function formatRIF(rif) {
+    if (!rif) return '';
+    const r = rif.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (r.length < 10) return r;
+    return `${r[0]}-${r.substring(1, 9)}-${r[9]}`;
+  }
+
+  /**
    * Formatea un número para WhatsApp detectando el país desde la dirección
    */
   function formatWhatsApp(phoneRaw, address = '') {
@@ -542,6 +582,7 @@ const Utils = (() => {
 
     debounce, getFormData, setFormData,
     showToast, showModal, closeModal, confirm,
+    validateRIF, formatRIF,
 
     // ─── Simple Markdown to HTML ───────────────────────────────────────────
     mdToHtml: (md) => {

@@ -12,8 +12,23 @@
  * 6. Copiar la URL de la web app → pegar en config.js
  */
 
-// ⚙️ Cambiar por tu clave secreta (debe coincidir con config.js)
-const API_KEY = 'ERGX2026';
+// ⚙️ El sistema busca la API_KEY en Propiedades del Script. Si no existe, usa la predeterminada.
+// Para mayor seguridad, el administrador debe ejecutar configurarApiKey() una vez.
+function getApiKey() {
+  const props = PropertiesService.getScriptProperties();
+  const key = props.getProperty('API_KEY');
+  return key || 'ERGX2026';
+}
+
+/**
+ * Función de utilidad para que el administrador establezca una nueva API_KEY
+ * sin editar el código fuente.
+ */
+function configurarApiKey(nuevaClave) {
+  if (!nuevaClave) throw new Error('Se requiere una nueva clave');
+  PropertiesService.getScriptProperties().setProperty('API_KEY', nuevaClave);
+  return 'API_KEY actualizada correctamente.';
+}
 
 // ─── Cabeceras de cada hoja ──────────────────────────────────────────────────
 const HEADERS = {
@@ -33,8 +48,9 @@ const HEADERS = {
 function doPost(e) {
   try {
     const req = JSON.parse(e.postData.contents);
+    const API_KEY = getApiKey();
     if (!req.apiKey || req.apiKey !== API_KEY) {
-      return ok({ success: false, error: 'API Key inválido' });
+      return ok({ success: false, error: 'Acceso Denegado: API Key inválida' });
     }
     
     // Acciones públicas (No requieren Token)
