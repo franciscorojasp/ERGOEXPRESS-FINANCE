@@ -273,9 +273,15 @@ const Finances = (() => {
             ${list.length ? list.map(r => `
               <tr>
                 <td>${Utils.formatDate(r['Fecha'])}</td>
-                <td class="td-bold">${Utils.escapeHtml(r['Beneficiario'])}</td>
+                <td class="td-bold">
+                  <div>${Utils.escapeHtml(r['Beneficiario'])}</div>
+                  <div style="font-size:10px; color:var(--text-muted);">${r['Pagador'] ? 'Pagado por: ' + r['Pagador'] : ''}</div>
+                </td>
                 <td><span class="badge badge-primary">${r['Categoría'] || 'Otros'}</span></td>
-                <td>${Utils.escapeHtml(r['Concepto'])}</td>
+                <td>
+                  <div>${Utils.escapeHtml(r['Concepto'])}</div>
+                  <div style="font-size:10px; color:var(--text-muted);">${r['Banco'] || ''} ${r['Referencia Nº'] ? '#'+r['Referencia Nº'] : ''}</div>
+                </td>
                 <td style="text-align:right; font-weight:800; color:var(--error);">$${Utils.formatUSD(r['Total USD'])}</td>
                 <td><span class="badge badge-neutral">${r['Método']}</span></td>
               </tr>
@@ -470,6 +476,9 @@ const Finances = (() => {
   }
 
   function openExpenseForm() {
+    // Historial de pagadores para el datalist
+    const pagadores = [...new Set(_expenses.map(e => e['Pagador']).filter(p => !!p))];
+    
     Utils.showModal({
       title: 'Registrar Nuevo Egreso',
       content: `
@@ -503,6 +512,25 @@ const Finances = (() => {
                  ${CONFIG.PAYMENT_METHODS.map(m => `<option value="${m}">${m}</option>`).join('')}
               </select>
             </div>
+            <div class="form-group">
+               <label class="form-label">Banco Emisor</label>
+               <select class="form-select" name="Banco">
+                  <option value="">-- Seleccionar --</option>
+                  ${CONFIG.BANKS.map(b => `<option value="${b}">${b}</option>`).join('')}
+               </select>
+            </div>
+            <div class="form-group">
+               <label class="form-label">Referencia Nº</label>
+               <input class="form-input" name="Referencia Nº" placeholder="Nº de transferencia" />
+            </div>
+            <div class="form-group full">
+               <label class="form-label">Quién realizó el pago (Pagador)</label>
+               <input class="form-input" name="Pagador" list="pagadores-list" placeholder="Nombre de la persona o entidad" />
+               <datalist id="pagadores-list">
+                  ${pagadores.map(p => `<option value="${Utils.escapeHtml(p)}">`).join('')}
+               </datalist>
+               <div class="form-hint">Escribe un nuevo nombre o selecciona uno del historial.</div>
+            </div>
           </div>
         </form>
       `,
@@ -514,24 +542,44 @@ const Finances = (() => {
   }
 
   async function saveExpense() {
-    const data = Utils.getFormData('expense-form');
-    if (Utils.validateRequired(data, ['Beneficiario','Concepto','Total USD']).length) {
-       Utils.showToast('Introduzca los campos requeridos', 'warning'); return;
-    }
+    const form = document.querySelector('#expense-form');
+    if (!form.checkValidity()) return form.reportValidity();
 
-    try {
-      Utils.showToast('Procesando egreso...', 'info');
-      const entry = {
-        'ID': Utils.generateId(),
-        ...data,
-        'Estado': 'Pagado',
-        'Usuario Email': App.getCurrentUserEmail() || 'staff'
-      };
-      await Sheets.appendRow(CONFIG.SHEETS.FINANCE_EXPENSE, entry);
-      Utils.showToast('Egreso registrado', 'success');
+    const fd = new FormData(form);
+    const data = Object.fromEntries(fd.entries());
+    
+    const tasa = App.getTasaSugerida() || 1;
+    const usd  = Utils.toNumber(data['Total USD']);
+
+    const entry = {
+      ID: Utils.uuid(),
+      Fecha: data.Fecha,
+      Beneficiario: data.Beneficiario,
+      Categoría: data.Categoría,
+      Concepto: data.Concepto,
+      Método: data.Método,
+      Banco: data.Banco || '',
+      'Referencia Nº': data['Referencia Nº'] || '',
+      Pagador: data.Pagador || '',
+      Tasa: tasa,
+      'Total USD': usd,
+      'Total VES': usd * tasa,
+      Estado: 'Completado',
+      'Usuario Email': App.getUser()?.email || 'sistema',
+      Referencia: '' 
+    };
+
+    Utils.showLoading('Guardando egreso...');
+    const res = await Backend.append('Finanzas_Egresos', entry);
+    Utils.hideLoading();
+
+    if (res.success) {
+      Utils.showToast('Egreso registrado correctamente');
       Utils.closeModal();
-      await render(document.getElementById('main-content'));
-    } catch(e) { Utils.showToast('Error: ' + e.message, 'error'); }
+      await init(); 
+    } else {
+      Utils.showToast('Error al guardar: ' + res.error, 'error');
+    }
   }
 
   async function exportPDF() {
@@ -582,8 +630,8 @@ const Finances = (() => {
            <thead>
               <tr style="background:#ef4444; color:#ffffff; text-align:left;">
                  <th style="padding:6px 10px; border-radius:4px 0 0 4px;">Fecha</th>
-                 <th style="padding:6px 10px;">Beneficiario</th>
-                 <th style="padding:6px 10px;">Categoría</th>
+                 <th style="padding:6px 10px;">Beneficiario / Pagador</th>
+                 <th style="padding:6px 10px;">Concepto / Banco / Ref</th>
                  <th style="padding:6px 10px; text-align:right; border-radius:0 4px 4px 0;">Monto USD</th>
               </tr>
            </thead>
@@ -591,9 +639,15 @@ const Finances = (() => {
               ${filteredExp.map(r => `
                 <tr style="border-bottom:1px solid #f1f5f9;">
                    <td style="padding:6px 10px;">${Utils.formatDate(r['Fecha'])}</td>
-                   <td style="padding:6px 10px; font-weight:700;">${Utils.escapeHtml(r['Beneficiario'])}</td>
-                   <td style="padding:6px 10px; color:#64748b;">${Utils.escapeHtml(r['Categoría'])}</td>
-                   <td style="padding:6px 10px; text-align:right; font-weight:800; color:#ef4444;">$ ${Utils.formatUSD(r['Total USD'])}</td>
+                   <td style="padding:6px 10px;">
+                      <div style="font-weight:700;">${Utils.escapeHtml(r['Beneficiario'])}</div>
+                      <div style="font-size:8px; color:#64748b;">${r['Pagador']?'Pagado por: '+r['Pagador']:''}</div>
+                   </td>
+                   <td style="padding:6px 10px; color:#64748b;">
+                      <div>${Utils.escapeHtml(r['Concepto'])}</div>
+                      <div style="font-size:8px;">${r['Banco']||''} ${r['Referencia Nº']?'#'+r['Referencia Nº']:''}</div>
+                   </td>
+                   <td style="padding:6px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
                 </tr>
               `).join('')}
            </tbody>
