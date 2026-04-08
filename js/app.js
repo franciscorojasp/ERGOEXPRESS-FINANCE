@@ -23,7 +23,7 @@ const App = (() => {
 
   let _currentRoute = '/dashboard';
   let _currentUser  = null;
-  let _currentRole  = 'vendedor';
+  let _currentRole  = '';
   let _notifInterval = null;
   let _notifications = [];
   let _updatePending = false;

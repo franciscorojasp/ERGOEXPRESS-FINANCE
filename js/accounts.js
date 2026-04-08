@@ -83,7 +83,7 @@ const Accounts = (() => {
 
     list.innerHTML = _users.map(u => {
       const isAdminFlag = u.Rol === 'admin';
-      const isActive = u.Activo === 'SI';
+      const isActive = String(u.Activo).toUpperCase() === 'SI';
       
       return `
         <tr>

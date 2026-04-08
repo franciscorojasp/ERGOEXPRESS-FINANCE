@@ -286,7 +286,7 @@ function login(req) {
       const isCorrect = (storedPass === passHashed) || (storedPass === req.password);
       
       if (!isCorrect) return { success: false, error: 'Contraseña incorrecta.' };
-      if (r[iA] !== 'SI') return { success: false, error: 'Cuenta inactiva.' };
+      if (String(r[iA]).toUpperCase() !== 'SI') return { success: false, error: 'Cuenta inactiva.' };
       
       const token = makeToken(emailInput, r[iN], r[iR]);
       return { success: true, token, user: { email: emailInput, name: r[iN], role: r[iR] } };
@@ -409,8 +409,14 @@ function append(req) {
   const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   
   // Si estamos agregando un usuario, hashear el password
-  if (req.sheet === 'Usuarios' && req.data.Password) {
-    req.data.Password = hash(req.data.Password);
+  if (req.sheet === 'Usuarios') {
+    if (req.data.Password) req.data.Password = hash(req.data.Password);
+    if (req.data.Activo) req.data.Activo = String(req.data.Activo).toUpperCase();
+  }
+
+  // Generación automática de ID si falta y la columna existe
+  if (cols.includes('ID') && (!req.data.ID || req.data.ID === '')) {
+    req.data.ID = Utilities.getUuid();
   }
   
   sheet.appendRow(cols.map(h => {
@@ -428,7 +434,15 @@ function batchAppend(req) {
   if (!req.data || !req.data.length) return { success: true };
   
   const cols = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  const hasID = cols.includes('ID');
+
   const rows = req.data.map(row => cols.map(h => {
+    if (h === 'ID' && (!row[h] || row[h] === '')) {
+      row[h] = Utilities.getUuid();
+    }
+    if (req.sheet === 'Usuarios' && h === 'Activo' && row[h]) {
+      row[h] = String(row[h]).toUpperCase();
+    }
     if (row[h] === undefined) return '';
     if (typeof row[h] === 'number') return row[h];
     return String(row[h]);
@@ -746,6 +760,51 @@ function migrarTablasEgresos() {
     }
   });
 
-  // 2. Sincronizar el orden exacto (Opcional, pero para mayor seguridad solo informamos)
+// 2. Sincronizar el orden exacto (Opcional, pero para mayor seguridad solo informamos)
   return 'Migración completada. Por favor, asegúrese de que las columnas están presentes en su hoja.';
+}
+
+/**
+ * REPARACIÓN DE DATOS DE USUARIOS
+ * ────────────────────────────────────────────────────────────────────────────
+ * 1. Asigna IDs (UUID) a usuarios que no lo tengan.
+ * 2. Normaliza el estado Activo a "SI" (en mayúsculas).
+ * 3. Corrige la cuenta de francisco.rojasp@gmail.com si es necesario.
+ */
+function repararCuentasUsuarios() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Usuarios');
+  if (!sh) return "Error: Hoja 'Usuarios' no existe.";
+  
+  const data = sh.getDataRange().getValues();
+  const hdrs = data[0];
+  const iID = hdrs.indexOf('ID');
+  const iEm = hdrs.indexOf('Email');
+  const iAc = hdrs.indexOf('Activo');
+  
+  if (iID === -1 || iEm === -1 || iAc === -1) return "Error: Columnas críticas no encontradas.";
+  
+  let repairs = 0;
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const rowNum = i + 1;
+    let changed = false;
+    
+    // 1. Verificar ID
+    if (!row[iID] || row[iID] === '') {
+      sh.getRange(rowNum, iID + 1).setValue(Utilities.getUuid());
+      changed = true;
+    }
+    
+    // 2. Normalizar "SI"
+    const status = String(row[iAc]).toUpperCase().trim();
+    if (status === 'SI' && row[iAc] !== 'SI') {
+      sh.getRange(rowNum, iAc + 1).setValue('SI');
+      changed = true;
+    }
+    
+    if (changed) repairs++;
+  }
+  
+  return `Mantenimiento completado. Se repararon ${repairs} registros de usuarios.`;
 }

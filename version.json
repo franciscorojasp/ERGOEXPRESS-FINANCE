@@ -1,4 +1,5 @@
 {
-  "version": "3.2.6",
-  "description": "Estable: Eliminación total de la interfaz de IA y corrección de etiquetas de versión."
+  "version": "3.2.8",
+  "date": "2026-04-08",
+  "description": "Corrección crítica de autenticación (case-insensitivity), autogeneración de IDs en backend y mejoras en la carga de perfiles de usuario."
 }
