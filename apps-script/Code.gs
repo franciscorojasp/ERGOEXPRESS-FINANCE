@@ -54,12 +54,13 @@ function doPost(e) {
     }
     
     // Acciones públicas (No requieren Token)
-    if (['LOGIN', 'CHECK_SETUP', 'SETUP', 'CREATE_ADMIN'].includes(req.action)) {
+    if (['LOGIN', 'CHECK_SETUP', 'SETUP', 'CREATE_ADMIN', 'REQUEST_ACCESS'].includes(req.action)) {
       switch (req.action) {
         case 'CHECK_SETUP':    return ok(checkSetup());
         case 'SETUP':          return ok(setup());
         case 'CREATE_ADMIN':   return ok(createAdmin(req));
         case 'LOGIN':          return ok(login(req));
+        case 'REQUEST_ACCESS': return ok(requestAccess(req));
       }
     }
 
@@ -80,6 +81,7 @@ function doPost(e) {
         case 'SYNC_TO_CALENDAR': return ok(syncToCalendar(req));
         case 'GET_NEXT_NUMBER': return ok(getNextNumber(req));
         case 'RESET_ALL_PASSWORDS': return ok(resetAllPasswords(req));
+        case 'RUN_MAINTENANCE': return ok({ success: true, message: repararCuentasUsuarios() });
         case 'ASK_GEMINI':     return ok(askGemini(req));
         default: return ok({ success: false, error: 'Acción desconocida o no autorizada: ' + req.action });
       }
@@ -234,6 +236,30 @@ function createAdmin(req) {
   _initConfig(ss);
   const token = makeToken(req.email, req.name, 'admin');
   return { success: true, token, user: { email: req.email, name: req.name, role: 'admin' } };
+}
+
+function requestAccess(req) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Usuarios');
+  if (!sheet) return { success: false, error: 'Sistema no configurado' };
+
+  const data = sheet.getDataRange().getValues();
+  const emailInput = (req.email || '').toLowerCase().trim();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][1]).toLowerCase().trim() === emailInput)
+      return { success: false, error: 'Ya existe una solicitud o cuenta con este correo.' };
+  }
+
+  const cols = HEADERS.Usuarios;
+  sheet.appendRow(cols.map(h => ({
+    ID: Utilities.getUuid(), Email: emailInput, Nombre: req.name,
+    Rol: 'vendedor', Activo: 'NO',
+    'Fecha Registro': new Date().toISOString().split('T')[0],
+    Password: hash(req.password)
+  }[h] || '')));
+
+  return { success: true, message: 'Solicitud enviada. Contacte al administrador para la activación.' };
 }
 
 function _initConfig(ss) {

@@ -196,52 +196,146 @@ const App = (() => {
   async function _runSetup() {
     const c = content();
     c.innerHTML = `
-      <div style="max-width:520px; margin:40px auto;">
+      <div style="max-width:520px; margin:40px auto;" class="fade-in">
         <div class="card card-padded">
           <div class="card-header" style="border-bottom:none; padding:0 0 16px;">
             <h2 class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" style="color:var(--primary);">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
-              Configuración Inicial
+              Configuración Inicial del CRM
             </h2>
           </div>
-          <p style="color:var(--text-secondary); margin-bottom:20px; font-size:14px;">
-            El CRM necesita crear la hoja de cálculo "CRM ERGOEXPRESS" en tu Google Drive.
+          <p style="color:var(--text-secondary); margin-bottom:24px; font-size:14px; line-height:1.6;">
+            Bienvenido. Como primer usuario, se te asignará el rol de <b>Administrador Principal</b>. El CRM creará la infraestructura necesaria en tu Google Drive.
           </p>
           <div class="setup-steps" id="setup-steps">
             <div class="setup-step" id="setup-step-1">
               <div class="setup-step-num">1</div>
               <div class="setup-step-content">
-                <h4>Crear Google Spreadsheet</h4>
-                <p>Se creará automáticamente en tu Drive</p>
+                <h4>Crear Repositorio Central</h4>
+                <p>Google Spreadsheet "CRM ERGOEXPRESS"</p>
               </div>
             </div>
             <div class="setup-step" id="setup-step-2">
               <div class="setup-step-num">2</div>
               <div class="setup-step-content">
-                <h4>Inicializar hojas de datos</h4>
-                <p>Contactos, Productos, Cotizaciones, etc.</p>
+                <h4>Estructurar Base de Datos</h4>
+                <p>Clientes, Finanzas, Usuarios y Agenda</p>
               </div>
             </div>
             <div class="setup-step" id="setup-step-3">
               <div class="setup-step-num">3</div>
               <div class="setup-step-content">
-                <h4>Registrar administrador</h4>
-                <p>Tu cuenta como administrador del sistema</p>
+                <h4>Activar Perfil Maestro</h4>
+                <p>${_currentUser.email} como Administrador</p>
               </div>
             </div>
           </div>
-          <div style="margin-top:24px; text-align:center;">
-            <button class="btn btn-primary btn-lg" id="start-setup-btn" onclick="App.runSetupNow()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-              Iniciar Configuración
+          <div style="margin-top:32px; text-align:center;">
+            <button class="btn btn-primary btn-lg" id="start-setup-btn" onclick="App.runSetupNow()" style="width:100%; height:56px; font-weight:700;">
+              ESTABLECER SISTEMA ELITE
             </button>
           </div>
-          <div id="setup-error" style="display:none; margin-top:12px;" class="form-error"></div>
+          <div id="setup-error" style="display:none; margin-top:16px;" class="form-error"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function _renderSolicitudIngreso() {
+    const c = content();
+    c.innerHTML = `
+      <div style="max-width:480px; margin:60px auto;" class="fade-in">
+        <div class="card card-padded" style="border-top: 4px solid var(--primary);">
+          <div style="text-align:center; margin-bottom:24px;">
+            <div style="display:inline-flex; padding:16px; background:rgba(14,165,233,0.1); border-radius:50%; color:var(--primary); margin-bottom:16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+            </div>
+            <h2 style="font-size:24px; font-weight:800; color:white; margin:0;">Solicitud de Ingreso</h2>
+            <p style="color:var(--text-secondary); margin-top:8px;">Tu cuenta no está registrada en el CRM.</p>
+          </div>
+          
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px;">
+            <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; font-weight:700; margin-bottom:4px;">Correo Detectado</div>
+            <div style="font-size:16px; color:white; font-weight:600; font-family:monospace;">${_currentUser.email}</div>
+          </div>
+
+          <p style="font-size:14px; color:var(--text-muted); line-height:1.5; margin-bottom:24px; text-align:center;">
+            Al enviar la solicitud, un administrador recibirá tu petición y podrá habilitar tu acceso al sistema.
+          </p>
+
+          <button class="btn btn-primary btn-lg" id="request-access-btn" onclick="App.submitAccessRequest()" style="width:100%; height:56px; font-weight:800;">
+            ENVIAR SOLICITUD DE ACCESO
+          </button>
+          
+          <div style="text-align:center; margin-top:20px;">
+            <a href="#" onclick="Auth.signOut()" style="color:var(--text-muted); font-size:13px; text-decoration:none;">Usar otra cuenta</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function submitAccessRequest() {
+    const btn = document.getElementById('request-access-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span> ENVIANDO...';
+
+    try {
+      // Re-confirm data from Auth
+      const res = await API.call('REQUEST_ACCESS', {
+        email: _currentUser.email,
+        name: _currentUser.name || 'Usuario Nuevo',
+        password: '' // Optional for Google Auth, but backend expects it or blank
+      });
+
+      if (res.success) {
+        Utils.showToast('Solicitud enviada exitosamente', 'success');
+        _renderEsperandoAprobacion();
+      } else {
+        throw new Error(res.error || 'Error al enviar solicitud');
+      }
+    } catch (e) {
+      Utils.showToast(e.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'REINTENTAR ENVÍO';
+    }
+  }
+
+  function _renderEsperandoAprobacion() {
+    const c = content();
+    c.innerHTML = `
+      <div style="max-width:480px; margin:60px auto;" class="fade-in">
+        <div class="card card-padded" style="border-top: 4px solid #f59e0b;">
+          <div style="text-align:center; margin-bottom:24px;">
+            <div style="display:inline-flex; padding:16px; background:rgba(245,158,11,0.1); border-radius:50%; color:#f59e0b; margin-bottom:16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h2 style="font-size:24px; font-weight:800; color:white; margin:0;">Esperando Aprobación</h2>
+            <p style="color:var(--text-secondary); margin-top:8px;">Tu solicitud está siendo revisada.</p>
+          </div>
+          
+          <div style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:12px; padding:20px; text-align:center; color:white; font-size:15px; line-height:1.6;">
+            El administrador debe activar tu cuenta desde el panel de <b>Gestión de Usuarios</b>. Una vez aprobada, podrás acceder a todas las funciones del CRM.
+          </div>
+
+          <p style="font-size:13px; color:var(--text-muted); margin-top:24px; text-align:center;">
+            Recibirás acceso una vez que se verifiquen tus credenciales.
+          </p>
+
+          <div style="text-align:center; margin-top:32px;">
+            <button class="btn btn-outline" onclick="window.location.reload()" style="width:100%; border-color:var(--border);">
+              VERIFICAR ESTADO AHORA
+            </button>
+            <div style="margin-top:20px;">
+              <a href="#" onclick="Auth.signOut()" style="color:var(--text-muted); font-size:13px; text-decoration:none;">Cerrar sesión</a>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -320,16 +414,21 @@ const App = (() => {
       let user = await Sheets.findUser(_currentUser.email);
 
       if (!user) {
-        // Check if there are any users at all (first login)
+        // First check if the system is totally empty
         const allUsers = await Sheets.readSheet(CONFIG.SHEETS.USERS, false);
-        const role = allUsers.length === 0 ? 'admin' : 'vendedor';
-        await Sheets.createUser(_currentUser.email, _currentUser.name, role);
-        user = { 'Rol': role, 'Activo': 'SI' };
+        if (allUsers.length === 0) {
+          // If empty, this is the owner/admin setting up the sheet
+          _runSetup();
+        } else {
+          // If not empty, this is a guest trying to enter
+          _renderSolicitudIngreso();
+        }
+        return;
       }
 
-      if (user['Activo'] !== 'SI') {
-        Utils.showToast('Tu cuenta no está activa. Contacta al administrador.', 'error');
-        setTimeout(() => Auth.signOut(), 3000);
+      const active = String(user['Activo']).toUpperCase();
+      if (active !== 'SI') {
+        _renderEsperandoAprobacion();
         return;
       }
 
@@ -337,8 +436,11 @@ const App = (() => {
       localStorage.setItem('crm_user_role', _currentRole);
 
     } catch(e) {
-      // Setup might be needed
       console.warn('[App] User verification failed:', e.message);
+      // If we can't even reach the sheet, maybe it's not setup?
+      if (e.message.includes('not found') || e.message.includes('404')) {
+        _runSetup();
+      }
     }
   }
 
@@ -979,7 +1081,7 @@ const App = (() => {
     toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
     toggleTheme, toggleCurrency, getCurrency, setFontScale,
-    runSetupNow, 
+    runSetupNow, submitAccessRequest,
     applyUpdate, showUpdateNotice, saveMandatoryRate
   };
 })();

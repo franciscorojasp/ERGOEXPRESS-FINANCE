@@ -1,5 +1,5 @@
 {
-  "version": "3.2.8",
-  "date": "2026-04-08",
-  "description": "Corrección crítica de autenticación (case-insensitivity), autogeneración de IDs en backend y mejoras en la carga de perfiles de usuario."
+  "version": "3.3.0",
+  "description": "Elite Admin Update: Gestión de Cuentas Premium, nuevo flujo de Solicitudes de Ingreso y herramienta de reparación de IDs.",
+  "date": "2026-04-08"
 }

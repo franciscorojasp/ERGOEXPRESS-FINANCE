@@ -61,7 +61,7 @@ const CONFIG = {
     'Guárico','Lara','Mérida','Miranda','Monagas','Nueva Esparta',
     'Portuguesa','Sucre','Táchira','Trujillo','Vargas','Yaracuy','Zulia'],
 
-  APP_VERSION: '3.2.8',
+  APP_VERSION: '3.3.0',
   APP_NAME:    'ERGOEXPRESS CRM',
   GEMINI_MODEL: 'gemini-1.5-flash'
 };
