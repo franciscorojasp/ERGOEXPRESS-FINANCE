@@ -49,8 +49,8 @@ const Dashboard = (() => {
         </div>
 
         <!-- KPIs -->
-        <div class="grid-5" id="kpi-grid">
-          ${[1,2,3,4,5].map(() => `
+        <div class="grid-KPIs" id="kpi-grid">
+          ${[1,2,3,4,5,6].map(() => `
             <div class="kpi-card" style="animation: pulse 1.5s ease infinite;">
               <div class="kpi-label">Cargando…</div>
               <div class="kpi-value">—</div>
@@ -180,13 +180,21 @@ const Dashboard = (() => {
       const totalContacts  = filteredContacts.length;
       const totalQuotes    = filteredQuotes.length;
       
-      // Ventas Reales (Aceptadas, Facturadas, etc)
+      // KPI 4: Ventas Cerradas (Aceptadas, Facturadas, etc)
       const acceptedQuotes = filteredQuotes.filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
       const totalRevenue   = acceptedQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
       
-      // Volumen Ofertado (Exposición total en el mercado)
+      // KPI 3: Volumen Ofertado (Exposición total en el mercado)
       const offeredQuotes = filteredQuotes.filter(q => ['Enviada', 'Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
       const offeredVolume = offeredQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+
+      // KPI 5: Recaudo Real (Ingresos en periodo)
+      const incomes = (isAdmin ? (await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME)) : (await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME)).filter(i => i['Vendedor Email'] === userEmail))
+        .filter(i => {
+           if (period === 'todo') return true;
+           return i['Fecha'] >= range.start && i['Fecha'] <= range.end;
+        });
+      const totalCashIn = incomes.reduce((sum, i) => sum + Utils.toNumber(i['Total USD']), 0);
 
       const convRate = totalQuotes > 0
         ? Math.round((acceptedQuotes.length / totalQuotes) * 100)
@@ -196,15 +204,17 @@ const Dashboard = (() => {
       const rate = latestRate ? Utils.toNumber(latestRate['Tasa Oficial']) : 0;
       const displayTotal = currency === 'VES' && rate > 0 ? totalRevenue * rate : totalRevenue;
       const displayOffered = currency === 'VES' && rate > 0 ? offeredVolume * rate : offeredVolume;
+      const displayCash = currency === 'VES' && rate > 0 ? totalCashIn * rate : totalCashIn;
       const symbol = currency === 'USD' ? '$' : 'Bs.';
 
+      document.getElementById('kpi-grid').className = 'grid-KPIs';
       document.getElementById('kpi-grid').innerHTML = `
         <div class="kpi-card">
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Contactos</div>
             <div class="kpi-value">${totalContacts}</div>
-            <div class="kpi-meta">En cartera total</div>
+            <div class="kpi-meta">En cartera</div>
           </div>
         </div>
 
@@ -213,7 +223,7 @@ const Dashboard = (() => {
           <div class="kpi-content">
             <div class="kpi-label">Cotizaciones</div>
             <div class="kpi-value">${totalQuotes}</div>
-            <div class="kpi-meta">${offeredQuotes.length} en mercado</div>
+            <div class="kpi-meta">${offeredQuotes.length} enviadas</div>
           </div>
         </div>
 
@@ -221,17 +231,26 @@ const Dashboard = (() => {
           <div class="kpi-icon" style="color:var(--accent); background:var(--accent-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Volumen Ofertado</div>
-            <div class="kpi-value" style="color:var(--accent);">${symbol} ${currency === 'USD' ? Utils.formatUSD(displayOffered) : Utils.formatVES(displayOffered)}</div>
-            <div class="kpi-meta">Exposición Comercial</div>
+            <div class="kpi-value" style="color:var(--accent); font-size:20px;">${symbol} ${Utils.formatNumber(displayOffered)}</div>
+            <div class="kpi-meta">En negociación</div>
           </div>
         </div>
 
         <div class="kpi-card">
+          <div class="kpi-icon" style="color:var(--primary-light); background:var(--primary-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="kpi-content">
+            <div class="kpi-label">Ventas Cerradas</div>
+            <div class="kpi-value u-primary" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayTotal)}</div>
+            <div class="kpi-meta">${acceptedQuotes.length} ganadas</div>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="border:1px solid var(--success); background:rgba(16, 185, 129, 0.05);">
           <div class="kpi-icon" style="color:var(--success); background:var(--success-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="kpi-content">
-            <div class="kpi-label">Ingresos Reales</div>
-            <div class="kpi-value u-primary">${symbol} ${currency === 'USD' ? Utils.formatUSD(displayTotal) : Utils.formatVES(displayTotal)}</div>
-            <div class="kpi-meta">${acceptedQuotes.length} cerradas</div>
+            <div class="kpi-label">Recaudo Real</div>
+            <div class="kpi-value" style="color:var(--success); font-size:20px;">${symbol} ${Utils.formatNumber(displayCash)}</div>
+            <div class="kpi-meta">Efectivo en caja</div>
           </div>
         </div>
 
@@ -240,7 +259,7 @@ const Dashboard = (() => {
           <div class="kpi-content">
             <div class="kpi-label">Conversión</div>
             <div class="kpi-value">${convRate}%</div>
-            <div class="kpi-meta">Cierres / Total</div>
+            <div class="kpi-meta">Eficiencia comercial</div>
           </div>
         </div>
       `;

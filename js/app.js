@@ -365,6 +365,13 @@ const App = (() => {
     }
 
     _currentRoute = route || '/dashboard';
+    
+    // Security: Restricted routes
+    if (_currentRoute === '/accounts' && !isAdmin()) {
+      console.warn('[App] Access Denied to /accounts. Redirecting to Dashboard.');
+      navigate('/dashboard');
+      return;
+    }
 
     // Match route with params
     let handler = routes[route];

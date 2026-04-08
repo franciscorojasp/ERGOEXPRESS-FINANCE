@@ -7,6 +7,12 @@ const Accounts = (() => {
   let _isSaving = false;
 
   async function render(container) {
+    if (typeof App !== 'undefined' && !App.isAdmin()) {
+      Utils.showToast('Acceso denegado: Se requiere perfil administrador', 'error');
+      App.navigate('/dashboard');
+      return;
+    }
+
     try {
       container.innerHTML = `
         <div class="module-header">

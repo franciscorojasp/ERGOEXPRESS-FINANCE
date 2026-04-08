@@ -277,6 +277,12 @@ body::before {
   gap: var(--dash-gap);
 }
 
+.grid-KPIs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--dash-gap);
+}
+
 .kpi-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);

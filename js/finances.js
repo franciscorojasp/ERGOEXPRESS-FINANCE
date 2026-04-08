@@ -160,58 +160,13 @@ const Finances = (() => {
   function _getFilteredData(data) {
     if (!data || !data.length) return [];
     
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const currentDay = now.getDate();
+    // Period is already set in _filterPeriod
+    const range = Utils.getDateRange(_filterPeriod);
     
-    // Obtenemos el inicio de la semana (Lunes)
-    const startOfWeek = new Date(now);
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    startOfWeek.setHours(0,0,0,0);
-
     return data.filter(r => {
-      if (!r['Fecha']) return false;
-      const refDate = new Date(r['Fecha'] + 'T12:00:00');
-      const rYear = refDate.getFullYear();
-      const rMonth = refDate.getMonth();
-      const rDay = refDate.getDate();
-
-      switch(_filterPeriod) {
-        case 'hoy': 
-          return rYear === currentYear && rMonth === currentMonth && rDay === currentDay;
-        
-        case 'semanal':
-          return refDate >= startOfWeek && refDate <= now;
-
-        case 'quincenal':
-          // Quincena actual: 1-15 o 16-fin
-          if (currentDay <= 15) {
-            return rYear === currentYear && rMonth === currentMonth && rDay <= 15;
-          } else {
-            return rYear === currentYear && rMonth === currentMonth && rDay > 15;
-          }
-
-        case 'mensual':
-          return rYear === currentYear && rMonth === currentMonth;
-
-        case 'trimestral':
-          const currentTrim = Math.floor(currentMonth / 3);
-          const rTrim = Math.floor(rMonth / 3);
-          return rYear === currentYear && rTrim === currentTrim;
-
-        case 'semestral':
-          const currentSem = currentMonth < 6 ? 0 : 1;
-          const rSem = rMonth < 6 ? 0 : 1;
-          return rYear === currentYear && rSem === currentSem;
-
-        case 'anual':
-          return rYear === currentYear;
-
-        default: return true;
-      }
+      const date = r['Fecha'] || r['Fecha Creación'];
+      if (!date) return false;
+      return date >= range.start && date <= range.end;
     });
   }
 

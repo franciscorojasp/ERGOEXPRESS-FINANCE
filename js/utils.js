@@ -76,33 +76,54 @@ const Utils = (() => {
    */
   function getDateRange(period) {
     const now = new Date();
-    const end = toISODate(now);
-    let start;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let start, end = toISODate(now);
 
     switch (period) {
       case 'hoy':
-        start = end;
+        start = toISODate(now);
         break;
-      case 'semanal':
-        start = toISODate(new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)));
+      case 'semanal': {
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        start = toISODate(new Date(now.getFullYear(), now.getMonth(), diff));
         break;
-      case 'quincenal':
-        start = toISODate(new Date(now.getTime() - (15 * 24 * 60 * 60 * 1000)));
+      }
+      case 'quincenal': {
+        const day = now.getDate();
+        if (day <= 15) {
+          start = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+          end = toISODate(new Date(now.getFullYear(), now.getMonth(), 15));
+        } else {
+          start = toISODate(new Date(now.getFullYear(), now.getMonth(), 16));
+          // Last day of month
+          const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          end = toISODate(lastDay);
+        }
         break;
+      }
       case 'mensual':
-        start = toISODate(new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)));
+        start = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
         break;
-      case 'trimestral':
-        start = toISODate(new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000)));
+      case 'trimestral': {
+        const q = Math.floor(now.getMonth() / 3);
+        start = toISODate(new Date(now.getFullYear(), q * 3, 1));
         break;
-      case 'semestral':
-        start = toISODate(new Date(now.getTime() - (180 * 24 * 60 * 60 * 1000)));
+      }
+      case 'semestral': {
+        const s = now.getMonth() < 6 ? 0 : 6;
+        start = toISODate(new Date(now.getFullYear(), s, 1));
         break;
+      }
       case 'anual':
-        start = toISODate(new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000)));
+        start = toISODate(new Date(now.getFullYear(), 0, 1));
         break;
-      default: // histórico / todo
-        start = '2020-01-01';
+      case 'todo':
+        start = '2000-01-01';
+        break;
+      default: // histórico / mensual 30d fallback
+        start = toISODate(new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)));
     }
     return { start, end };
   }
