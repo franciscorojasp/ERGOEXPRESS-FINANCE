@@ -672,3 +672,30 @@ function askGemini(req) {
 
   return { success: false, error: lastError };
 }
+
+/**
+ * FUNCIÓN DE MIGRACIÓN SEGURA — EJECUTAR UNA SOLA VEZ
+ * ────────────────────────────────────────────────────────────────────────────
+ * Añade las columnas faltantes (Banco, Referencia Nº, Pagador) a la hoja de 
+ * Finanzas_Egresos de forma inofensiva.
+ */
+function migrarTablasEgresos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja = ss.getSheetByName('Finanzas_Egresos');
+  if (!hoja) return 'Error: No se encontró la hoja Finanzas_Egresos';
+
+  const headersActuales = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+  const headersObjetivo = ['ID','Fecha','Beneficiario','Categoría','Concepto','Referencia','Método', 'Banco', 'Referencia Nº', 'Pagador', 'Tasa', 'Total USD','Total VES','Estado','Usuario Email'];
+  
+  // 1. Verificar si faltan columnas
+  headersObjetivo.forEach((h, index) => {
+    if (!headersActuales.includes(h)) {
+      // Si el header no existe, lo añadimos al final por seguridad
+      hoja.getRange(1, hoja.getLastColumn() + 1).setValue(h);
+      Logger.log('Añadida columna: ' + h);
+    }
+  });
+
+  // 2. Sincronizar el orden exacto (Opcional, pero para mayor seguridad solo informamos)
+  return 'Migración completada. Por favor, asegúrese de que las columnas están presentes en su hoja.';
+}

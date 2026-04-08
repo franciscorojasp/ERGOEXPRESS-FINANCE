@@ -100,36 +100,59 @@ const Finances = (() => {
 
     metricsDiv.innerHTML = `
       <div class="stat-card-finance">
-         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Ingresos (${currency})</div>
-            <div class="icon-circle" style="background:#3b82f622; color:#3b82f6;">💰</div>
+         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+               <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Ingresos (${currency})</div>
+               <div style="font-size:26px; font-weight:900; color:#fff; margin-top:10px; font-family:var(--font-heading);">${symbol} ${format(displayI)}</div>
+            </div>
+            <div class="icon-circle" style="background:rgba(59,130,246,0.1); color:#3b82f6;">💰</div>
          </div>
-         <div style="font-size:28px; font-weight:800; color:#fff; margin-top:8px;">${symbol} ${format(displayI)}</div>
-         <div style="font-size:10px; color:#10b981; margin-top:8px; font-weight:700;">OK <span style="color:var(--text-muted); font-weight:400;">Flujo de caja</span></div>
+         <div style="font-size:10px; color:#10b981; margin-top:16px; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span style="width:6px; height:6px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981;"></span>
+            OK <span style="color:var(--text-muted); font-weight:400; font-family:var(--font-main);">Flujo de caja positivo</span>
+         </div>
       </div>
+
       <div class="stat-card-finance">
-         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Egresos (${currency})</div>
-            <div class="icon-circle" style="background:#ef444422; color:#ef4444;">💸</div>
+         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+               <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Egresos (${currency})</div>
+               <div style="font-size:26px; font-weight:900; color:#fff; margin-top:10px; font-family:var(--font-heading);">${symbol} ${format(displayE)}</div>
+            </div>
+            <div class="icon-circle" style="background:rgba(239,68,68,0.1); color:#ef4444;">💸</div>
          </div>
-         <div style="font-size:28px; font-weight:800; color:#fff; margin-top:8px;">${symbol} ${format(displayE)}</div>
-         <div style="font-size:10px; color:#ef4444; margin-top:8px; font-weight:700;">Control <span style="color:var(--text-muted); font-weight:400;">Gastos operativos</span></div>
+         <div style="font-size:10px; color:#ef4444; margin-top:16px; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span style="width:6px; height:6px; background:#ef4444; border-radius:50%; box-shadow:0 0 8px #ef4444;"></span>
+            CONTROL <span style="color:var(--text-muted); font-weight:400; font-family:var(--font-main);">Gastos operativos</span>
+         </div>
       </div>
+
       <div class="stat-card-finance">
-         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Balance Neto (${currency})</div>
-            <div class="icon-circle" style="background:#10b98122; color:#10b981;">📊</div>
+         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+               <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Balance Neto (${currency})</div>
+               <div style="font-size:26px; font-weight:900; color:#fff; margin-top:10px; font-family:var(--font-heading);">${symbol} ${format(displayB)}</div>
+            </div>
+            <div class="icon-circle" style="background:rgba(16,185,129,0.1); color:#10b981;">📊</div>
          </div>
-         <div style="font-size:28px; font-weight:800; color:#fff; margin-top:8px;">${symbol} ${format(displayB)}</div>
-         <div style="font-size:10px; color:#10b981; margin-top:8px; font-weight:700;">OK <span style="color:var(--text-muted); font-weight:400;">Rentabilidad</span></div>
+         <div style="font-size:10px; color:#10b981; margin-top:16px; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span style="width:6px; height:6px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981;"></span>
+            RENTABLE <span style="color:var(--text-muted); font-weight:400; font-family:var(--font-main);">Utilidad del periodo</span>
+         </div>
       </div>
+
       <div class="stat-card-finance">
-         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Pendiente (${currency})</div>
-            <div class="icon-circle" style="background:#f59e0b22; color:#f59e0b;">⏳</div>
+         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+               <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Pendiente (${currency})</div>
+               <div style="font-size:26px; font-weight:900; color:#fff; margin-top:10px; font-family:var(--font-heading);">${symbol} ${format(displayP)}</div>
+            </div>
+            <div class="icon-circle" style="background:rgba(245,158,11,0.1); color:#f59e0b;">⏳</div>
          </div>
-         <div style="font-size:28px; font-weight:800; color:#fff; margin-top:8px;">${symbol} ${format(displayP)}</div>
-         <div style="font-size:10px; color:#f59e0b; margin-top:8px; font-weight:700;">Vigente <span style="color:var(--text-muted); font-weight:400;">Cuentas por cobrar</span></div>
+         <div style="font-size:10px; color:#f59e0b; margin-top:16px; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span style="width:6px; height:6px; background:#f59e0b; border-radius:50%; box-shadow:0 0 8px #f59e0b;"></span>
+            VIGENTE <span style="color:var(--text-muted); font-weight:400; font-family:var(--font-main);">Cuentas por cobrar</span>
+         </div>
       </div>
     `;
   }
@@ -138,21 +161,55 @@ const Finances = (() => {
     if (!data || !data.length) return [];
     
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
     
+    // Obtenemos el inicio de la semana (Lunes)
+    const startOfWeek = new Date(now);
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0,0,0,0);
+
     return data.filter(r => {
       if (!r['Fecha']) return false;
       const refDate = new Date(r['Fecha'] + 'T12:00:00');
-      const diffDays = (today - refDate) / (1000 * 60 * 60 * 24);
-      
+      const rYear = refDate.getFullYear();
+      const rMonth = refDate.getMonth();
+      const rDay = refDate.getDate();
+
       switch(_filterPeriod) {
-        case 'hoy':       return diffDays >= -0.5 && diffDays <= 0.5;
-        case 'semanal':   return diffDays <= 7;
-        case 'quincenal': return diffDays <= 15;
-        case 'mensual':   return diffDays <= 30;
-        case 'trimestral': return diffDays <= 90;
-        case 'semestral': return diffDays <= 180;
-        case 'anual':      return diffDays <= 365;
+        case 'hoy': 
+          return rYear === currentYear && rMonth === currentMonth && rDay === currentDay;
+        
+        case 'semanal':
+          return refDate >= startOfWeek && refDate <= now;
+
+        case 'quincenal':
+          // Quincena actual: 1-15 o 16-fin
+          if (currentDay <= 15) {
+            return rYear === currentYear && rMonth === currentMonth && rDay <= 15;
+          } else {
+            return rYear === currentYear && rMonth === currentMonth && rDay > 15;
+          }
+
+        case 'mensual':
+          return rYear === currentYear && rMonth === currentMonth;
+
+        case 'trimestral':
+          const currentTrim = Math.floor(currentMonth / 3);
+          const rTrim = Math.floor(rMonth / 3);
+          return rYear === currentYear && rTrim === currentTrim;
+
+        case 'semestral':
+          const currentSem = currentMonth < 6 ? 0 : 1;
+          const rSem = rMonth < 6 ? 0 : 1;
+          return rYear === currentYear && rSem === currentSem;
+
+        case 'anual':
+          return rYear === currentYear;
+
         default: return true;
       }
     });
@@ -240,10 +297,16 @@ const Finances = (() => {
             ${list.length ? list.map(r => `
               <tr>
                 <td>${Utils.formatDate(r['Fecha'])}</td>
-                <td><small>${Utils.escapeHtml(r['ID Cliente'])}</small></td>
-                <td>${Utils.escapeHtml(r['Concepto'])}</td>
+                <td class="td-bold">${Utils.escapeHtml(r['ID Cliente'])}</td>
+                <td>
+                  <div style="font-weight:600;">${Utils.escapeHtml(r['Concepto'])}</div>
+                  <div style="font-size:10px; color:var(--text-muted); display:flex; gap:8px;">
+                     <span>${r['Banco'] || ''}</span>
+                     ${r['Referencia Nº'] ? `<span>• Ref: ${r['Referencia Nº']}</span>` : ''}
+                  </div>
+                </td>
                 <td><span class="badge badge-neutral">${r['Método']}</span></td>
-                <td style="text-align:right; font-weight:700;">$${Utils.formatUSD(r['Total USD'])}</td>
+                <td style="text-align:right; font-weight:700; color:var(--primary-light);">$${Utils.formatUSD(r['Total USD'])}</td>
                 <td style="text-align:right; color:var(--text-muted); font-size:11px;">Bs ${Utils.formatVES(r['Total VES'])}</td>
                 <td><span class="badge badge-success">Recibido</span></td>
               </tr>
@@ -275,12 +338,15 @@ const Finances = (() => {
                 <td>${Utils.formatDate(r['Fecha'])}</td>
                 <td class="td-bold">
                   <div>${Utils.escapeHtml(r['Beneficiario'])}</div>
-                  <div style="font-size:10px; color:var(--text-muted);">${r['Pagador'] ? 'Pagado por: ' + r['Pagador'] : ''}</div>
+                  ${r['Pagador'] ? `<div style="font-size:10px; color:var(--text-muted); font-weight:400; font-style:italic;">Pagado por: ${r['Pagador']}</div>` : ''}
                 </td>
                 <td><span class="badge badge-primary">${r['Categoría'] || 'Otros'}</span></td>
                 <td>
-                  <div>${Utils.escapeHtml(r['Concepto'])}</div>
-                  <div style="font-size:10px; color:var(--text-muted);">${r['Banco'] || ''} ${r['Referencia Nº'] ? '#'+r['Referencia Nº'] : ''}</div>
+                  <div style="font-weight:600;">${Utils.escapeHtml(r['Concepto'])}</div>
+                  <div style="font-size:10px; color:var(--text-muted); display:flex; gap:8px;">
+                     <span>${r['Banco'] || ''}</span>
+                     ${r['Referencia Nº'] ? `<span>• Ref: ${r['Referencia Nº']}</span>` : ''}
+                  </div>
                 </td>
                 <td style="text-align:right; font-weight:800; color:var(--error);">$${Utils.formatUSD(r['Total USD'])}</td>
                 <td><span class="badge badge-neutral">${r['Método']}</span></td>
@@ -584,12 +650,46 @@ const Finances = (() => {
 
   async function exportPDF() {
     try {
-      const config = await Sheets.getAllConfig();
       const filteredInc = _getFilteredData(_income);
       const filteredExp = _getFilteredData(_expenses);
       const totalI = filteredInc.reduce((s, r) => s + Utils.toNumber(r['Total USD']), 0);
       const totalE = filteredExp.reduce((s, r) => s + Utils.toNumber(r['Total USD']), 0);
       const balance = totalI - totalE;
+
+      // Gráfico de torta SVG dinámico
+      const totalMov = totalI + totalE;
+      let chartHTML = '';
+      if (totalMov > 0) {
+        const pInc = (totalI / totalMov) * 100;
+        const pExp = (totalE / totalMov) * 100;
+        const radius = 15.91549430918954; 
+        
+        chartHTML = `
+          <div style="display:flex; align-items:center; gap:40px; margin:25px 0; padding:20px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+            <div style="position:relative; width:120px; height:120px;">
+              <svg width="120" height="120" viewBox="0 0 42 42" style="transform: rotate(-90deg);">
+                <circle cx="21" cy="21" r="${radius}" fill="transparent" stroke="#ef4444" stroke-width="10"></circle>
+                <circle cx="21" cy="21" r="${radius}" fill="transparent" stroke="#3b82f6" stroke-width="10" stroke-dasharray="${pInc} ${pExp}"></circle>
+              </svg>
+            </div>
+            <div style="flex:1;">
+               <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px;">Distribución de Capital</div>
+               <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+                  <span style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700;">
+                    <span style="width:10px; height:10px; background:#3b82f6; border-radius:2px;"></span> Ingresos
+                  </span>
+                  <span style="font-size:12px; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(totalI)} (${pInc.toFixed(1)}%)</span>
+               </div>
+               <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700;">
+                    <span style="width:10px; height:10px; background:#ef4444; border-radius:2px;"></span> Egresos
+                  </span>
+                  <span style="font-size:12px; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(totalE)} (${pExp.toFixed(1)}%)</span>
+               </div>
+            </div>
+          </div>
+        `;
+      }
 
       const reportHTML = `
         <div style="margin-bottom:8mm; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:15px; display:flex; justify-content:space-between; align-items:center;">
@@ -603,14 +703,17 @@ const Finances = (() => {
            </div>
         </div>
 
-        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #3b82f6; padding-left:10px;">Detalle de Ingresos</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:9.5px; margin-bottom:10mm;">
+        ${chartHTML}
+
+        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-top:20px; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #3b82f6; padding-left:10px;">Detalle Completo de Ingresos</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:8.5px; margin-bottom:10mm;">
            <thead>
               <tr style="background:#3b82f6; color:#ffffff; text-align:left;">
-                 <th style="padding:6px 10px; border-radius:4px 0 0 4px;">Fecha</th>
+                 <th style="padding:6px 10px;">Fecha</th>
                  <th style="padding:6px 10px;">Cliente</th>
-                 <th style="padding:6px 10px;">Concepto</th>
-                 <th style="padding:6px 10px; text-align:right; border-radius:0 4px 4px 0;">Monto USD</th>
+                 <th style="padding:6px 10px;">Concepto / Banco / Referencia</th>
+                 <th style="padding:6px 10px;">Método</th>
+                 <th style="padding:6px 10px; text-align:right;">Monto USD</th>
               </tr>
            </thead>
            <tbody>
@@ -618,21 +721,27 @@ const Finances = (() => {
                 <tr style="border-bottom:1px solid #f1f5f9;">
                    <td style="padding:6px 10px;">${Utils.formatDate(r['Fecha'])}</td>
                    <td style="padding:6px 10px; font-weight:700;">${Utils.escapeHtml(r['ID Cliente'])}</td>
-                   <td style="padding:6px 10px; color:#64748b;">${Utils.escapeHtml(r['Concepto'])}</td>
+                   <td style="padding:6px 10px; color:#64748b;">
+                      <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'])}</div>
+                      <div style="font-size:7.5px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
+                   </td>
+                   <td style="padding:6px 10px;">${r['Método']}</td>
                    <td style="padding:6px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
                 </tr>
               `).join('')}
+              ${filteredInc.length === 0 ? '<tr><td colspan="5" style="padding:20px; text-align:center; color:#64748b;">No hay ingresos registrados en este periodo.</td></tr>' : ''}
            </tbody>
         </table>
 
-        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #ef4444; padding-left:10px;">Detalle de Egresos</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:9.5px;">
+        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-top:20px; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #ef4444; padding-left:10px;">Detalle Completo de Egresos</h3>
+        <table style="width:100%; border-collapse:collapse; font-size:8.5px;">
            <thead>
               <tr style="background:#ef4444; color:#ffffff; text-align:left;">
-                 <th style="padding:6px 10px; border-radius:4px 0 0 4px;">Fecha</th>
+                 <th style="padding:6px 10px;">Fecha</th>
                  <th style="padding:6px 10px;">Beneficiario / Pagador</th>
-                 <th style="padding:6px 10px;">Concepto / Banco / Ref</th>
-                 <th style="padding:6px 10px; text-align:right; border-radius:0 4px 4px 0;">Monto USD</th>
+                 <th style="padding:6px 10px;">Concepto / Banco / Referencia</th>
+                 <th style="padding:6px 10px;">Cat. / Método</th>
+                 <th style="padding:6px 10px; text-align:right;">Monto USD</th>
               </tr>
            </thead>
            <tbody>
@@ -640,16 +749,21 @@ const Finances = (() => {
                 <tr style="border-bottom:1px solid #f1f5f9;">
                    <td style="padding:6px 10px;">${Utils.formatDate(r['Fecha'])}</td>
                    <td style="padding:6px 10px;">
-                      <div style="font-weight:700;">${Utils.escapeHtml(r['Beneficiario'])}</div>
-                      <div style="font-size:8px; color:#64748b;">${r['Pagador']?'Pagado por: '+r['Pagador']:''}</div>
+                      <div style="font-weight:700; color:#1e293b;">${Utils.escapeHtml(r['Beneficiario'])}</div>
+                      ${r['Pagador'] ? `<div style="font-size:7.5px; color:#ef4444; font-style:italic;">Pagado por: ${r['Pagador']}</div>` : ''}
                    </td>
                    <td style="padding:6px 10px; color:#64748b;">
-                      <div>${Utils.escapeHtml(r['Concepto'])}</div>
-                      <div style="font-size:8px;">${r['Banco']||''} ${r['Referencia Nº']?'#'+r['Referencia Nº']:''}</div>
+                      <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'])}</div>
+                      <div style="font-size:7.5px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
+                   </td>
+                   <td style="padding:6px 10px;">
+                      <div>${r['Categoría'] || 'Otros'}</div>
+                      <div style="font-size:7.5px; color:#64748b;">${r['Método']}</div>
                    </td>
                    <td style="padding:6px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
                 </tr>
               `).join('')}
+              ${filteredExp.length === 0 ? '<tr><td colspan="5" style="padding:20px; text-align:center; color:#64748b;">No hay egresos registrados en este periodo.</td></tr>' : ''}
            </tbody>
         </table>
       `;
