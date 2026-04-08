@@ -442,22 +442,32 @@ const Utils = (() => {
   // ─── Status Badge HTML ─────────────────────────────────────────────────
   function statusBadge(status) {
     const map = {
+      // Cotizaciones
       'Borrador':      'badge-neutral',
       'Enviada':       'badge-info',
       'Aceptada':      'badge-success',
-      'Rechazada':     'badge-error',
       'Facturada':     'badge-primary',
+      'Parcial':       'badge-warning',
+      'Pagada':        'badge-success', // Podríamos diferenciar con ícono después
+      'Rechazada':     'badge-error',
+      'Vencida':       'badge-dark',
+      
+      // Contactos
       'potencial':     'badge-warning',
       'activo':        'badge-success',
       'inactivo':      'badge-neutral',
+      
+      // Pipeline
       'Nuevo':             'badge-warning',
       'Contactado':        'badge-info',
       'En Negociación':    'badge-primary',
       'Ganado':            'badge-success',
       'Perdido':           'badge-error',
-      // Retrocompatibilidad
-      'Primer contacto':   'badge-neutral',
-      'Cotización enviada': 'badge-info',
+
+      // Finanzas
+      'Recibido':          'badge-success',
+      'Pendiente':         'badge-warning',
+      'Pagado':            'badge-success',
     };
     const cls = map[status] || 'badge-neutral';
     return `<span class="badge ${cls}">${escapeHtml(status || '—')}</span>`;

@@ -152,9 +152,9 @@ const Dashboard = (() => {
       const totalContacts  = myContacts.length;
       const activeContacts = myContacts.filter(c => c['Tipo'] === 'activo').length;
       const totalQuotes    = myQuotations.length;
-      const acceptedQuotes = myQuotations.filter(q => q['Estado'] === 'Aceptada').length;
+      const acceptedQuotes = myQuotations.filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado'])).length;
       const totalRevenue   = myQuotations
-        .filter(q => q['Estado'] === 'Aceptada' || q['Estado'] === 'Facturada')
+        .filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']))
         .reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
       const convRate = totalQuotes > 0
         ? Math.round((acceptedQuotes / totalQuotes) * 100)

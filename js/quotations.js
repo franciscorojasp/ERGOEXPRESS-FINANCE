@@ -77,6 +77,9 @@ const Quotations = (() => {
       State.quotes = parts[0]; State.contacts = parts[1]; State.products = parts[2];
       State.config = parts[3]; State.rate = parts[4] ? Utils.toNumber(parts[4]['Tasa Oficial']) : 0;
       
+      // Chequeo de vencimiento automático
+      await _checkVencimiento();
+      
       renderCurrentView();
     } catch (e) {
       const listEnv = document.getElementById('q-list-container');
@@ -137,18 +140,6 @@ const Quotations = (() => {
             <div class="q-list-actions">
                <!-- Comunicación -->
                <button class="btn btn-icon-sm" style="color:#25D366;" onclick="event.stopPropagation(); QuoteBuilder.shareByWhatsApp('${q['ID']}')" title="WhatsApp">
-                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-4.821 7.454c-1.893 0-3.748-.511-5.361-1.477l-.385-.228-3.991 1.047 1.065-3.893-.25-.398a10.038 10.038 0 0 1-1.531-5.312c0-5.54 4.51-10.05 10.05-10.05 2.684 0 5.207 1.046 7.104 2.943a10.003 10.003 0 0 1 2.943 7.106c0 5.54-4.51 10.05-10.05 10.05m0-21.782c-6.475 0-11.732 5.257-11.732 11.73 0 2.07.541 4.091 1.565 5.885l-1.666 6.085 6.223-1.632a11.705 11.705 0 0 0 5.61 1.444c6.473 0 11.731-5.257 11.731-11.73 0-3.136-1.22-6.084-3.436-8.301-2.215-2.216-5.163-3.435-8.295-3.435\"/></svg>
-               </button>
-               <button class="btn btn-icon-sm" style="color:#4285F4;" onclick="event.stopPropagation(); QuoteBuilder.shareByEmail('${q['ID']}')" title="Email">
-                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-               </button>
-               <button class="btn btn-icon-sm" onclick="event.stopPropagation(); QuoteBuilder.downloadPDF('${q['ID']}')" title="PDF">
-                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-               </button>
-
-               <div style="width:1px; height:16px; background:var(--border-light); margin:0 4px;"></div>
-
-               <button class="btn btn-icon-sm" onclick="event.stopPropagation(); Quotations.renderForm('${q['ID']}')" title="Editar">
                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                </button>
                <button class="btn btn-icon-sm danger-text" onclick="event.stopPropagation(); Quotations.deleteForm('${q['ID']}')" title="Eliminar">
@@ -223,15 +214,30 @@ const Quotations = (() => {
             <button class="btn btn-icon" style="background:transparent; border:none; color:var(--text-muted);" onclick="Quotations.render(document.getElementById('main-content'))">
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             </button>
-            <span style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Cotización Comercial</span>
+            <div style="display:flex; flex-direction:column;">
+               <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Comprobante Comercial</span>
+               ${quote ? Utils.statusBadge(quote['Estado']) : ''}
+            </div>
           </div>
-          <button id="btn-save-quote" class="btn btn-primary" style="padding:10px 16px; border-radius:12px; font-weight:700;" onclick="Quotations.saveForm()">Guardar</button>
+          <div style="display:flex; gap:12px;">
+            ${quote && ['Vencida'].includes(quote['Estado']) ? `
+              <button class="btn btn-secondary" onclick="Quotations.reactivateQuote('${quote['ID']}')">Ampliar Vigencia</button>
+            ` : ''}
+            ${(!quote || !['Facturada', 'Pagada', 'Vencida'].includes(quote['Estado'])) ? `
+              <button id="btn-save-quote" class="btn btn-primary" style="padding:10px 16px; border-radius:12px; font-weight:700;" onclick="Quotations.saveForm()">Guardar</button>
+            ` : `
+               <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:#ef4444; padding:8px 16px; border-radius:12px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  DOCUMENTO BLOQUEADO
+               </div>
+            `}
+          </div>
         </div>
 
         <!-- Parámetros Invisibles (Sin bordes toscos) -->
         <h1 class="q-canvas-header" style="color:var(--text-primary); margin-bottom:30px; outline:none; cursor:text;">${quote ? 'ERGOX-'+String(quote['Número']).padStart(6,'0') : 'Borrador Comercial'}</h1>
 
-        <div class="q-grid-params" style="margin-bottom:40px;">
+        <div class="q-grid-params" style="margin-bottom:40px; ${quote && ['Facturada', 'Pagada', 'Vencida'].includes(quote['Estado']) ? 'pointer-events:none; opacity:0.8;' : ''}">
           <div>
             <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Cliente Principal</label>
             <select id="frm-client" class="form-select" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:18px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'">
@@ -243,6 +249,10 @@ const Quotations = (() => {
             <div style="flex:1;">
                <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Fecha</label>
                <input id="frm-date" type="date" value="${quote ? quote['Fecha'] : Utils.todayISO()}" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'" />
+            </div>
+            <div class="frm-group no-shrink" style="flex:1;">
+               <label style="display:block; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Validez (Días)</label>
+               <input id="frm-validity" type="number" value="${quote ? quote['Validez Días'] : 15}" style="width:100%; border:none; border-bottom:2px solid var(--border-light); background:transparent; padding:8px 0; font-size:16px; font-weight:600; color:var(--text-primary); outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border-light)'" />
             </div>
             <div class="frm-group no-shrink" style="flex:1;">
             <label class="frm-label">Moneda Impresión</label>
@@ -451,9 +461,8 @@ const Quotations = (() => {
         'Número': State.editor.id ? State.quotes.find(x => x['ID']===State.editor.id)['Número'] : num,
         'Fecha': date,
         'ID Cliente': clientId,
-        'Validez Días': 5,
+        'Validez Días': validity,
         'Estado': State.editor.id ? State.quotes.find(x => x['ID']===State.editor.id)['Estado'] : 'Borrador',
-        'Total USD': Utils.round(totalNet + (applyTax ? totalNet * 0.16 : 0)),
         'Total VES': Utils.round((totalNet + (applyTax ? totalNet * 0.16 : 0)) * State.rate),
         'Detalle JSON': JSON.stringify({
           items: validItems,
@@ -761,6 +770,46 @@ const Quotations = (() => {
     `;
   }
 
+  async function _checkVencimiento() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    let changed = false;
+
+    for (const q of State.quotes) {
+      if (q['Estado'] === 'Enviada') {
+        const qDate = new Date(q['Fecha'] + 'T12:00:00');
+        const days = parseInt(q['Validez Días']) || 15;
+        const expiration = new Date(qDate.getTime() + (days * 24 * 60 * 60 * 1000));
+        
+        if (today > expiration) {
+          q['Estado'] = 'Vencida';
+          await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, q['ID'], q);
+          changed = true;
+          console.log(`[Vencimiento] Cotización ERGOX-${q['Número']} marcada como Vencida.`);
+        }
+      }
+    }
+    return changed;
+  }
+
+  async function reactivateQuote(id) {
+    const q = State.quotes.find(x => x['ID'] === id);
+    if (!q) return;
+
+    if (!await Utils.confirm('¿Seguro que deseas ampliar la vigencia? Se actualizará la fecha a HOY y el estado volverá a "Enviada".')) return;
+
+    try {
+      Utils.showToast('Actualizando vigencia...', 'info');
+      q['Fecha'] = Utils.todayISO();
+      q['Estado'] = 'Enviada';
+      await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, id, q);
+      Utils.showToast('Vigencia ampliada correctamente', 'success');
+      render(document.getElementById('main-content'));
+    } catch (e) {
+      Utils.showToast('Error al reactivar: ' + e.message, 'error');
+    }
+  }
+
   // ─── ELIMINAR COTIZACIÓN ────────────────────────────────────────────────
   async function deleteForm(id) {
     if (!await Utils.confirm('¿Estás seguro de que deseas eliminar permanentemente esta cotización y sacarla de los registros financieros?')) return;
@@ -779,7 +828,7 @@ const Quotations = (() => {
   // ─── EXPOSICIÓN DE API ──────────────────────────────────────────────────
   return {
     render, renderList, renderForm, saveForm, renderDetail, deleteForm, updateStatus,
-    renderCurrentView,
+    renderCurrentView, reactivateQuote,
     getQuotation: (id) => State.quotes.find(x => x['ID']===id),
     getContacts: () => State.contacts,
     getConfig: () => State.config,

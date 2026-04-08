@@ -320,19 +320,30 @@ const Finances = (() => {
             </div>
             <div class="form-group">
                <label class="form-label">Monto USD <span class="required">*</span></label>
-               <input type="number" step="0.01" class="form-input" name="Total USD" value="0.00" oninput="Finances._recalcVES(this.value)" />
+               <input type="number" step="0.01" class="form-input" name="Total USD" id="income-usd-input" value="0.00" oninput="Finances._recalcAll(this.value)" />
             </div>
             <div class="form-group">
                <label class="form-label">Tasa Cambio</label>
-               <input type="number" step="0.01" class="form-input" name="Tasa" id="income-rate-input" />
+               <input type="number" step="0.01" class="form-input" name="Tasa" id="income-rate-input" oninput="Finances._recalcAll()" />
             </div>
             <div class="form-group">
                <label class="form-label">Monto VES</label>
                <input type="text" class="form-input" name="Total VES" id="income-ves-output" readonly style="background:var(--bg-card); opacity:0.7;" />
             </div>
             <div class="form-group">
-               <label class="form-label">Referencia / Observación</label>
-               <input class="form-input" name="Referencia" placeholder="Nº de comprobante" />
+               <label class="form-label">Banco Emisor</label>
+               <select class="form-select" name="Banco">
+                  <option value="">-- Seleccionar Banco --</option>
+                  ${CONFIG.BANKS.map(b => `<option value="${b}">${b}</option>`).join('')}
+               </select>
+            </div>
+            <div class="form-group">
+               <label class="form-label">Referencia Nº</label>
+               <input class="form-input" name="Referencia Nº" placeholder="Ej: 123456" />
+            </div>
+            <div class="form-group full">
+               <label class="form-label">Observaciones Adicionales</label>
+               <input class="form-input" name="Referencia" placeholder="Notas internas sobre el pago" />
             </div>
           </div>
         </form>
@@ -350,11 +361,18 @@ const Finances = (() => {
     });
   }
 
-  function _recalcVES(usd) {
+  function _recalcAll() {
+    const usdVal = Utils.toNumber(document.getElementById('income-usd-input')?.value || 0);
     const rate = Utils.toNumber(document.getElementById('income-rate-input')?.value || 0);
-    const ves = Utils.toNumber(usd) * rate;
+    
+    // Recalc VES
+    const ves = usdVal * rate;
     const out = document.getElementById('income-ves-output');
     if (out) out.value = Utils.formatVES(ves);
+
+    // Recalc Quote Info if selected
+    const quoteId = document.querySelector('[name="ID Cotización"]')?.value;
+    if (quoteId) _onQuoteSelect(quoteId);
   }
 
   function _onQuoteSelect(id) {
@@ -362,13 +380,38 @@ const Finances = (() => {
     const box = document.getElementById('quote-info-box');
     if (!q) { box.innerHTML = ''; return; }
 
+    const inputUsd = Utils.toNumber(document.getElementById('income-usd-input')?.value || 0);
     const paid = _income.filter(i => i['ID Cotización'] === id).reduce((s, i) => s + Utils.toNumber(i['Total USD']), 0);
-    const balance = Utils.toNumber(q['Total USD']) - paid;
+    const totalQuote = Utils.toNumber(q['Total USD']);
+    const currentBalance = totalQuote - paid;
+    const newBalance = currentBalance - inputUsd;
+    const coverage = totalQuote > 0 ? (inputUsd / totalQuote) * 100 : 0;
     
+    let alertClass = 'info';
+    let coverageText = `Este pago cubre el <b>${coverage.toFixed(1)}%</b> del total.`;
+    
+    if (newBalance <= 0.01) {
+       alertClass = 'success';
+       coverageText = `✅ Con este pago la cotización queda <b>TOTALMENTE PAGADA</b>.`;
+    } else if (inputUsd > 0) {
+       alertClass = 'warning';
+       coverageText = `⚠️ Este pago es <b>PARCIAL</b> (${coverage.toFixed(1)}%). Restarán $${Utils.formatUSD(newBalance)} por cobrar.`;
+    }
+
     box.innerHTML = `
-      <div style="background:rgba(59,130,246,0.1); border-radius:6px; padding:10px; margin-top:8px;">
-         <span style="color:#60a5fa; font-weight:700;">SALDO PENDIENTE: $${Utils.formatUSD(balance)}</span><br/>
-         <small style="color:var(--text-muted)">Total Cotizado: $${Utils.formatUSD(q['Total USD'])} | Pagado: $${Utils.formatUSD(paid)}</small>
+      <div style="background:var(--bg-card); border:1px solid rgba(255,255,255,0.05); border-left:4px solid ${alertClass === 'success'?'#10b981':'#3b82f6'}; border-radius:8px; padding:12px; margin-top:10px;">
+         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Estado de Cuenta COT-${q['Número']}</span>
+            <span style="font-size:12px; font-weight:800; color:#fff;">Saldo Hoy: $${Utils.formatUSD(currentBalance)}</span>
+         </div>
+         <div style="font-size:13px; color:#e2e8f0; line-height:1.4;">${coverageText}</div>
+         <div style="margin-top:10px; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+            <div style="width:${Math.min(100, ((paid + inputUsd) / totalQuote) * 100).toFixed(0)}%; height:100%; background:linear-gradient(90deg, #3b82f6, #10b981);"></div>
+         </div>
+         <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--text-muted); font-weight:600;">
+            <span>TOTAL: $${Utils.formatUSD(totalQuote)}</span>
+            <span>RESTANTE: $${Utils.formatUSD(Math.max(0, newBalance))}</span>
+         </div>
       </div>
     `;
   }
@@ -407,17 +450,20 @@ const Finances = (() => {
     }
   }
 
-  async function _updateQuoteStatus(quoteId, newPayAmount) {
+  async function _updateQuoteStatus(quoteId) {
      const q = _quotes.find(x => x['ID'] === quoteId);
      if (!q) return;
 
+     // Fetch fresh data to be sure
      const incomeRows = await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME, false);
-     const totalPaidNow = incomeRows.filter(i => i['ID Cotización'] === quoteId).reduce((s, i) => s + Utils.toNumber(i['Total USD']), 0);
+     const totalPaidNow = incomeRows.filter(i => i['ID Cotización'] === quoteId && i['Estado'] !== 'Anulado').reduce((s, i) => s + Utils.toNumber(i['Total USD']), 0);
      const totalQuote = Utils.toNumber(q['Total USD']);
 
      let newStatus = 'Parcial';
-     if (totalPaidNow >= totalQuote - 0.01) { // Floating point safety
+     if (totalPaidNow >= totalQuote - 0.05) { // Threshold for minor rounding differences
          newStatus = 'Pagada';
+     } else if (totalPaidNow <= 0) {
+         newStatus = 'Aceptada'; // or whatever it was before
      }
 
      await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, quoteId, { ...q, 'Estado': newStatus });
@@ -569,6 +615,6 @@ const Finances = (() => {
     render, setPeriod: (p) => { _filterPeriod = p; render(document.getElementById('main-content')); },
     setTab: (t) => { _activeTab = t; _renderActiveTab(); },
     openIncomeForm, openExpenseForm, saveIncome, saveExpense, exportPDF,
-    _recalcVES, _onQuoteSelect
+    _recalcAll, _onQuoteSelect
   };
 })();

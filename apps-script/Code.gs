@@ -39,7 +39,7 @@ const HEADERS = {
   Seguimiento:  ['ID','ID Cliente','Fecha','Tipo','Descripción','Próximo Seguimiento','Asunto Próximo','Etapa Pipeline','Fecha Cambio Etapa','Usuario Email'],
   Configuracion:['Clave','Valor'],
   Usuarios:     ['ID','Email','Nombre','Rol','Activo','Fecha Registro','Password'],
-  Finanzas_Ingresos: ['ID','Fecha','ID Cliente','Concepto','ID Cotización','Método','Referencia', 'Tasa', 'Total USD','Total VES','Estado','Vendedor Email'],
+  Finanzas_Ingresos: ['ID','Fecha','ID Cliente','Concepto','ID Cotización','Método','Banco','Referencia Nº','Referencia', 'Tasa', 'Total USD','Total VES','Estado','Vendedor Email'],
   Finanzas_Egresos:  ['ID','Fecha','Beneficiario','Categoría','Concepto','Referencia','Método', 'Tasa', 'Total USD','Total VES','Estado','Usuario Email'],
   Agenda:       ['ID','Fecha','Hora','ID Cliente','Asunto','Tipo','Estado','Notas','Usuario Email']
 };
