@@ -807,8 +807,9 @@ function repararCuentasUsuarios() {
   const iID = hdrs.indexOf('ID');
   const iEm = hdrs.indexOf('Email');
   const iAc = hdrs.indexOf('Activo');
+  const iPa = hdrs.indexOf('Password');
   
-  if (iID === -1 || iEm === -1 || iAc === -1) return "Error: Columnas críticas no encontradas.";
+  if (iID === -1 || iEm === -1 || iAc === -1 || iPa === -1) return "Error: Columnas críticas no encontradas.";
   
   let repairs = 0;
   for (let i = 1; i < data.length; i++) {
@@ -826,6 +827,13 @@ function repararCuentasUsuarios() {
     const status = String(row[iAc]).toUpperCase().trim();
     if (status === 'SI' && row[iAc] !== 'SI') {
       sh.getRange(rowNum, iAc + 1).setValue('SI');
+      changed = true;
+    }
+
+    // 3. Encriptar contraseñas antiguas (Texto plano)
+    const rawPass = String(row[iPa] || '');
+    if (rawPass !== '' && rawPass.length < 60) {
+      sh.getRange(rowNum, iPa + 1).setValue(hash(rawPass));
       changed = true;
     }
     

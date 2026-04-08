@@ -1,5 +1,5 @@
 {
-  "version": "3.3.0",
-  "description": "Elite Admin Update: Gestión de Cuentas Premium, nuevo flujo de Solicitudes de Ingreso y herramienta de reparación de IDs.",
+  "version": "3.3.1",
+  "description": "Elite Admin & Security Patch: Corrección de Dashboard, rediseño simétrico de modales y cifrado automático de seguridad.",
   "date": "2026-04-08"
 }

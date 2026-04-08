@@ -78,11 +78,20 @@ const Accounts = (() => {
   }
 
   async function loadUsers() {
+    const list = document.getElementById('accounts-list');
     try {
       const res = await Sheets.readSheet(CONFIG.SHEETS.USERS);
       _users = res || [];
       _renderList();
     } catch (e) {
+      console.error('[Accounts] Load error:', e);
+      if (list) {
+        list.innerHTML = `<tr><td colspan="5" style="padding:60px; text-align:center; color:var(--error);">
+          <div style="font-size:2rem; margin-bottom:10px;">⚠️</div>
+          <strong>Error de conexión</strong><br>
+          No se pudo sincronizar la base de usuarios. Reintente en unos momentos.
+        </td></tr>`;
+      }
       Utils.showToast('Error al conectar con el servidor', 'error');
     }
   }
@@ -250,19 +259,30 @@ const Accounts = (() => {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay fade-in';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width:400px;">
-        <h3 style="margin-bottom:24px; color:white;">Editar Perfil</h3>
-        <div class="form-group">
-          <label class="form-label">Nombre del Colaborador</label>
-          <input type="text" id="edit-acc-name" class="form-control" value="${u.Nombre || ''}">
+      <div class="modal-content" style="max-width:500px; padding:0; overflow:hidden; border-radius:16px;">
+        <div style="background:var(--bg-elevated); padding:24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0; color:white; font-size:1.25rem;">Editar Perfil Administrativo</h3>
+          <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Correo Electrónico</label>
-          <input type="email" id="edit-acc-email" class="form-control" value="${u.Email || ''}">
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
-          <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cerrar</button>
-          <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}', ${u._rowIndex})">Actualizar Datos</button>
+        
+        <div style="padding:28px;">
+          <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Nombre del Colaborador</label>
+              <input type="text" id="edit-acc-name" class="form-control" value="${u.Nombre || ''}" style="height:48px; font-size:15px;">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Correo Electrónico</label>
+              <input type="email" id="edit-acc-email" class="form-control" value="${u.Email || ''}" style="height:48px; font-size:15px;">
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
+            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="height:44px; padding:0 24px;">Cancelar</button>
+            <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}', ${u._rowIndex})" style="height:44px; padding:0 24px; font-weight:700;">Guardar Cambios</button>
+          </div>
         </div>
       </div>
     `;
@@ -274,6 +294,7 @@ const Accounts = (() => {
     const email = document.getElementById('edit-acc-email').value;
 
     try {
+      Utils.showToast('Guardando cambios...', 'info');
       await Sheets.updateRow(CONFIG.SHEETS.USERS, rowIndex, { Nombre: name, Email: email, ID: id });
       Utils.showToast('Perfil actualizado correctamente', 'success');
       document.querySelector('.modal-overlay').remove();
@@ -287,36 +308,47 @@ const Accounts = (() => {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay fade-in';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width:450px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-          <h3 style="margin:0; color:white;">Nuevo Colaborador</h3>
+      <div class="modal-content" style="max-width:600px; padding:0; overflow:hidden; border-radius:16px; box-shadow: var(--shadow-lg);">
+        <div style="background:var(--bg-elevated); padding:24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="margin:0; color:white; font-size:1.25rem;">Nuevo Colaborador</h3>
+            <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Configure los accesos para un nuevo miembro del equipo</p>
+          </div>
           <button class="btn-icon" onclick="this.closest('.modal-overlay').remove()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        <form id="new-user-form" onsubmit="Accounts.registerUser(event)">
-          <div class="form-group">
-            <label class="form-label">Nombre Completo</label>
-            <input type="text" name="Nombre" class="form-control" placeholder="Ej: Francisco Rojas" required>
+
+        <form id="new-user-form" onsubmit="Accounts.registerUser(event)" style="padding:28px;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Nombre Completo</label>
+              <input type="text" name="Nombre" class="form-control" placeholder="Ej: Francisco Rojas" required style="height:48px; font-size:15px;">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Correo Corporativo</label>
+              <input type="email" name="Email" class="form-control" placeholder="email@ergoexpress.com" required style="height:48px; font-size:15px;">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Rol del Sistema</label>
+              <select name="Rol" class="form-control" style="height:48px; font-size:15px;">
+                <option value="vendedor">Vendedor Elite</option>
+                <option value="admin">Administrador Maestro</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" style="font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:block;">Contraseña de Acceso</label>
+              <input type="password" name="Password" class="form-control" placeholder="Mínimo 6 caracteres" required style="height:48px; font-size:15px;">
+              <p style="margin:6px 0 0; font-size:11px; color:var(--text-muted);">⚠️ La contraseña será encriptada automáticamente al guardar.</p>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Correo Corporativo</label>
-            <input type="email" name="Email" class="form-control" placeholder="email@ergoexpress.com" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Rol del Sistema</label>
-            <select name="Rol" class="form-control">
-              <option value="vendedor">Vendedor Elite</option>
-              <option value="admin">Administrador Maestro</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Contraseña de Acceso</label>
-            <input type="password" name="Password" class="form-control" placeholder="Mínimo 6 caracteres" required>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px;">
-            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Descartar</button>
-            <button type="submit" class="btn btn-primary">Crear Cuenta</button>
+
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:32px; padding-top:20px; border-top:1px solid var(--border-color);">
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()" style="height:44px; padding:0 24px;">Descartar</button>
+            <button type="submit" class="btn btn-primary" style="height:44px; padding:0 24px; font-weight:700;">Crear Cuenta</button>
           </div>
         </form>
       </div>

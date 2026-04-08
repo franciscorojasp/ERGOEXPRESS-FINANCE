@@ -149,7 +149,9 @@ const Dashboard = (() => {
       const isAdmin   = App.isAdmin();
 
       // Period Handling
-      const period = document.getElementById('dash-period')?.value || 'mensual';
+      const periodEl = document.getElementById('dash-period');
+      if (!periodEl) return; // Guard clause 1
+      const period = periodEl.value || 'mensual';
       const range  = Utils.getDateRange(period);
       
       const filteredContacts = isAdmin ? contacts : contacts.filter(c => c['Vendedor Email'] === userEmail);
@@ -160,9 +162,10 @@ const Dashboard = (() => {
           return date >= range.start && date <= range.end;
         });
 
-      // Check if view still exists
+      // Check if view still exists after filtered data calculation
       const greetingEl = document.getElementById('dash-greeting');
-      if (!greetingEl) return;
+      const kpiGridEl  = document.getElementById('kpi-grid');
+      if (!greetingEl || !kpiGridEl) return; // Guard clause 2
 
       // Greeting
       const h = new Date().getHours();
@@ -222,8 +225,9 @@ const Dashboard = (() => {
       const symbol = currency === 'USD' ? '$' : 'Bs.';
       const currencyCode = App.getCurrency();
 
-      document.getElementById('kpi-grid').className = 'grid-KPIs';
-      document.getElementById('kpi-grid').innerHTML = `
+      if (!kpiGridEl) return; // Safety redundancy
+      kpiGridEl.className = 'grid-KPIs';
+      kpiGridEl.innerHTML = `
         <!-- 1: Contactos -->
         <div class="kpi-card">
           <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
@@ -319,11 +323,14 @@ const Dashboard = (() => {
 
     } catch(e) {
       console.error('[Dashboard] Load error:', e);
-      document.getElementById('kpi-grid').innerHTML = `
-        <div class="kpi-card" style="grid-column:1/-1;">
-          <p style="color:var(--error);">Error cargando datos: ${e.message}</p>
-        </div>
-      `;
+      const kpiGrid = document.getElementById('kpi-grid');
+      if (kpiGrid) {
+        kpiGrid.innerHTML = `
+          <div class="kpi-card" style="grid-column:1/-1;">
+            <p style="color:var(--error);">Error cargando datos: ${e.message}</p>
+          </div>
+        `;
+      }
     }
   }
 
