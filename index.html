@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="assets/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
   <!-- CRM Styles -->
   <link rel="stylesheet" href="css/main.css?v=3.2.6">
@@ -22,14 +22,13 @@
   <link rel="stylesheet" href="css/responsive.css?v=3.2.6">
 
   <style>
-    :root.light-mode .top-header {
-      background: rgba(255, 255, 255, 0.95);
-      border-bottom: 1px solid rgba(0,0,0,0.06);
+    /* Unificación de Fuentes Elite */
+    :root {
+      --font: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    :root.light-mode .header-btn {
-      background: #f1f5f9;
-      border-color: #e2e8f0;
-      color: #0f172a;
+    
+    body {
+      font-family: var(--font) !important;
     }
 
     /* Selection Indicator for View Switcher */
@@ -421,16 +420,18 @@
 <script src="js/api.js?v=3.2.6"></script>
 <script src="js/auth.js?v=3.2.6"></script>
 
-<!-- CRM Modules -->
+<!-- CRM Modules Dependencies First -->
 <script src="js/sheets.js?v=3.2.6"></script>
-<script src="js/dashboard.js?v=3.2.6"></script>
 <script src="js/contacts.js?v=3.2.6"></script>
 <script src="js/products.js?v=3.2.6"></script>
+<script src="js/rates.js?v=3.2.6"></script>
 <script src="js/quotations.js?v=3.2.6"></script>
 <script src="js/quote-builder.js?v=3.2.6"></script>
 <script src="js/ReportBuilder.js?v=3.2.6"></script>
+
+<!-- CRM Feature Modules -->
+<script src="js/dashboard.js?v=3.2.6"></script>
 <script src="js/pipeline.js?v=3.2.6"></script>
-<script src="js/rates.js?v=3.2.6"></script>
 <script src="js/finances.js?v=3.2.6"></script>
 <script src="js/agenda.js?v=3.2.6"></script>
 <script src="js/settings.js?v=3.2.6"></script>
