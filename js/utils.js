@@ -598,7 +598,7 @@ const Utils = (() => {
   // ─── Public API ────────────────────────────────────────────────────────
   return {
     generateId, todayISO, toISODate, formatDate, formatDateTime, formatDateLong,
-    daysFromNow, isOverdue, currentYear, toNumber, round, getHour, normalizeItems,
+    getDateRange, daysFromNow, isOverdue, currentYear, toNumber, round, getHour, normalizeItems,
     formatUSD, formatVES, formatPrice, formatNumber, usdToVes, formatWhatsApp,
     capitalize, initials, truncate, slugify, escapeHtml,
     groupBy, sortBy,

@@ -127,6 +127,14 @@ const App = (() => {
       _renderUserHeader();
 
       // Load visual settings
+      const theme = localStorage.getItem('crm_theme') || 'dark';
+      document.documentElement.classList.remove('theme-light', 'theme-medium', 'light-mode');
+      if (theme !== 'dark') {
+        document.documentElement.classList.add(`theme-${theme}`);
+        if (theme === 'light') document.documentElement.classList.add('light-mode');
+      }
+      _updateThemeUI(theme);
+
       const scale = localStorage.getItem('crm_font_scale') || '1';
       setFontScale(scale);
 
@@ -782,16 +790,42 @@ const App = (() => {
 
   // ─── Theme & Currency ───────────────────────────────────────────────────
   function toggleTheme() {
-    const isLight = document.documentElement.classList.toggle('light-mode');
-    localStorage.setItem('crm_theme', isLight ? 'light' : 'dark');
-    _updateThemeUI(isLight);
+    const themes = ['dark', 'light', 'medium'];
+    const current = localStorage.getItem('crm_theme') || 'dark';
+    const nextIndex = (themes.indexOf(current) + 1) % themes.length;
+    const next = themes[nextIndex];
+    
+    // Remover todas las clases de tema previas
+    document.documentElement.classList.remove('theme-light', 'theme-medium', 'light-mode');
+    
+    // Aplicar nuevo tema
+    if (next !== 'dark') {
+      document.documentElement.classList.add(`theme-${next}`);
+      if (next === 'light') document.documentElement.classList.add('light-mode'); // Compatibilidad legacy
+    }
+    
+    localStorage.setItem('crm_theme', next);
+    _updateThemeUI(next);
   }
 
-  function _updateThemeUI(isLight) {
+  function _updateThemeUI(theme) {
     const sun  = document.getElementById('theme-icon-sun');
     const moon = document.getElementById('theme-icon-moon');
-    if (sun) sun.style.display = isLight ? 'block' : 'none';
-    if (moon) moon.style.display = isLight ? 'none' : 'block';
+    const cloud = document.getElementById('theme-icon-cloud');
+    
+    if (!sun || !moon || !cloud) return;
+
+    // Ocultar todos
+    sun.style.display = 'none';
+    moon.style.display = 'none';
+    cloud.style.display = 'none';
+
+    // Mostrar el correspondiente al SIGUIENTE tema (porque el botón indica qué pasará si haces clic)
+    // O mejor: mostrar el tema ACTUAL para que el usuario sepa en qué modo está.
+    // El usuario pidió "Sol ➔ Nube ➔ Luna", así que mostraré el icono del tema actual.
+    if (theme === 'light') sun.style.display = 'block';
+    else if (theme === 'medium') cloud.style.display = 'block';
+    else moon.style.display = 'block';
   }
 
   function toggleCurrency() {

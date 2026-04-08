@@ -4,137 +4,95 @@
 :root {
   color-scheme: dark;
 
-  /* Paleta Oceánica Ejecutiva */
+  /* --- Variables Base (Tema Oscuro por defecto) --- */
   --bg-dark:        #040610; 
+  --bg-base:        var(--bg-dark);
   --bg-sidebar:     rgba(8, 12, 28, 0.98);
   --bg-card:        rgba(255, 255, 255, 0.04);
   --bg-card-hover:  rgba(255, 255, 255, 0.08);
   --bg-modal:       #0a0f25;
+  --bg-surface:     var(--bg-card);
+  --bg-elevated:    var(--bg-modal);
+  --bg-hover:       var(--bg-card-hover);
   
-  /* Gradientes Dinámicos */
+  --text-primary:   #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted:     #94a3b8;
+  --text-inverse:   #040610;
+
+  --border:         rgba(255, 255, 255, 0.15);
+  --border-light:   rgba(255, 255, 255, 0.08);
+  
+  /* Gradientes */
   --grad-alpha:     #ffffff; 
   --grad-beta:      #94a3b8; 
   
-  /* Acentos Médicos Premium (Executive Teal) */
+  /* Acentos */
   --primary:        #0d7377; 
   --primary-light:  #2dd4bf;
   --primary-dark:   #085f63;
   --primary-glow:   rgba(13, 115, 119, 0.5);
   --primary-dim:    rgba(13, 115, 119, 0.1);
-  --primary-subtle: rgba(13, 115, 119, 0.05);
   --accent:         #8b5cf6; 
-  --accent-glow:    rgba(139, 92, 246, 0.4);
-  --accent-dim:     rgba(139, 92, 246, 0.1);
   
-  /* Semántica de Élite */
-  --success:        #10b981;
-  --success-glow:   rgba(16, 185, 129, 0.3);
-  --warning:        #f59e0b;
-  --error:          #ef4444; /* Mapped to danger in ErgoDental */
-  --danger:         #ef4444;
-  
-  /* Tipografía y Bordes */
-  --text-primary:   #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted:     #94a3b8;
-  --text-inverse:   #040610;
-  --border:         rgba(255, 255, 255, 0.15);
-  --border-light:   rgba(255, 255, 255, 0.08);
-  --border-active:  rgba(0, 212, 255, 0.4);
-  
-  /* Base Legacy Aliases for Compatibility */
-  --bg-base:        var(--bg-dark);
-  --bg-surface:     var(--bg-card);
-  --bg-elevated:    var(--bg-modal);
-  --bg-hover:       var(--bg-card-hover);
-  
-  /* Estructura */
-  --sidebar-w:      280px;
-  --sidebar-w-collapsed: 80px;
-  --header-h:       64px;
-  --bottom-nav-h:   64px;
-  --radius:         24px;
-  --radius-sm:      14px;
-  --r-sm:           10px;
-  --r-md:           16px;
-  --r-lg:           24px;
-  --r-xl:           32px;
-  
-  /* Sistema de Espaciado "Elite Agility" */
-  --card-gap:       16px;
-  --inner-p:        16px;
-  --p-density:      12px;
-  
-  --shadow-sm:      0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-md:      0 12px 40px rgba(0, 0, 0, 0.6);
   --shadow-lg:      0 20px 60px -15px rgba(0, 0, 0, 0.8);
-  --shadow-glow:    0 0 20px var(--primary-glow);
-
-  --glass-blur:     30px;
-  --transition:     all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  --t-fast:         150ms cubic-bezier(0.16, 1, 0.3, 1);
-  --t-med:          250ms cubic-bezier(0.16, 1, 0.3, 1);
-  
-  /* Typography */
-  --font:           'Outfit', -apple-system, sans-serif;
-  --font-scale: 1;
-  --font-xs: calc(11px * var(--font-scale));
-  --font-sm: calc(13px * var(--font-scale));
-  --font-md: calc(15px * var(--font-scale));
-  --font-lg: calc(18px * var(--font-scale));
-  --font-xl: calc(24px * var(--font-scale));
-  --font-2xl: calc(32px * var(--font-scale));
+  --shadow-sm:      0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* ─── Modo Claro ☀️ (ERGODENTAL DNA) ───────────────────────────────────────── */
-:root.light-mode {
+/* ─── TEMA CLARO (☀️ Light) ─── */
+:root.theme-light {
   color-scheme: light;
-
-  --bg-dark:        #f8fafc;
-  --bg-base:        #f8fafc;
-  --bg-card:        rgba(255, 255, 255, 0.95);
-  --grad-alpha:     #0f172a;
-  --grad-beta:      #475569;
-  --bg-card-hover:  #ffffff;
+  --bg-dark:        #f1f5f9;
+  --bg-base:        #f1f5f9;
   --bg-sidebar:     #ffffff;
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #f8fafc;
   --bg-modal:       #ffffff;
   --bg-surface:     #ffffff;
   --bg-elevated:    #ffffff;
-  --bg-hover:       #f1f5f9;
+  --bg-hover:       #e2e8f0;
   
-  --border:         rgba(0, 0, 0, 0.08);
-  --border-light:   rgba(0, 0, 0, 0.04);
   --text-primary:   #0f172a;
   --text-secondary: #334155;
   --text-muted:     #64748b;
-  --primary-dim:    rgba(0, 212, 255, 0.12);
-  --accent-dim:     rgba(139, 92, 246, 0.12);
-  --shadow-lg:      0 10px 30px rgba(15, 23, 42, 0.05);
-  --shadow-sm:      0 4px 12px rgba(15, 23, 42, 0.03);
-  --shadow-md:      0 8px 16px rgba(0,0,0,0.05);
+  --text-inverse:   #ffffff;
+
+  --border:         rgba(15, 23, 42, 0.12);
+  --border-light:   rgba(15, 23, 42, 0.06);
+  
+  --grad-alpha:     #0f172a;
+  --grad-beta:      #475569;
+  
+  --shadow-lg:      0 10px 30px rgba(15, 23, 42, 0.1);
+  --shadow-sm:      0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
-/* ─── Modo Claro ☀️ ──────────────────────────────────────────────────────── */
-:root.light-mode {
-  --bg-base:        #f8fafc;
-  --bg-card:        #ffffff;
-  --bg-surface:     #ffffff;
-  --bg-elevated:    #ffffff;
-  --bg-hover:       #f1f5f9;
+/* ─── TEMA MEDIO (☁️ Slate Ergonomic) ─── */
+:root.theme-medium {
+  color-scheme: dark;
+  --bg-dark:        #1e293b;
+  --bg-base:        #1e293b;
+  --bg-sidebar:     #0f172a;
+  --bg-card:        #334155;
+  --bg-card-hover:  #3e4e63;
+  --bg-modal:       #1e293b;
+  --bg-surface:     #334155;
+  --bg-elevated:    #1e293b;
+  --bg-hover:       #475569;
   
-  --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --text-muted:     #64748b;
+  --text-primary:   #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted:     #94a3b8;
+  --text-inverse:   #0f172a;
 
-  --card-shadow-soft: 0 4px 15px rgba(0,0,0,0.08);
-  --card-border-light: 1px solid rgba(0,0,0,0.08);
+  --border:         rgba(255, 255, 255, 0.1);
+  --border-light:   rgba(255, 255, 255, 0.05);
   
-  --border:         rgba(15, 23, 42, 0.15);
-  --border-light:   rgba(15, 23, 42, 0.08);
+  --grad-alpha:     #f8fafc;
+  --grad-beta:      #94a3b8;
   
-  --shadow-sm:      0 1px 2px rgba(0,0,0,0.03);
-  --shadow-md:      0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  --shadow-lg:      0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.03);
+  --shadow-lg:      0 15px 40px rgba(0, 0, 0, 0.3);
+  --shadow-sm:      0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 :root.light-mode body::before {
@@ -617,9 +575,15 @@ body::before {
   box-sizing: border-box;
 }
 
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  background: var(--bg-hover);
+}
+
 .form-select option {
-  background: #1a1e23;
-  color: #ffffff;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 .user-menu-btn:hover {
