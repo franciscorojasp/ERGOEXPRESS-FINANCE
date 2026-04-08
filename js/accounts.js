@@ -226,7 +226,7 @@ const Accounts = (() => {
     const data = Object.fromEntries(fd.entries());
     
     // Add missing fields
-    data.ID = Utils.uuid();
+    data.ID = Utils.generateId();
     data.Activo = 'SI';
     data['Fecha Registro'] = Utils.todayISO();
 
@@ -257,3 +257,6 @@ const Accounts = (() => {
     registerUser
   };
 })();
+
+// Exportar globalmente para eventos HTML onclick
+window.Accounts = Accounts;
