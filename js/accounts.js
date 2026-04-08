@@ -6,46 +6,51 @@ const Accounts = (() => {
   let _users = [];
   let _isSaving = false;
 
-  async function render(container) {
-    container.innerHTML = `
-      <div class="module-header">
-        <div>
-          <h1 class="module-title">Gestión de Cuentas</h1>
-          <p class="module-subtitle">Administra los accesos y roles del equipo</p>
+    try {
+      container.innerHTML = `
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Gestión de Cuentas</h1>
+            <p class="module-subtitle">Administra los accesos y roles del equipo</p>
+          </div>
+          <div class="module-actions">
+            <button class="btn btn-primary" onclick="window.Accounts.showAddModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
+              </svg>
+              Nuevo Usuario
+            </button>
+          </div>
         </div>
-        <div class="module-actions">
-          <button class="btn btn-primary" onclick="Accounts.showAddModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
-            </svg>
-            Nuevo Usuario
-          </button>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="table-container">
-          <table class="data-table" id="accounts-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Registro</th>
-                <th style="text-align:right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="accounts-list">
-              <tr><td colspan="6" style="padding:40px; text-align:center;">Cargando usuarios...</td></tr>
-            </tbody>
-          </table>
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table" id="accounts-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Registro</th>
+                  <th style="text-align:right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-list">
+                <tr><td colspan="6" style="padding:40px; text-align:center; color:var(--text-secondary);">
+                  <div class="spinner" style="margin: 0 auto 10px;"></div>
+                  Cargando equipo...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
-
-    loadUsers();
-  }
+      `;
+      loadUsers();
+    } catch (e) {
+      console.error('[Accounts] Error en render:', e);
+      container.innerHTML = `<div class="alert alert-error">Error crítico al cargar el módulo: ${e.message}</div>`;
+    }
 
   async function loadUsers() {
     try {
