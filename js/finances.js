@@ -705,67 +705,71 @@ const Finances = (() => {
 
         ${chartHTML}
 
-        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-top:20px; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #3b82f6; padding-left:10px;">Detalle Completo de Ingresos</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:8.5px; margin-bottom:10mm;">
-           <thead>
-              <tr style="background:#3b82f6; color:#ffffff; text-align:left;">
-                 <th style="padding:6px 10px;">Fecha</th>
-                 <th style="padding:6px 10px;">Cliente</th>
-                 <th style="padding:6px 10px;">Concepto / Banco / Referencia</th>
-                 <th style="padding:6px 10px;">Método</th>
-                 <th style="padding:6px 10px; text-align:right;">Monto USD</th>
-              </tr>
-           </thead>
-           <tbody>
-              ${filteredInc.map(r => `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                   <td style="padding:6px 10px;">${Utils.formatDate(r['Fecha'])}</td>
-                   <td style="padding:6px 10px; font-weight:700;">${Utils.escapeHtml(r['ID Cliente'])}</td>
-                   <td style="padding:6px 10px; color:#64748b;">
-                      <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'])}</div>
-                      <div style="font-size:7.5px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
-                   </td>
-                   <td style="padding:6px 10px;">${r['Método']}</td>
-                   <td style="padding:6px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
-                </tr>
-              `).join('')}
-              ${filteredInc.length === 0 ? '<tr><td colspan="5" style="padding:20px; text-align:center; color:#64748b;">No hay ingresos registrados en este periodo.</td></tr>' : ''}
-           </tbody>
-        </table>
+        <div style="margin-top:20px; width:100%;">
+           <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:12px; text-transform:uppercase; border-left:4px solid #3b82f6; padding-left:10px;">Detalle Completo de Ingresos</h3>
+           <table style="width:100%; border-spacing:0; border-collapse:collapse; font-size:9px; background:#ffffff;">
+              <thead>
+                 <tr style="background-color:#3b82f6 !important; color:#ffffff !important; -webkit-print-color-adjust:exact;">
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #2563eb;">Fecha</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #2563eb;">Cliente</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #2563eb;">Concepto / Referencia</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #2563eb;">Método</th>
+                    <th style="padding:8px 10px; text-align:right; border-bottom:2px solid #2563eb;">Monto USD</th>
+                 </tr>
+              </thead>
+              <tbody>
+                 ${filteredInc.map(r => `
+                   <tr style="border-bottom:1px solid #e2e8f0;">
+                      <td style="padding:8px 10px;">${Utils.formatDate(r['Fecha'])}</td>
+                      <td style="padding:8px 10px; font-weight:700;">${Utils.escapeHtml(r['ID Cliente'])}</td>
+                      <td style="padding:8px 10px; color:#64748b;">
+                         <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'] || '-')}</div>
+                         <div style="font-size:8px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
+                      </td>
+                      <td style="padding:8px 10px;">${r['Método'] || '-'}</td>
+                      <td style="padding:8px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
+                   </tr>
+                 `).join('')}
+                 ${filteredInc.length === 0 ? '<tr><td colspan="5" style="padding:30px; text-align:center; color:#64748b; font-style:italic;">No se encontraron ingresos en este periodo.</td></tr>' : ''}
+              </tbody>
+           </table>
+        </div>
 
-        <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-top:20px; margin-bottom:10px; text-transform:uppercase; border-left:4px solid #ef4444; padding-left:10px;">Detalle Completo de Egresos</h3>
-        <table style="width:100%; border-collapse:collapse; font-size:8.5px;">
-           <thead>
-              <tr style="background:#ef4444; color:#ffffff; text-align:left;">
-                 <th style="padding:6px 10px;">Fecha</th>
-                 <th style="padding:6px 10px;">Beneficiario / Pagador</th>
-                 <th style="padding:6px 10px;">Concepto / Banco / Referencia</th>
-                 <th style="padding:6px 10px;">Cat. / Método</th>
-                 <th style="padding:6px 10px; text-align:right;">Monto USD</th>
-              </tr>
-           </thead>
-           <tbody>
-              ${filteredExp.map(r => `
-                <tr style="border-bottom:1px solid #f1f5f9;">
-                   <td style="padding:6px 10px;">${Utils.formatDate(r['Fecha'])}</td>
-                   <td style="padding:6px 10px;">
-                      <div style="font-weight:700; color:#1e293b;">${Utils.escapeHtml(r['Beneficiario'])}</div>
-                      ${r['Pagador'] ? `<div style="font-size:7.5px; color:#ef4444; font-style:italic;">Pagado por: ${r['Pagador']}</div>` : ''}
-                   </td>
-                   <td style="padding:6px 10px; color:#64748b;">
-                      <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'])}</div>
-                      <div style="font-size:7.5px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
-                   </td>
-                   <td style="padding:6px 10px;">
-                      <div>${r['Categoría'] || 'Otros'}</div>
-                      <div style="font-size:7.5px; color:#64748b;">${r['Método']}</div>
-                   </td>
-                   <td style="padding:6px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
-                </tr>
-              `).join('')}
-              ${filteredExp.length === 0 ? '<tr><td colspan="5" style="padding:20px; text-align:center; color:#64748b;">No hay egresos registrados en este periodo.</td></tr>' : ''}
-           </tbody>
-        </table>
+        <div style="margin-top:30px; width:100%;">
+           <h3 style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:12px; text-transform:uppercase; border-left:4px solid #ef4444; padding-left:10px;">Detalle Completo de Egresos</h3>
+           <table style="width:100%; border-spacing:0; border-collapse:collapse; font-size:9px; background:#ffffff;">
+              <thead>
+                 <tr style="background-color:#ef4444 !important; color:#ffffff !important; -webkit-print-color-adjust:exact;">
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #dc2626;">Fecha</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #dc2626;">Beneficiario / Pagador</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #dc2626;">Concepto / Referencia</th>
+                    <th style="padding:8px 10px; text-align:left; border-bottom:2px solid #dc2626;">Cat / Método</th>
+                    <th style="padding:8px 10px; text-align:right; border-bottom:2px solid #dc2626;">Monto USD</th>
+                 </tr>
+              </thead>
+              <tbody>
+                 ${filteredExp.map(r => `
+                   <tr style="border-bottom:1px solid #e2e8f0;">
+                      <td style="padding:8px 10px;">${Utils.formatDate(r['Fecha'])}</td>
+                      <td style="padding:8px 10px;">
+                         <div style="font-weight:700; color:#1e293b;">${Utils.escapeHtml(r['Beneficiario'] || '-')}</div>
+                         ${r['Pagador'] ? `<div style="font-size:8px; color:#ef4444; font-style:italic;">Pagado por: ${r['Pagador']}</div>` : ''}
+                      </td>
+                      <td style="padding:8px 10px; color:#64748b;">
+                         <div style="font-weight:600; color:#1e293b;">${Utils.escapeHtml(r['Concepto'] || '-')}</div>
+                         <div style="font-size:8px;">${r['Banco'] || ''} ${r['Referencia Nº'] ? '• Ref: '+r['Referencia Nº'] : ''}</div>
+                      </td>
+                      <td style="padding:8px 10px;">
+                         <div>${r['Categoría'] || 'Otros'}</div>
+                         <div style="font-size:8px; color:#64748b;">${r['Método']}</div>
+                      </td>
+                      <td style="padding:8px 10px; text-align:right; font-weight:800; color:#1e293b;">$ ${Utils.formatUSD(r['Total USD'])}</td>
+                   </tr>
+                 `).join('')}
+                 ${filteredExp.length === 0 ? '<tr><td colspan="5" style="padding:30px; text-align:center; color:#64748b; font-style:italic;">No se encontraron egresos en este periodo.</td></tr>' : ''}
+              </tbody>
+           </table>
+        </div>
       `;
 
       await ReportBuilder.generateEliteReport({
@@ -775,6 +779,7 @@ const Finances = (() => {
       });
 
     } catch (e) {
+      console.error('[Finances] Error export:', e);
       Utils.showToast('Error al exportar finanzas: ' + e.message, 'error');
     }
   }
