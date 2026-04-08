@@ -17,9 +17,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
   <!-- CRM Styles -->
-  <link rel="stylesheet" href="css/main.css?v=3.2.6">
-  <link rel="stylesheet" href="css/components.css?v=3.2.6">
-  <link rel="stylesheet" href="css/responsive.css?v=3.2.6">
+  <link rel="stylesheet" href="css/main.css?v=3.2.7">
+  <link rel="stylesheet" href="css/components.css?v=3.2.7">
+  <link rel="stylesheet" href="css/responsive.css?v=3.2.7">
 
   <style>
     /* Unificación de Fuentes Elite */
@@ -179,8 +179,17 @@
         </a>
       </div>
 
-      <div class="sidebar-section" id="admin-section" style="display:none">
+      <div class="sidebar-section admin-only" id="admin-section" style="display:none">
         <div class="sidebar-section-label">Administración</div>
+
+        <a class="nav-item" data-route="/accounts" onclick="App.navigate('/accounts')" id="nav-accounts">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/>
+            </svg>
+          </span>
+          <span class="nav-label">Gestión de Cuentas</span>
+        </a>
 
         <a class="nav-item" data-route="/settings" onclick="App.navigate('/settings')" id="nav-settings">
           <span class="nav-icon">
@@ -415,30 +424,31 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <!-- CRM Core -->
-<script src="config.js?v=3.2.6"></script>
-<script src="js/utils.js?v=3.2.6"></script>
-<script src="js/api.js?v=3.2.6"></script>
-<script src="js/auth.js?v=3.2.6"></script>
+<script src="config.js?v=3.2.7"></script>
+<script src="js/utils.js?v=3.2.7"></script>
+<script src="js/api.js?v=3.2.7"></script>
+<script src="js/auth.js?v=3.2.7"></script>
 
 <!-- CRM Modules Dependencies First -->
-<script src="js/sheets.js?v=3.2.6"></script>
-<script src="js/contacts.js?v=3.2.6"></script>
-<script src="js/products.js?v=3.2.6"></script>
-<script src="js/rates.js?v=3.2.6"></script>
-<script src="js/quotations.js?v=3.2.6"></script>
-<script src="js/quote-builder.js?v=3.2.6"></script>
-<script src="js/ReportBuilder.js?v=3.2.6"></script>
+<script src="js/sheets.js?v=3.2.7"></script>
+<script src="js/contacts.js?v=3.2.7"></script>
+<script src="js/products.js?v=3.2.7"></script>
+<script src="js/rates.js?v=3.2.7"></script>
+<script src="js/quotations.js?v=3.2.7"></script>
+<script src="js/quote-builder.js?v=3.2.7"></script>
+<script src="js/ReportBuilder.js?v=3.2.7"></script>
 
 <!-- CRM Feature Modules -->
-<script src="js/dashboard.js?v=3.2.6"></script>
-<script src="js/pipeline.js?v=3.2.6"></script>
-<script src="js/finances.js?v=3.2.6"></script>
-<script src="js/agenda.js?v=3.2.6"></script>
-<script src="js/settings.js?v=3.2.6"></script>
-<script src="js/ai.js?v=3.2.6"></script>
+<script src="js/dashboard.js?v=3.2.7"></script>
+<script src="js/pipeline.js?v=3.2.7"></script>
+<script src="js/finances.js?v=3.2.7"></script>
+<script src="js/agenda.js?v=3.2.7"></script>
+<script src="js/settings.js?v=3.2.7"></script>
+<script src="js/accounts.js?v=3.2.7"></script>
+<script src="js/ai.js?v=3.2.7"></script>
 
 <!-- App Router -->
-<script src="js/app.js?v=3.2.6"></script>
+<script src="js/app.js?v=3.2.7"></script>
 
 <!-- No se requiere Google Identity Services -->
 

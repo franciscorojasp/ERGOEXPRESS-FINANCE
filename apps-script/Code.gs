@@ -301,9 +301,17 @@ function read(req) {
   if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
   const all  = sheet.getDataRange().getValues();
   const hdrs = all[0];
+  const isUserSheet = (req.sheet === 'Usuarios');
+
   const rows = all.slice(1).map((row, i) => {
     const o = { _rowIndex: i + 2 };
     hdrs.forEach((h, j) => { 
+      // Seguridad: No enviar hashes de password al frontend
+      if (isUserSheet && h === 'Password') {
+        o[h] = '********';
+        return;
+      }
+
       let val = row[j];
       const dateHdrs = ['Fecha','Registro','Seguimiento','Validez'];
       const isDateCol = dateHdrs.some(dh => h.includes(dh));
@@ -320,6 +328,48 @@ function read(req) {
     return o;
   });
   return { success: true, data: rows };
+}
+
+/**
+ * Habilita al usuario solicitado vera.hugo712@gmail.com como administrador.
+ * Esta función es de utilidad única para cumplir con el requerimiento del sistema.
+ */
+function habilitarUsuarioSolicitado() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('Usuarios');
+  if (!sh) {
+    setup();
+    sh = ss.getSheetByName('Usuarios');
+  }
+  
+  const data = sh.getDataRange().getValues();
+  const emailTarget = 'vera.hugo712@gmail.com';
+  let found = false;
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][1]).toLowerCase() === emailTarget) {
+      // Si existe, aseguramos que sea admin y esté activo
+      sh.getRange(i + 1, 4).setValue('admin'); // Rol
+      sh.getRange(i + 1, 5).setValue('SI');    // Activo
+      found = true;
+      break;
+    }
+  }
+  
+  if (!found) {
+    const newUser = [
+      Utilities.getUuid(),
+      emailTarget,
+      'Hugo Vera',
+      'admin',
+      'SI',
+      new Date().toISOString().split('T')[0],
+      '' // Password vacío, deberá establecerlo al entrar o vía reset
+    ];
+    sh.appendRow(newUser);
+  }
+  
+  return "Usuario vera.hugo712@gmail.com habilitado correctamente como admin.";
 }
 
 function batchRead(req) {

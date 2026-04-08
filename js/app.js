@@ -44,6 +44,7 @@ const App = (() => {
     '/finances':    () => Finances.render(content()),
     '/agenda':      () => Agenda.render(content()),
     '/settings':    () => Settings.render(content()),
+    '/accounts':    () => Accounts.render(content()),
   };
 
   const routeTitles = {
@@ -56,6 +57,7 @@ const App = (() => {
     '/finances':    'Control de Finanzas',
     '/agenda':      'Agenda Visual',
     '/settings':    'Configuración',
+    '/accounts':    'Gestión de Cuentas',
   };
 
   function content() {
@@ -332,10 +334,6 @@ const App = (() => {
       }
 
       _currentRole = user['Rol'] || 'vendedor';
-
-      // --- AUTO-RESCATE ADMINISTRADOR ---
-      // Forzamos temporalmente a admin para permitir ajustar roles desde Configuración
-      _currentRole = 'admin';
       localStorage.setItem('crm_user_role', _currentRole);
 
     } catch(e) {
