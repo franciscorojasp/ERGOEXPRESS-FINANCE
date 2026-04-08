@@ -6,6 +6,7 @@ const Accounts = (() => {
   let _users = [];
   let _isSaving = false;
 
+  async function render(container) {
     try {
       container.innerHTML = `
         <div class="module-header">
@@ -49,8 +50,11 @@ const Accounts = (() => {
       loadUsers();
     } catch (e) {
       console.error('[Accounts] Error en render:', e);
-      container.innerHTML = `<div class="alert alert-error">Error crítico al cargar el módulo: ${e.message}</div>`;
+      if (container) {
+        container.innerHTML = `<div class="alert alert-error">Error crítico al cargar el módulo: ${e.message}</div>`;
+      }
     }
+  }
 
   async function loadUsers() {
     try {
