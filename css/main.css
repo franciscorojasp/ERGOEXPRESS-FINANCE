@@ -197,14 +197,21 @@ body::before {
 }
 
 .period-select {
-  background: transparent;
-  border: none;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   outline: none;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  transition: var(--transition);
+}
+
+.period-select:hover {
+  border-color: var(--primary-light);
+  background: var(--primary-dim);
 }
 
 .kpi-trend {
@@ -340,29 +347,27 @@ body::before {
     "sidebar main";
   min-height: 100vh;
   min-height: calc(var(--vh, 1vh) * 100);
-  position: relative;
-  z-index: 1;
   transition: grid-template-columns var(--t-med);
+}
+
+.app-shell.sidebar-collapsed {
+  grid-template-columns: var(--sidebar-w-collapsed) 1fr;
 }
 
 /* ─── Sidebar ────────────────────────────────────────────────────────────── */
 .sidebar {
   grid-area: sidebar;
-  background: rgba(15, 24, 38, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  width: var(--sidebar-w);
   height: 100vh;
   z-index: 200;
-  transition: width var(--t-med), transform var(--t-med);
+  transition: width var(--t-med);
   overflow: hidden;
-  box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.1);
 }
 
 /* ─── Sidebar Mini (Solo Desktop) ─── */
@@ -596,6 +601,25 @@ body::before {
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.main-content {
+  grid-area: main;
+  background: var(--bg-body);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 5;
+  transition: padding var(--t-med);
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
 }
 
 .header-toggle {
