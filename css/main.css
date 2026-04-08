@@ -492,12 +492,13 @@ body::before {
 }
 
 .sidebar-brand img {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
-  border-radius: var(--r-sm);
-  flex-shrink: 0;
-  transition: transform var(--t-med);
+  border-radius: 50%; /* Changed from 12px to circular */
+  background: var(--bg-surface);
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .sidebar-brand-text {

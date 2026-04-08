@@ -283,7 +283,7 @@ const Settings = (() => {
     c.innerHTML = `
       <div class="card card-padded" style="max-width:500px;">
         <div style="text-align:center; margin-bottom:20px;">
-          <img src="assets/logo.png" style="width:80px; height:80px; object-fit:contain; border-radius:12px; margin-bottom:12px;" />
+          <img src="assets/logo.png" style="width:80px; height:80px; object-fit:contain; border-radius:50%; margin-bottom:12px; background:var(--bg-surface); padding:10px; box-shadow:0 8px 20px rgba(0,0,0,0.2);" />
           <h2 style="font-size:20px; font-weight:800; color:var(--primary-light);">ERGOEXPRESS CRM</h2>
           <p class="text-muted text-sm">v${CONFIG.APP_VERSION} — Gestión Comercial Profesional</p>
         </div>
