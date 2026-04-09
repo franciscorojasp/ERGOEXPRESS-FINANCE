@@ -207,6 +207,28 @@ const Utils = (() => {
     return [];
   }
 
+  /**
+   * Obtiene el total en USD de una cotización, con fallback al Detalle JSON
+   * si la columna Total USD está vacía (autocorrección)
+   */
+  function getQuoteTotalUSD(q) {
+    if (!q) return 0;
+    let total = toNumber(q['Total USD']);
+    if (total > 0) return total;
+    
+    // Fallback: intentar calcular desde Detalle JSON
+    try {
+      const detailStr = q['Detalle JSON'];
+      if (detailStr) {
+        const detail = JSON.parse(detailStr);
+        const items = normalizeItems(detail.items);
+        const net = items.reduce((s, it) => s + (toNumber(it.qty) * toNumber(it.price)), 0);
+        return round(net + (detail.applyTax ? net * 0.16 : 0));
+      }
+    } catch(e) {}
+    return 0;
+  }
+
   // ─── Currency Utilities ────────────────────────────────────────────────
   function formatUSD(amount) {
     const n = toNumber(amount);
@@ -619,7 +641,7 @@ const Utils = (() => {
   // ─── Public API ────────────────────────────────────────────────────────
   return {
     generateId, todayISO, toISODate, formatDate, formatDateTime, formatDateLong,
-    getDateRange, daysFromNow, isOverdue, currentYear, toNumber, round, getHour, normalizeItems,
+    getDateRange, daysFromNow, isOverdue,    currentYear, toNumber, round, getQuoteTotalUSD, getHour, normalizeItems,
     formatUSD, formatVES, formatPrice, formatNumber, usdToVes, formatWhatsApp,
     capitalize, initials, truncate, slugify, escapeHtml,
     groupBy, sortBy,

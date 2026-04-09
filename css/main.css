@@ -21,37 +21,41 @@
   --text-muted:     #94a3b8;
   --text-inverse:   #040610;
 
-  --border:         rgba(255, 255, 255, 0.15);
-  --border-light:   rgba(255, 255, 255, 0.08);
+  --border:         rgba(255, 255, 255, 0.06);
+  --border-light:   rgba(255, 255, 255, 0.03);
+  --border-active:  rgba(13, 115, 119, 0.4);
   
   /* Gradientes */
   --grad-alpha:     #ffffff; 
   --grad-beta:      #94a3b8; 
   
-  /* Acentos */
+  /* Acentos (Paleta ErgoExpress) */
   --primary:        #0d7377; 
   --primary-light:  #2dd4bf;
   --primary-dark:   #085f63;
   --primary-glow:   rgba(13, 115, 119, 0.5);
   --primary-dim:    rgba(13, 115, 119, 0.1);
-  --accent:         #8b5cf6; 
+  --accent:         #8b5cf6;
+  --accent-glow:    rgba(139, 92, 246, 0.4);
+  --accent-dim:     rgba(139, 92, 246, 0.1);
   
   --shadow-lg:      0 20px 60px -15px rgba(0, 0, 0, 0.8);
   --shadow-sm:      0 8px 30px rgba(0, 0, 0, 0.5);
 
-  /* Tallas & Arquitectura Visual Elite */
+  /* Arquitectura Visual World-Class (ErgoDental DNA) */
   --sidebar-w:           260px;
   --sidebar-w-collapsed: 72px;
   --header-h:            64px;
   --dash-gap:            24px;
   --section-p:           24px;
-  --r-card:              16px;
-  --r-md:                12px;
-  --r-lg:                16px;
+  --r-card:              24px;
+  --r-md:                14px;
+  --r-lg:                24px;
   --r-pill:              50px;
+  --glass-blur:          30px;
   
-  --transition:          all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --t-med:               0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:          all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --t-med:               0.3s cubic-bezier(0.16, 1, 0.3, 1);
   --t-fast:              0.15s ease;
 }
 
@@ -73,8 +77,9 @@
   --text-muted:     #64748b;
   --text-inverse:   #ffffff;
 
-  --border:         rgba(15, 23, 42, 0.12);
-  --border-light:   rgba(15, 23, 42, 0.06);
+  --border:         rgba(15, 23, 42, 0.08);
+  --border-light:   rgba(15, 23, 42, 0.04);
+  --border-active:  rgba(13, 115, 119, 0.3);
   
   --grad-alpha:     #0f172a;
   --grad-beta:      #475569;
@@ -101,8 +106,9 @@
   --text-muted:     #94a3b8;
   --text-inverse:   #0f172a;
 
-  --border:         rgba(255, 255, 255, 0.1);
-  --border-light:   rgba(255, 255, 255, 0.05);
+  --border:         rgba(255, 255, 255, 0.06);
+  --border-light:   rgba(255, 255, 255, 0.03);
+  --border-active:  rgba(13, 115, 119, 0.35);
   
   --grad-alpha:     #f8fafc;
   --grad-beta:      #94a3b8;
@@ -173,12 +179,21 @@ body::before {
 
 .card {
   background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--r-card);
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.2);
   transition: var(--transition);
   overflow: hidden;
   margin-bottom: var(--card-gap);
+}
+
+.card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), 0 0 30px var(--primary-dim);
 }
 
 .card-padded {
@@ -283,25 +298,58 @@ body::before {
   gap: var(--dash-gap);
 }
 
+/* Dashboard Desktop Fix: Enforce 2 columns for charts and lists */
+@media (min-width: 769px) {
+  .dash-charts-row, .dash-bottom-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+}
+
+/* Form Styles Extension */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px 20px;
+}
+
+.col-span-2 { grid-column: span 2; }
+.col-span-3 { grid-column: span 3; }
+
+.form-section {
+  margin-bottom: 20px;
+  padding-bottom: 5px;
+}
+
 .kpi-card {
-  background: var(--bg-surface);
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid var(--border);
   border-radius: var(--r-card);
-  padding: 24px;
+  padding: 28px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: var(--transition);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at top right, var(--primary-dim), transparent 60%);
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .kpi-card:hover {
-  transform: translateY(-4px);
-  background: var(--bg-hover);
-  border-color: var(--primary-light);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-8px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  border-color: var(--primary);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 20px var(--primary-dim);
 }
 
 .kpi-icon {
@@ -780,6 +828,7 @@ body::before {
   border-color: var(--primary);
   outline: none;
   background: var(--bg-hover);
+  box-shadow: 0 0 0 4px var(--primary-dim), 0 0 20px var(--primary-glow);
 }
 
 .form-select option {
@@ -959,10 +1008,14 @@ body::before {
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  background: linear-gradient(to bottom, var(--grad-alpha) 30%, var(--grad-beta) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .page-subtitle {
@@ -1041,8 +1094,12 @@ body::before {
 /* ─── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-thumb { 
+  background: rgba(255,255,255,0.1); 
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 /* ─── Radio Cards (Currency Selector) ─── */
 .radio-card { transition: all 0.2s ease; display: block; position: relative; background: #1e293b; color: #fff; border: 1.5px solid #334155; }
@@ -1135,6 +1192,22 @@ body::before {
 
 .fade-in     { animation: fadeIn 0.3s ease forwards; }
 .slide-right { animation: slideInRight 0.3s ease forwards; }
+
+/* Smooth Focus Rings (ErgoDental DNA) */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Page Navigation Transition */
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
 
 .mobile-action-bar { display: none; }
 
@@ -1577,32 +1650,40 @@ body.lock-scroll {
 }
 
 
-/* ─── Premium Modal System (v3.5) ─── */
+/* ─── Premium Modal System (v4.0 — ErgoDental DNA) ─── */
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(4, 7, 15, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(2, 4, 12, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 20px;
+  padding: 40px;
   animation: fadeIn 0.3s ease forwards;
 }
 
 .modal-content {
-  background: #0f172a; /* Slate 900 for premium feel */
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 24px;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+  background: var(--bg-modal);
+  border: 1px solid var(--border-active);
+  border-radius: 32px;
+  box-shadow: 0 50px 100px -20px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.05);
   width: 100%;
-  max-width: 650px;
-  max-height: 90vh;
+  max-width: 640px;
+  max-height: 95vh;
   overflow-y: auto;
   position: relative;
-  animation: modalPremiumPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPremiumPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Modal sizes (Desktop) */
+@media (min-width: 1025px) {
+  .modal-lg { 
+    max-width: 650px !important; /* Reduced from 780px to improve symmetry as requested */
+    margin: auto !important;
+  }
 }
 
 @keyframes modalPremiumPop {

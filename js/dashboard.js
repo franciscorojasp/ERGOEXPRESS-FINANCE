@@ -59,7 +59,7 @@ const Dashboard = (() => {
         </div>
 
         <!-- Charts Row -->
-        <div class="grid-2" style="margin-top:24px; gap:20px;">
+        <div class="grid-2 dash-charts-row" style="margin-top:24px;">
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">
@@ -90,7 +90,7 @@ const Dashboard = (() => {
         </div>
 
         <!-- Bottom Row -->
-        <div class="grid-2" style="margin-top:20px; gap:20px;">
+        <div class="grid-2 dash-bottom-row" style="margin-top:20px;">
           <!-- Upcoming Follow-ups -->
           <div class="card">
             <div class="card-header">
@@ -185,11 +185,13 @@ const Dashboard = (() => {
       
       // KPI 4: Ventas Cerradas (Aceptadas, Facturadas, etc)
       const acceptedQuotes = filteredQuotes.filter(q => ['Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
-      const totalRevenue   = acceptedQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+      const totalRevenue   = acceptedQuotes.reduce((sum, q) => sum + Utils.getQuoteTotalUSD(q), 0);
       
-      // KPI 3: Volumen Ofertado (Exposición total en el mercado)
-      const offeredQuotes = filteredQuotes.filter(q => ['Enviada', 'Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado']));
-      const offeredVolume = offeredQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+      // KPI 3: Volumen Ofertado (Cotizado: Enviadas y estados siguientes)
+      const offeredQuotes = filteredQuotes.filter(q => 
+        ['Enviada', 'Aprobada', 'Aceptada', 'Facturada', 'Parcial', 'Pagada', 'Rechazada', 'Vencida'].includes(q['Estado'])
+      );
+      const offeredVolume = offeredQuotes.reduce((sum, q) => sum + Utils.getQuoteTotalUSD(q), 0);
 
       // KPI 5: Recaudo Real (Ingresos en periodo)
       const incomes = (isAdmin ? (await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME)) : (await Sheets.readSheet(CONFIG.SHEETS.FINANCE_INCOME)).filter(i => i['Vendedor Email'] === userEmail))
@@ -199,13 +201,18 @@ const Dashboard = (() => {
         });
       const totalCashIn = incomes.reduce((sum, i) => sum + Utils.toNumber(i['Total USD']), 0);
 
-      const convRate = totalQuotes > 0
-        ? Math.round((acceptedQuotes.length / totalQuotes) * 100)
+      // Tasa de Conversión: Aprobadas+ Cerradas / Cotizadas (Sin Borradores)
+      const conversionSuccessCount = filteredQuotes.filter(q => 
+        ['Aprobada', 'Aceptada', 'Facturada', 'Parcial', 'Pagada'].includes(q['Estado'])
+      ).length;
+
+      const convRate = offeredQuotes.length > 0
+        ? Math.round((conversionSuccessCount / offeredQuotes.length) * 100)
         : 0;
 
       // KPI 7: Volumen Aprobado (Estado "Aprobada")
       const approvedQuotes = filteredQuotes.filter(q => q['Estado'] === 'Aprobada');
-      const approvedVolume = approvedQuotes.reduce((sum, q) => sum + Utils.toNumber(q['Total USD']), 0);
+      const approvedVolume = approvedQuotes.reduce((sum, q) => sum + Utils.getQuoteTotalUSD(q), 0);
 
       // KPI 8: Datos para Distribución (Pie Chart)
       const statusCounts = {};
@@ -213,7 +220,7 @@ const Dashboard = (() => {
         const s = q['Estado'] || 'Borrador';
         if (!statusCounts[s]) statusCounts[s] = { count: 0, total: 0 };
         statusCounts[s].count++;
-        statusCounts[s].total += Utils.toNumber(q['Total USD']);
+        statusCounts[s].total += Utils.getQuoteTotalUSD(q);
       });
 
       const currency = App.getCurrency();
@@ -278,13 +285,12 @@ const Dashboard = (() => {
           </div>
         </div>
 
-        <!-- 6: Conversión -->
         <div class="kpi-card">
           <div class="kpi-icon" style="color:var(--warning); background:var(--warning-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Conversión</div>
             <div class="kpi-value" style="color:var(--warning);">${convRate}%</div>
-            <div class="kpi-meta">Quotes vs Aceptadas</div>
+            <div class="kpi-meta">Cotizadas vs Aprobadas</div>
           </div>
         </div>
 
@@ -345,7 +351,7 @@ const Dashboard = (() => {
       .forEach(q => {
         const date = q['Fecha Creación'] || q['Fecha'];
         if (!date) return;
-        salesByDate[date] = (salesByDate[date] || 0) + Utils.toNumber(q['Total USD']);
+        salesByDate[date] = (salesByDate[date] || 0) + Utils.getQuoteTotalUSD(q);
       });
 
     const labels = Object.keys(salesByDate).sort();
@@ -509,7 +515,7 @@ const Dashboard = (() => {
           </div>
           <div class="notif-item-sub" style="display:flex; justify-content:space-between; align-items:center;">
             <span>${Utils.statusBadge(q['Estado'])}</span>
-            <span style="color:var(--primary); font-weight:800; font-size:15px;">$ ${Utils.formatUSD(q['Total USD'])}</span>
+            <span style="color:var(--primary); font-weight:800; font-size:15px;">$ ${Utils.formatUSD(Utils.getQuoteTotalUSD(q))}</span>
           </div>
         </div>
       `;

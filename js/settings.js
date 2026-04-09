@@ -259,10 +259,10 @@ const Settings = (() => {
                   <td>${Utils.formatDate(u['Fecha Registro'])}</td>
                   <td>
                     <div class="table-actions">
-                      <button class="btn btn-sm btn-ghost" onclick="Settings.toggleUser('${u['ID']}', '${u['Activo']}', ${u._rowIndex})">
+                      <button class="btn btn-sm btn-ghost" onclick="Settings.toggleUser('${u['ID']}', '${u['Activo']}')">
                         ${u['Activo']==='SI' ? '🔒 Desactivar' : '🔓 Activar'}
                       </button>
-                      <button class="btn btn-sm btn-ghost" onclick="Settings.changeRole('${u['ID']}', '${u['Rol']}', ${u._rowIndex})">
+                      <button class="btn btn-sm btn-ghost" onclick="Settings.changeRole('${u['ID']}', '${u['Rol']}')">
                         🔄 Cambiar rol
                       </button>
                     </div>

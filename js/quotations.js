@@ -152,7 +152,20 @@ const Quotations = (() => {
     }).join('');
   }
 
-  function renderForm(quoteId = null) {
+  function renderForm(arg1 = null, arg2 = null) {
+    let container = _container;
+    let quoteId = null;
+
+    // Detectar si arg1 es un Elemento DOM (el router manda content())
+    if (arg1 && (arg1.nodeType === 1 || arg1 instanceof HTMLElement)) {
+      container = arg1;
+      quoteId = arg2;
+    } else {
+      quoteId = arg1;
+    }
+
+    if (container) _container = container;
+
     State.editor.id = quoteId;
     let quote = null;
     let detail = { items: [], currencyMode: 'usd', applyTax: false, intro: '' };
@@ -465,6 +478,7 @@ const Quotations = (() => {
         'ID Cliente': clientId,
         'Validez Días': validity,
         'Estado': State.editor.id ? State.quotes.find(x => x['ID']===State.editor.id)['Estado'] : 'Borrador',
+        'Total USD': Utils.round(totalNet + (applyTax ? totalNet * 0.16 : 0)),
         'Total VES': Utils.round((totalNet + (applyTax ? totalNet * 0.16 : 0)) * State.rate),
         'Detalle JSON': JSON.stringify({
           items: validItems,
@@ -539,7 +553,7 @@ const Quotations = (() => {
         <div class="kanban-board" id="quotes-kanban">
           ${lanes.map(lane => {
             const cards = filtered.filter(q => (q['Estado'] || 'Borrador') === lane);
-            const total = cards.reduce((s, q) => s + Utils.toNumber(q['Total USD']), 0);
+            const total = cards.reduce((s, q) => s + Utils.getQuoteTotalUSD(q), 0);
             return `
               <div class="kanban-col">
                 <div class="kanban-col-header">
@@ -588,10 +602,10 @@ const Quotations = (() => {
     if(st === 'Enviada') tagClass = 'tag-warning';
 
     return `
-      <div class="kanban-card quote-kanban-card" data-id="${q['ID']}" onclick="Quotations.renderDetail(null, '${q['ID']}')">
-        <div class="kanban-card-header">
-          <div class="kanban-card-title">${Utils.escapeHtml(client?.['Razón Social'] || 'Desconocido')}</div>
-          <div class="kanban-card-subtitle">ERGOX-${String(q['Número']).padStart(6,'0')}</div>
+      <div class="kanban-card" data-id="${q['ID']}" onclick="Quotations.renderDetail(null, '${q['ID']}')">
+        <div class="q-card-header">
+          <span class="q-card-num">COT-${String(q['Número']).padStart(4,'0')}</span>
+          <span class="q-card-price">$ ${Utils.formatUSD(Utils.getQuoteTotalUSD(q))}</span>
         </div>
         <div class="kanban-card-body">
           <div class="kanban-card-price">$ ${Utils.formatUSD(q['Total USD'])}</div>
@@ -656,7 +670,7 @@ const Quotations = (() => {
     const c = State.contacts.find(x => x['ID'] === q['ID Cliente']);
     const detail = JSON.parse(q['Detalle JSON'] || '{}');
     const items = Utils.normalizeItems(detail.items);
-    const sumUsd = Utils.toNumber(q['Total USD']);
+    const sumUsd = Utils.getQuoteTotalUSD(q);
     const status = q['Estado'] || 'Borrador';
 
     // Colores de estado
@@ -738,7 +752,7 @@ const Quotations = (() => {
           </div>
           <div class="q-det-hdr-right">
              <div style="font-size:13px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:8px;">Monto Cerrado</div>
-             <div style="font-size:48px; @media(min-width:768px){font-size:56px;} font-weight:900; letter-spacing:-2px; color:var(--success); line-height:1;">$${Utils.formatUSD(sumUsd)}</div>
+             <div style="font-size:48px; @media(min-width:768px){font-size:56px;} font-weight:900; letter-spacing:-2px; color:var(--success); line-height:1;">$${Utils.formatUSD(Utils.getQuoteTotalUSD(q))}</div>
              
              <!-- Gestión de Estado Pro -->
              <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">

@@ -143,7 +143,7 @@ const Accounts = (() => {
               <span class="badge ${isAdmin ? 'badge-primary' : 'badge-secondary'}" style="min-width:70px; text-align:center;">
                 ${isAdmin ? 'ADMIN' : 'VENDEDOR'}
               </span>
-              <button class="btn-icon-sm" onclick="Accounts.toggleRole('${u.ID}', '${u.Rol}', ${u._rowIndex})" title="Cambiar Rol">
+              <button class="btn-icon-sm" onclick="Accounts.toggleRole('${u.ID}', '${u.Rol}')" title="Cambiar Rol">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                   <path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5 5v-5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5-5v5h-5"/>
                 </svg>
@@ -158,7 +158,7 @@ const Accounts = (() => {
                   ${isActive ? 'ACTIVO' : 'INACTIVO'}
                 </span>
               </div>
-              <button class="btn-icon-sm" onclick="Accounts.toggleStatus('${u.ID}', '${u.Activo}', ${u._rowIndex})" title="${isActive ? 'Desactivar' : 'Activar'}">
+              <button class="btn-icon-sm" onclick="Accounts.toggleStatus('${u.ID}', '${u.Activo}')" title="${isActive ? 'Desactivar' : 'Activar'}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
@@ -172,7 +172,7 @@ const Accounts = (() => {
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
-              <button class="btn-icon" style="color:#ef4444;" onclick="Accounts.deleteAccount('${u.ID}', '${u.Email}', ${u._rowIndex})" title="Eliminar Permanente">
+              <button class="btn-icon" style="color:#ef4444;" onclick="Accounts.deleteAccount('${u.ID}', '${u.Email}')" title="Eliminar Permanente">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                   <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
                 </svg>
@@ -189,8 +189,7 @@ const Accounts = (() => {
     const newStatus = String(currentStatus).toUpperCase() === 'SI' ? 'NO' : 'SI';
     try {
       _isSaving = true;
-      Utils.showToast('Actualizando estado...', 'info');
-      await Sheets.updateRow(CONFIG.SHEETS.USERS, rowIndex, { Activo: newStatus, ID: id });
+      await Sheets.updateRow(CONFIG.SHEETS.USERS, id, { Activo: newStatus });
       Utils.showToast(`Usuario ${newStatus === 'SI' ? 'Activado' : 'Desactivado'}`, 'success');
       loadUsers();
     } catch (e) {
@@ -202,8 +201,7 @@ const Accounts = (() => {
     if (_isSaving) return;
     const newRole = String(currentRole).toLowerCase() === 'admin' ? 'vendedor' : 'admin';
     try {
-      _isSaving = true;
-      await Sheets.updateRow(CONFIG.SHEETS.USERS, rowIndex, { Rol: newRole, ID: id });
+      await Sheets.updateRow(CONFIG.SHEETS.USERS, id, { Rol: newRole });
       Utils.showToast(`Rol cambiado a ${newRole}`, 'success');
       loadUsers();
     } catch (e) {
@@ -224,8 +222,7 @@ const Accounts = (() => {
     if (!confirm2) return;
 
     try {
-      _isSaving = true;
-      await Sheets.deleteRow(CONFIG.SHEETS.USERS, rowIndex);
+      await Sheets.deleteRow(CONFIG.SHEETS.USERS, id);
       Utils.showToast('Cuenta eliminada del sistema', 'success');
       loadUsers();
     } catch (e) {
@@ -280,7 +277,7 @@ const Accounts = (() => {
 
           <div style="display:flex; justify-content:flex-end; gap:16px; margin-top:40px; padding-top:20px; border-top:1px solid var(--border);">
             <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()" style="height:48px; min-width:120px;">Cancelar</button>
-            <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}', ${u._rowIndex})" style="height:48px; min-width:160px; font-weight:800; box-shadow: 0 4px 15px var(--primary-dim);">Guardar Cambios</button>
+            <button class="btn btn-primary" onclick="Accounts.saveAccountEdit('${u.ID}')" style="height:48px; min-width:160px; font-weight:800; box-shadow: 0 4px 15px var(--primary-dim);">Guardar Cambios</button>
           </div>
         </div>
       </div>
@@ -293,8 +290,7 @@ const Accounts = (() => {
     const email = document.getElementById('edit-acc-email').value;
 
     try {
-      Utils.showToast('Guardando cambios...', 'info');
-      await Sheets.updateRow(CONFIG.SHEETS.USERS, rowIndex, { Nombre: name, Email: email, ID: id });
+      await Sheets.updateRow(CONFIG.SHEETS.USERS, id, { Nombre: name, Email: email });
       Utils.showToast('Perfil actualizado correctamente', 'success');
       document.querySelector('.modal-overlay').remove();
       loadUsers();

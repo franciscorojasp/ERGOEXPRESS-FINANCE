@@ -200,9 +200,9 @@ const Contacts = (() => {
       content: `
         <form id="contact-form">
           <div class="form-section">
-            <div class="form-section-title">Datos de la Empresa</div>
-            <div class="form-grid">
-              <div class="form-group full">
+            <div class="form-section-title">Información Principal</div>
+            <div class="form-grid-3">
+              <div class="form-group col-span-2">
                 <label class="form-label">Razón Social <span class="required">*</span></label>
                 <input class="form-input" name="Razón Social" required
                        value="${Utils.escapeHtml(contact?.['Razón Social'] || '')}" />
@@ -212,20 +212,7 @@ const Contacts = (() => {
                 <input class="form-input" name="RIF" placeholder="J-XXXXXXXX-X"
                        value="${Utils.escapeHtml(contact?.['RIF'] || '')}" />
               </div>
-              <div class="form-group">
-                <label class="form-label">Tipo <span class="required">*</span></label>
-                <select class="form-select" name="Tipo">
-                  ${CONFIG.CONTACT_TYPES.map(t => `
-                    <option value="${t}" ${contact?.['Tipo'] === t ? 'selected' : ''}>${Utils.capitalize(t)}</option>
-                  `).join('')}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-title">Persona de Contacto</div>
-            <div class="form-grid">
+              
               <div class="form-group">
                 <label class="form-label">Persona Contacto</label>
                 <input class="form-input" name="Persona Contacto"
@@ -245,12 +232,15 @@ const Contacts = (() => {
           </div>
 
           <div class="form-section">
-            <div class="form-section-title">Ubicación</div>
-            <div class="form-grid">
-              <div class="form-group full">
-                <label class="form-label">Dirección</label>
-                <input class="form-input" name="Dirección"
-                       value="${Utils.escapeHtml(contact?.['Dirección'] || '')}" />
+            <div class="form-section-title">Clasificación y Ubicación</div>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Tipo <span class="required">*</span></label>
+                <select class="form-select" name="Tipo">
+                  ${CONFIG.CONTACT_TYPES.map(t => `
+                    <option value="${t}" ${contact?.['Tipo'] === t ? 'selected' : ''}>${Utils.capitalize(t)}</option>
+                  `).join('')}
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Estado (Venezuela)</label>
@@ -269,6 +259,12 @@ const Contacts = (() => {
                     <option value="${s}" ${contact?.['Etapa Pipeline'] === s ? 'selected' : ''}>${s}</option>
                   `).join('')}
                 </select>
+              </div>
+              
+              <div class="form-group col-span-3">
+                <label class="form-label">Dirección</label>
+                <input class="form-input" name="Dirección"
+                       value="${Utils.escapeHtml(contact?.['Dirección'] || '')}" />
               </div>
             </div>
           </div>
@@ -665,7 +661,7 @@ const Contacts = (() => {
         const contact = _contacts.find(c => c['ID'] === contactId);
         if (contact) {
           const updated = { ...contact, 'Etapa Pipeline': data['Etapa Pipeline'] };
-          await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contact._rowIndex, updated);
+          await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contact.ID, updated);
         }
       }
 
