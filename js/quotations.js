@@ -155,16 +155,16 @@ const Quotations = (() => {
   function renderForm(quoteId = null) {
     State.editor.id = quoteId;
     let quote = null;
+    let detail = { items: [], currencyMode: 'usd', applyTax: false, intro: '' };
     
     if (quoteId) {
       quote = State.quotes.find(x => x['ID'] === quoteId);
       if (quote) {
-        let detail = {};
         try {
           const rawDetail = quote['Detalle JSON'];
           if (typeof rawDetail === 'string' && rawDetail.trim() !== '') {
-            detail = JSON.parse(rawDetail);
-            if (typeof detail === 'string') detail = JSON.parse(detail);
+            const parsed = JSON.parse(rawDetail);
+            detail = (typeof parsed === 'string') ? JSON.parse(parsed) : parsed;
           } else if (typeof rawDetail === 'object' && rawDetail !== null) {
             detail = rawDetail;
           }
@@ -172,16 +172,15 @@ const Quotations = (() => {
         
         State.editor.items = Utils.normalizeItems(detail.items);
         State.editor.currency = detail.currencyMode || 'usd';
-      } else {
-        State.editor.items = [{ id: Utils.generateId(), desc: '', qty: 1, price: 0 }];
-        State.editor.currency = 'usd';
       }
     } else {
       State.editor.items = [{ id: Utils.generateId(), desc: '', qty: 1, price: 0 }];
       State.editor.currency = 'usd';
     }
 
-    _container.innerHTML = `
+    const cCode = State.editor.currency;
+
+    const html = `
       <style>
         .q-canvas-header { font-size:42px; font-weight:900; letter-spacing:-1.5px; }
         .q-grid-params { display:grid; grid-template-columns: 1fr 1fr; gap:32px; }
@@ -307,7 +306,8 @@ const Quotations = (() => {
       </div>
     `;
 
-    container.innerHTML = html;
+    const target = container || _container;
+    if (target) target.innerHTML = html;
 
     // Listeners para recálculo inmediato
     document.getElementById('frm-tax').addEventListener('change', _recalculateGrandTotal);
@@ -440,6 +440,8 @@ const Quotations = (() => {
     const btn = document.getElementById('btn-save-quote');
     const clientId = document.getElementById('frm-client').value;
     const date = document.getElementById('frm-date').value;
+    const validity = document.getElementById('frm-validity').value;
+    const applyTax = document.getElementById('frm-tax').checked;
     
     if (!clientId) { Utils.showToast('Debes seleccionar un cliente.', 'error'); return; }
 
@@ -447,7 +449,7 @@ const Quotations = (() => {
     const validItems = State.editor.items.filter(it => it.desc.trim() !== '' && it.qty > 0);
     if (!validItems.length) { Utils.showToast('Agrega al menos un ítem al contrato.', 'error'); return; }
 
-    const totalUSD = Utils.round(validItems.reduce((s, it) => s + (it.qty * it.price), 0));
+    const totalNet = Utils.round(validItems.reduce((s, it) => s + (it.qty * it.price), 0));
     
     btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;"></span> Obteniendo Red...`;
     btn.disabled = true;
