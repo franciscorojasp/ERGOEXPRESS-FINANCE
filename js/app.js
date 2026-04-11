@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════════════════
-   ERGOEXPRESS CRM — Router SPA + Inicialización
+   ERGOEXPRESS-FINANCE — Router SPA + Inicialización
    ════════════════════════════════════════════════════════════════════════════ */
 
 const App = (() => {
@@ -43,8 +43,13 @@ const App = (() => {
     '/rates':       () => Rates.render(content()),
     '/finances':    () => Finances.render(content()),
     '/agenda':      () => Agenda.render(content()),
+    '/productivity': () => Productivity.render(content()),
+    '/payroll':      () => Payroll.render(content()),
+    '/fiscal':       () => Fiscal.render(content()),
+    '/intelligence': () => Intelligence.render(content()),
     '/settings':    () => Settings.render(content()),
     '/accounts':    () => Accounts.render(content()),
+    '/maintenance': () => MaintenanceUI.render(content()),
   };
 
   const routeTitles = {
@@ -56,8 +61,13 @@ const App = (() => {
     '/rates':       'Tasas de Cambio',
     '/finances':    'Control de Finanzas',
     '/agenda':      'Agenda Visual',
+    '/productivity': 'Productividad y Destajo',
+    '/payroll':      'Gestión de Nómina Integral',
+    '/fiscal':       'Centro Fiscal y Tributario',
+    '/intelligence': 'Inteligencia de Negocios (BI)',
     '/settings':    'Configuración',
     '/accounts':    'Gestión de Cuentas',
+    '/maintenance': 'Mantenimiento Pro & Sistema',
   };
 
   function content() {
@@ -125,6 +135,10 @@ const App = (() => {
       // Verify role and permissions
       await _verifyAndSetupUser();
 
+      const isSuper = _currentUser?.isSuper || false;
+      const superSec = document.getElementById('superadmin-section');
+      if (superSec) superSec.style.display = isSuper ? 'block' : 'none';
+
       // Render user info in header
       _renderUserHeader();
 
@@ -136,6 +150,10 @@ const App = (() => {
         if (theme === 'light') document.documentElement.classList.add('light-mode');
       }
       _updateThemeUI(theme);
+      
+      // Load privacy mode (Admin Eye)
+      const savedEye = localStorage.getItem('crm_admin_eye') === 'true';
+      if (savedEye) document.body.classList.add('admin-eye-active');
 
       const scale = localStorage.getItem('crm_font_scale') || '1';
       setFontScale(scale);
@@ -434,6 +452,14 @@ const App = (() => {
 
       _currentRole = user['Rol'] || 'vendedor';
       localStorage.setItem('crm_user_role', _currentRole);
+
+      // SuperAdmin Visibility
+      const isSuper = String(user['SuperAdmin']).toUpperCase() === 'SI' || _currentUser.email === 'francisco.rojasp@gmail.com';
+      _currentUser.isSuper = isSuper;
+      const superSec = document.getElementById('superadmin-section');
+      const mobileMaintBtn = document.getElementById('mobile-maint-btn');
+      if (superSec) superSec.style.display = isSuper ? 'block' : 'none';
+      if (mobileMaintBtn) mobileMaintBtn.style.display = isSuper ? 'flex' : 'none';
 
     } catch(e) {
       console.warn('[App] User verification failed:', e.message);
@@ -973,6 +999,11 @@ const App = (() => {
     ves.style.opacity = isUSD ? '0.5' : '1';
   }
 
+  function toggleAdminEye() {
+    const isActive = document.body.classList.toggle('admin-eye-active');
+    localStorage.setItem('crm_admin_eye', isActive);
+  }
+
   function getCurrency() {
     return localStorage.getItem('crm_currency') || 'USD';
   }
@@ -1080,7 +1111,7 @@ const App = (() => {
     toggleNotifications, toggleUserMenu, closeMenus,
     toggleMoreMenu,
     markAllNotifRead, isAdmin, getCurrentUserEmail,
-    toggleTheme, toggleCurrency, getCurrency, setFontScale,
+    toggleTheme, toggleCurrency, toggleAdminEye, getCurrency, setFontScale,
     runSetupNow, submitAccessRequest,
     applyUpdate, showUpdateNotice, saveMandatoryRate
   };

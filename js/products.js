@@ -131,6 +131,13 @@ const Products = (() => {
                 <h3 class="q-list-title">${Utils.escapeHtml(p['Nombre'])}</h3>
                 <div class="q-list-sub">${Utils.escapeHtml(p['Categoría'] || 'General')} • SKU: ${p['SKU'] || 'S/N'}</div>
               </div>
+              <div class="q-list-stock" style="text-align:center; padding: 0 20px;">
+                <div style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Stock Actual</div>
+                <div style="font-size:18px; font-weight:900; color: ${Number(p['Stock_Actual']) <= Number(p['Stock_Minimo']) && Number(p['Stock_Minimo']) > 0 ? '#ef4444' : 'inherit'}">
+                  ${p['Stock_Actual'] || 0}
+                </div>
+                ${Number(p['Stock_Actual']) <= Number(p['Stock_Minimo']) && Number(p['Stock_Minimo']) > 0 ? `<span style="font-size:9px; color:#ef4444; font-weight:800;">REABASTECER</span>` : ''}
+              </div>
             </div>
 
             <div class="q-list-meta">
@@ -196,6 +203,16 @@ const Products = (() => {
               <label class="form-label">Impuesto %</label>
               <input class="form-input" type="number" min="0" step="0.01" name="Impuesto %"
                      value="${product?.['Impuesto %']||'0'}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color:var(--primary); font-weight:800;">Stock Actual (Fisico)</label>
+              <input class="form-input" type="number" name="Stock_Actual"
+                     value="${product?.['Stock_Actual']||'0'}" style="border-color:var(--primary);" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Stock Mínimo (Alerta)</label>
+              <input class="form-input" type="number" name="Stock_Minimo"
+                     value="${product?.['Stock_Minimo']||'0'}" />
             </div>
           </div>
         </form>

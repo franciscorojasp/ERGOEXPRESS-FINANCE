@@ -466,6 +466,8 @@ const Finances = (() => {
       // Handle Quote logic
       if (data['ID Cotización']) {
          await _updateQuoteStatus(data['ID Cotización'], usd);
+         // 📦 Sincronización de Stock (Fase D)
+         await API.call('INV_REDUCE_STOCK', { quotaId: data['ID Cotización'] });
       }
 
       Utils.showToast('Pago registrado exitosamente', 'success');

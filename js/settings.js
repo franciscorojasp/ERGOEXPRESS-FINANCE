@@ -34,6 +34,7 @@ const Settings = (() => {
           <button class="tab-btn active" onclick="Settings._tab('empresa', this)">🏢 Empresa</button>
           <button class="tab-btn" onclick="Settings._tab('textos', this)">📝 Textos</button>
           <button class="tab-btn" onclick="Settings._tab('usuarios', this)">👥 Usuarios</button>
+          <button class="tab-btn" onclick="Settings._tab('auditoria', this)">🛡️ Auditoría</button>
           <button class="tab-btn" onclick="Settings._tab('interfaz', this)">📱 Interfaz</button>
           <button class="tab-btn" onclick="Settings._tab('info', this)">ℹ️ Info</button>
         </div>
@@ -67,6 +68,7 @@ const Settings = (() => {
     if (name === 'empresa')   _renderEmpresa(c);
     if (name === 'textos')    _renderTextos(c);
     if (name === 'usuarios')  _renderUsuarios(c);
+    if (name === 'auditoria') _renderAuditoria(c);
     if (name === 'interfaz')  _renderInterfaz(c);
     if (name === 'info')      _renderInfo(c);
   }
@@ -277,6 +279,71 @@ const Settings = (() => {
         </div>
       </div>
     `;
+  }
+
+  async function _renderAuditoria(c) {
+    c.innerHTML = `
+      <div class="card">
+        <div class="card-header" style="justify-content:space-between;">
+          <h3 class="card-title">Logs de Auditoría</h3>
+          <button class="btn btn-sm btn-ghost" onclick="Settings._renderAuditoria(document.getElementById('settings-content'))">🔄 Refrescar</button>
+        </div>
+        <div class="card-body" style="padding:0; max-height:600px; overflow-y:auto;">
+          <div id="audit-logs-list">
+            <div class="loading-spinner"><div class="spinner"></div></div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <p class="text-muted text-sm">Mostrando los últimos 100 eventos del sistema. Solo visible para personal autorizado.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const res = await API.call('GET_AUDIT_LOGS', { limit: 100 });
+      const list = document.getElementById('audit-logs-list');
+      if (!res.success) {
+        list.innerHTML = `<div style="padding:20px; color:var(--error);">${res.error}</div>`;
+        return;
+      }
+
+      if (res.data.length === 0) {
+        list.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros aún.</div>`;
+        return;
+      }
+
+      list.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha/Hora</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Tabla</th>
+              <th>Detalles</th>
+            </tr>
+          </thead>
+          <tbody style="font-size:12px;">
+            ${res.data.map(l => `
+              <tr>
+                <td style="white-space:nowrap;">${Utils.formatDate(l.fecha)} ${new Date(l.fecha).toLocaleTimeString()}</td>
+                <td><span style="color:var(--primary-light); font-weight:600;">${l.usuario}</span></td>
+                <td><span class="badge ${l.accion==='DELETE'?'badge-error':l.accion==='CREATE'?'badge-success':'badge-primary'}">${l.accion}</span></td>
+                <td class="td-bold">${l.tabla}</td>
+                <td>
+                  <div style="font-size:10px; font-family:monospace; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; color:var(--text-muted);" 
+                       onclick="Utils.showModal({title:'Detalles de Auditoría', content:'<pre style=\'font-size:11px; white-space:pre-wrap;\'>' + Utils.escapeHtml(JSON.stringify(JSON.parse(l.detalles || '{}'), null, 2)) + '</pre>' })">
+                    ${Utils.escapeHtml(l.detalles)}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch (e) {
+      document.getElementById('audit-logs-list').innerHTML = `<div style="padding:20px; color:var(--error);">${e.message}</div>`;
+    }
   }
 
   function _renderInfo(c) {

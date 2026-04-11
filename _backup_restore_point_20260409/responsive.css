@@ -1,0 +1,806 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ERGOEXPRESS CRM — RESPONSIVE v14.0
+   ESTRATEGIA CORRECTA: Sobrescribir variables CSS raíz en mobile.
+   Así los estilos inline del JS heredan automáticamente los valores correctos.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── TABLET ONLY (768–1024px) ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .grid-5 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 1024px) {
+  .app-shell { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
+  .sidebar { width: var(--sidebar-w-collapsed); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE FIRST — < 768px
+   THE KEY INSIGHT: We override :root CSS variables here so that all inline
+   styles using var(--text-primary) etc. automatically get the right values.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* ══ STEP 1: OVERRIDE ALL CSS VARIABLES SO INLINE STYLES WORK ══════════ */
+  :root {
+    /* Backgrounds — darker and more distinct */
+    --bg-base:        #080d18;
+    --bg-card:        #111827;
+    --bg-surface:     #0f172a;
+    --bg-elevated:    #1a2535;
+    --bg-hover:       #1e2f45;
+
+    /* Text — MAXIMUM CONTRAST */
+    --text-primary:   #f0f6fc;   /* Pure near-white for main content */
+    --text-secondary: #94a3b8;   /* Silver for secondary labels */
+    --text-muted:     #64748b;   /* Muted for hints */
+
+    /* Brand */
+    --primary:        #0d7377;
+    --primary-light:  #2dd4bf;   /* Brighter teal for mobile legibility */
+    --primary-subtle: rgba(20, 168, 173, 0.15);
+
+    /* Semantic colors */
+    --success:  #10b981;
+    --warning:  #f59e0b;
+    --error:    #ef4444;
+
+    /* Border — slightly more visible */
+    --border: rgba(255, 255, 255, 0.10);
+
+    /* Layout */
+    --header-h: 58px;
+    --bottom-nav-h: 64px;
+    
+    /* Density Optimization */
+    --inner-p:        14px;
+    --card-gap:       12px;
+  }
+  
+  /* Faster response for interactive elements */
+  button, a, .nav-item, .bottom-nav-item, .card, .info-row {
+    touch-action: manipulation;
+  }
+
+  .chart-container {
+    height: 160px !important;
+  }
+
+  .kpi-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+  
+  .kpi-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .kpi-label { font-size: 11px !important; }
+  .kpi-value { font-size: 16px !important; line-height: 1.2 !important; }
+  .kpi-meta  { font-size: 9px !important; }
+
+  /* ══ STEP 2: BASE RESET ════════════════════════════════════════════════ */
+  *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg-base) !important;
+    color: var(--text-primary) !important;
+    overflow-x: hidden !important;
+    font-size: 15px !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+
+  /* ══ STEP 3: APP SHELL — FLEX COLUMN ══════════════════════════════════ */
+  .app-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100dvh !important;
+    min-height: 100vh !important;
+    grid-template-columns: none !important;
+    background: var(--bg-base) !important;
+  }
+
+  /* ══ STEP 4: TOP HEADER ═══════════════════════════════════════════════ */
+  .top-header {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important; right: 0 !important;
+    height: var(--header-h) !important;
+    background: rgba(8, 13, 24, 0.95) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid var(--border) !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 12px !important;
+    z-index: 1000 !important;
+    gap: 6px !important;
+  }
+  .header-toggle {
+    width: 42px !important; height: 42px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    background: rgba(255,255,255,0.06) !important; border: none !important;
+    border-radius: 10px !important; color: var(--primary-light) !important;
+    flex-shrink: 0 !important; cursor: pointer;
+  }
+  .header-title {
+    flex: 1 !important; font-size: 16px !important; font-weight: 700 !important;
+    color: var(--text-primary) !important; white-space: nowrap !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+  }
+  .header-title span { color: var(--text-primary) !important; }
+  .header-btn {
+    width: 40px !important; height: 40px !important; border-radius: 10px !important;
+    background: rgba(255,255,255,0.05) !important; border: 1px solid var(--border) !important;
+    color: var(--text-secondary) !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+  }
+  .header-btn-wide { width: auto !important; padding: 0 10px !important; font-size: 12px !important; font-weight: 700 !important; }
+  .user-menu-btn .user-name, .user-menu-btn .user-role-badge { display: none !important; }
+  .user-menu-btn .user-avatar {
+    width: 34px !important; height: 34px !important; font-size: 13px !important;
+    border-radius: 50% !important; background: var(--primary-subtle) !important;
+    border: 2px solid var(--primary-light) !important; color: var(--primary-light) !important;
+    display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 800 !important;
+  }
+
+  /* ══ STEP 5: SIDEBAR REMOVAL (MOBILE ONLY) ══════════════════════════════ */
+  /* We move to a 100% Bottom-Nav experience for maximum speed */
+  .sidebar, 
+  .sidebar-overlay, 
+  .header-toggle, 
+  #swipe-zone,
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+  }
+
+  .top-header {
+    padding: 0 16px !important;
+    justify-content: space-between !important;
+    height: 60px !important;
+  }
+
+  .header-title {
+    text-align: left !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    font-size: 18px !important;
+  }
+
+  .mobile-logout-btn { display: flex !important; }
+
+  /* ══ STEP 6: BOTTOM NAV (MASTER RESTORE) ══════════════════════════════ */
+  .bottom-nav {
+    display: grid !important; 
+    grid-template-columns: repeat(6, 1fr) !important; 
+    position: fixed !important;
+    bottom: 0 !important; left: 0 !important; right: 0 !important;
+    height: 72px !important; 
+    background: rgba(8, 14, 25, 0.98) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+    z-index: 10000 !important; /* Capa suprema */
+    padding: 0 2px !important;
+    gap: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Hide bottom nav on desktop explicitly */
+@media (min-width: 769px) {
+  .bottom-nav, 
+  .mobile-more-menu, 
+  .mobile-menu-overlay, 
+  #btn-more-mobile { 
+    display: none !important; 
+  }
+}
+
+/* ─── MOBILE/TABLET OVERRIDES (Shared < 1024px) ────────────────────────── */
+@media (max-width: 1024px) {
+
+  .bottom-nav-item { 
+    display: flex !important;
+    flex-direction: column !important; 
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 1px !important; 
+    gap: 4px !important;
+    min-width: 0 !important;
+    background: none !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    cursor: pointer !important;
+  }
+  .bottom-nav-item svg { width: 22px !important; height: 22px !important; }
+  .bottom-nav-item span { 
+    font-size: 8.5px !important; 
+    font-weight: 800 !important; 
+    white-space: nowrap !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2px !important;
+  }
+  /* IA Assistant Mobile Fix (v3.2.3) */
+  #ai-chat-panel.ai-chat-panel {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(var(--bottom-nav-h) + 12px) !important;
+    width: auto !important;
+    height: 70vh !important;
+    max-height: 520px !important;
+    z-index: 10002 !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: var(--bg-card) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
+    display: none;
+    flex-direction: column !important;
+  }
+  #ai-chat-panel.active { display: flex !important; }
+  
+  .bottom-nav-item.active { color: #2dd4bf !important; transform: translateY(-2px) !important; }
+  .bottom-nav-item.active::after {
+    content: '';
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; background: #2dd4bf; border-radius: 50%;
+    box-shadow: 0 0 10px #2dd4bf;
+  }
+
+  /* ══ STEP 7: MAIN CONTENT ═════════════════════════════════════════════ */
+  .main-content {
+    flex: 1 !important; width: 100% !important; max-width: 100% !important;
+    padding: 60px 0 80px 0 !important; /* Proper padding for fixed header/footer */
+    background: var(--bg-base) !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
+    margin: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .main-content > .fade-in,
+  .main-content > div { padding: 16px !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+
+  /* ══ STEP 8: PAGE HEADER ══════════════════════════════════════════════ */
+  .page-header { margin-bottom: 16px !important; gap: 8px !important; flex-wrap: nowrap !important; }
+  .page-title { font-size: 20px !important; font-weight: 800 !important; color: var(--text-primary) !important; letter-spacing: -0.4px !important; }
+  .page-subtitle { font-size: 12px !important; color: var(--text-muted) !important; margin-top: 2px !important; }
+  .hidden-mobile, .hide-mobile { display: none !important; }
+  .show-mobile-only { display: flex !important; }
+  .page-actions .btn svg { width: 20px !important; height: 20px !important; }
+  .page-actions .btn { padding: 10px !important; height: 44px !important; min-width: 44px !important; border-radius: 12px !important; }
+  /* Show only icon on mobile for action buttons */
+  .page-actions .btn > span.btn-label { display: none !important; }
+
+  /* ══ STEP 9: GRIDS (DASHBOARD) ════════════════════════════════════════ */
+  .grid-4 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .grid-2, .form-grid-3 { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .dash-charts-row, .dash-bottom-row { grid-template-columns: 1fr !important; }
+  .grid-3 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* ══ STEP 10: KPI CARDS ═══════════════════════════════════════════════ */
+  .kpi-card {
+    padding: 14px !important; border-radius: 14px !important;
+    background: var(--bg-card) !important; border: 1px solid var(--border) !important;
+  }
+  .kpi-card:hover { transform: none !important; }
+  .kpi-icon {
+    position: static !important; width: 32px !important; height: 32px !important;
+    border-radius: 8px !important; margin-bottom: 8px !important;
+  }
+  .kpi-icon svg { width: 16px !important; height: 16px !important; }
+  .kpi-label { font-size: 10px !important; font-weight: 700 !important; }
+  .kpi-value { font-size: 24px !important; font-weight: 800 !important; color: var(--text-primary) !important; }
+  .kpi-meta { font-size: 11px !important; }
+
+  /* ══ STEP 11: CARDS ═══════════════════════════════════════════════════ */
+  .card {
+    background: var(--bg-card) !important; border: 1px solid var(--border) !important;
+    border-radius: 14px !important; margin-bottom: 12px !important;
+  }
+  .card:hover { transform: none !important; box-shadow: none !important; }
+  .card-padded, .card.card-padded { padding: 16px !important; }
+  .card-header { padding: 14px 16px !important; }
+  .card-body   { padding: 14px 16px !important; }
+  .card-footer { padding: 10px 16px !important; }
+  .card-title  { font-size: 14px !important; color: var(--text-primary) !important; }
+
+  /* ══ STEP 12: SEARCH & FILTERS ════════════════════════════════════════ */
+  .filters-bar { flex-wrap: nowrap !important; gap: 8px !important; margin-bottom: 14px !important; }
+  .search-input-wrap { flex: 1 !important; }
+  .search-input-wrap input {
+    height: 48px !important; font-size: 14px !important;
+    background: var(--bg-card) !important; border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+  }
+
+  /* ══ STEP 13: TABLES & DATA LISTS ══════════════════════════════════════ */
+  .table-wrapper { 
+    width: 100% !important; 
+    max-width: 100% !important; 
+    margin: 0 !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+  }
+  
+  table.data-table { 
+    width: 100% !important; 
+    min-width: 100% !important; 
+  }
+
+  .data-list { width: 100% !important; margin: 0 !important; }
+
+  .mobile-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    position: relative !important;
+    transition: var(--transition) !important;
+  }
+
+  .mobile-card:active {
+    background: var(--bg-card-hover) !important;
+    transform: scale(0.98) !important;
+  }
+
+  .mobile-card-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-card-title {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px !important;
+  }
+
+  .mobile-card-sub {
+    font-size: 12px !important;
+    color: var(--text-secondary) !important;
+    margin-top: 2px !important;
+  }
+
+  .mobile-card-amount {
+    color: var(--primary-light) !important;
+    text-shadow: 0 0 15px var(--primary-dim) !important;
+  }
+
+  .mobile-card-actions {
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid var(--border) !important;
+  }
+
+  .mobile-card-actions .btn-icon {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    background: var(--bg-card-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mobile-card-actions .btn-danger {
+    color: var(--error) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+  }
+  .filter-select { display: none !important; }
+
+  /* ══ STEP 13: MOBILE CARDS (CONTACTS, QUOTATIONS, PRODUCTS) ══════════ */
+  table.data-table, table { display: none !important; }
+  .data-list { display: flex !important; flex-direction: column !important; gap: 10px !important; }
+
+  .mobile-card {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important; padding: 14px !important;
+    margin: 0 !important; width: 100% !important; cursor: pointer !important;
+    transition: border-color 0.15s, opacity 0.15s !important;
+    animation: m-card-in 0.22s ease both !important;
+  }
+  @keyframes m-card-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .mobile-card:active { opacity: 0.75 !important; border-color: var(--primary-light) !important; }
+
+  .mobile-card-header {
+    display: flex !important; align-items: flex-start !important; justify-content: space-between !important;
+    gap: 10px !important; margin-bottom: 10px !important;
+    padding-bottom: 10px !important; border-bottom: 1px solid var(--border) !important;
+  }
+  .mobile-card-title {
+    font-size: 14px !important; font-weight: 700 !important;
+    color: var(--text-primary) !important; line-height: 1.35 !important;
+    flex: 1 !important;
+  }
+  .mobile-card-sub {
+    font-size: 12px !important; color: var(--text-muted) !important;
+    font-weight: 500 !important; margin-top: 2px !important;
+    display: block !important; text-transform: none !important; letter-spacing: 0 !important;
+  }
+  .mobile-card-body {
+    display: grid !important; grid-template-columns: 1fr 1fr !important;
+    gap: 8px 12px !important;
+  }
+  .mobile-card-info { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+  .mobile-card-label {
+    font-size: 10px !important; font-weight: 700 !important;
+    color: var(--text-muted) !important; text-transform: uppercase !important; letter-spacing: 0.5px !important;
+  }
+  .mobile-card-value {
+    font-size: 13px !important; font-weight: 600 !important;
+    color: var(--text-secondary) !important; display: block !important; margin: 0 !important;
+  }
+  .mobile-card-amount {
+    font-size: 16px !important; font-weight: 800 !important;
+    color: var(--primary-light) !important; letter-spacing: -0.3px !important;
+    display: block !important; margin: 0 !important;
+  }
+  .mobile-card-footer {
+    display: flex !important; align-items: center !important; justify-content: space-between !important;
+    margin-top: 10px !important; padding-top: 10px !important;
+    border-top: 1px solid var(--border) !important;
+  }
+  .mobile-card-footer svg { color: var(--text-muted) !important; }
+  .mobile-c  .header-title span { color: var(--text-primary) !important; }
+
+  /* Stage selector for Kanban */
+  .kanban-mobile-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    background: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border) !important;
+    scrollbar-width: none !important;
+  }
+  .kanban-mobile-tabs::-webkit-scrollbar { display: none !important; }
+  
+  .kanban-tab {
+    padding: 8px 16px !important;
+    border-radius: var(--radius-sm) !important;
+    background: var(--bg-elevated) !important;
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    border: 1px solid var(--border) !important;
+    cursor: pointer;
+  }
+  .kanban-tab.active {
+    background: var(--primary-subtle) !important;
+    color: var(--primary-light) !important;
+    border-color: var(--primary-light) !important;
+  }
+
+  .kanban-board {
+    display: block !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+  .kanban-col {
+    display: none !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  .kanban-col.active {
+    display: flex !important;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* ══ STEP 14: FORMS ═══════════════════════════════════════════════════ */
+  .form-input, .form-select, .form-textarea {
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    height: 52px !important; border-radius: 14px !important;
+    padding: 0 16px !important; width: 100% !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+    transition: all 0.2s ease !important;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    background: rgba(255,255,255,0.05) !important;
+    border-color: var(--primary-light) !important;
+    box-shadow: 0 0 0 3px var(--primary-subtle), inset 0 2px 4px rgba(0,0,0,0.2) !important;
+  }
+  .form-textarea { height: auto !important; padding: 14px 16px !important; min-height: 90px !important; }
+  .form-label { font-size: 13px !important; color: var(--text-secondary) !important; margin-bottom: 6px !important; }
+  .form-hint  { font-size: 11px !important; color: var(--text-muted) !important; }
+  .form-grid  { grid-template-columns: 1fr !important; }
+
+  /* ══ STEP 15: BUTTONS ═════════════════════════════════════════════════ */
+  .btn { height: 48px !important; border-radius: 12px !important; font-size: 15px !important; font-weight: 600 !important; }
+  .btn-sm { height: 36px !important; font-size: 13px !important; border-radius: 8px !important; padding: 0 14px !important; }
+  .btn-icon { width: 44px !important; height: 44px !important; border-radius: 10px !important; }
+
+  /* ══ STEP 16: FLOATING ACTION BUTTON ══════════════════════════════════ */
+  .fab, button.fab, .visible-mobile {
+    display: flex !important;
+    position: fixed !important;
+    bottom: calc(var(--bottom-nav-h) + 18px) !important;
+    right: 18px !important;
+    width: 54px !important; height: 54px !important; border-radius: 50% !important;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary)) !important;
+    color: #fff !important; border: none !important; cursor: pointer !important;
+    align-items: center !important; justify-content: center !important;
+    box-shadow: 0 4px 20px rgba(20,168,173,0.35), 0 2px 8px rgba(0,0,0,0.4) !important;
+    z-index: 500 !important; transition: transform 0.15s !important;
+  }
+  .fab:active, button.fab:active { transform: scale(0.90) !important; }
+
+  /* ══ STEP 17: BADGES ══════════════════════════════════════════════════ */
+  .badge { font-size: 10px !important; padding: 3px 8px !important; border-radius: 100px !important; font-weight: 700 !important; }
+
+  /* ══ STEP 18: TABLE WRAPPER ═══════════════════════════════════════════ */
+  .table-wrapper {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+  /* Force the mobile-card list inside table-wrapper to show */
+  .table-wrapper .data-list { padding: 10px !important; }
+
+  /* ══ STEP 19: MODAL — BOTTOM SHEET ═══════════════════════════════════ */
+  .modal-overlay {
+    background: rgba(0,0,0,0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    align-items: flex-end !important;
+    padding: 0 !important;
+    z-index: 10001 !important; /* Ensure it floats above the bottom-nav */
+  }
+  .modal {
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92dvh !important; max-height: 92vh !important;
+    width: 100% !important; max-width: 100% !important;
+    margin: 0 !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-bottom: none !important;
+    animation: m-slide-up 0.28s cubic-bezier(0.4,0,0.2,1) !important;
+  }
+  @keyframes m-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal::before {
+    content: ''; display: block;
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.2); border-radius: 100px;
+    margin: 10px auto 0;
+  }
+  .modal-header { 
+    padding: 20px 20px 10px !important; 
+    border-bottom: none !important;
+  }
+  .modal-body { 
+    padding: 10px 20px 20px !important; 
+    overflow-y: auto !important; 
+    max-height: 70dvh !important;
+  }
+  .modal-footer { 
+    padding: 12px 20px 24px !important; 
+    display: flex !important; 
+    gap: 12px !important;
+    background: var(--bg-elevated) !important;
+    border-top: 1px solid rgba(255,255,255,0.05) !important;
+  }
+  .modal-footer .btn { height: 50px !important; font-weight: 700 !important; }
+
+  /* ══ STEP 20: PIPELINE ════════════════════════════════════════════════ */
+  .pipeline-board { flex-direction: column !important; gap: 16px !important; }
+  .pipeline-column { width: 100% !important; background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; }
+  .pipeline-card   { background: var(--bg-elevated) !important; color: var(--text-primary) !important; border-radius: 10px !important; padding: 12px !important; margin: 8px !important; }
+
+  /* ══ STEP 21: RATES DASHBOARD ════════════════════════════════════════ */
+  .rates-grid { grid-template-columns: 1fr !important; }
+
+  /* ══ STEP 22: EMPTY STATE ════════════════════════════════════════════ */
+  .empty-state { padding: 40px 24px !important; }
+  .empty-state h3 { color: var(--text-primary) !important; font-size: 18px !important; }
+  .empty-state p  { color: var(--text-muted) !important; }
+
+  /* ══ STEP 23: DROPDOWN → BOTTOM SLIDE ═══════════════════════════════ */
+  #user-dropdown, .dropdown-menu {
+    position: fixed !important;
+    left: 12px !important; right: 12px !important;
+    bottom: calc(var(--bottom-nav-h) + 12px) !important;
+    top: auto !important; width: auto !important;
+    border-radius: 16px !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    padding: 8px !important;
+    animation: m-slide-up 0.2s ease !important;
+  }
+  .dropdown-item { padding: 14px 16px !important; font-size: 15px !important; border-radius: 10px !important; }
+
+  /* ══ STEP 24: LOADING ═══════════════════════════════════════════════ */
+  .loading-spinner { padding: 40px !important; }
+
+  /* ══ STEP 25: TABS (SETTINGS) ═══════════════════════════════════════ */
+  .tabs { overflow-x: auto !important; white-space: nowrap !important; padding-bottom: 2px !important; scrollbar-width: none !important; }
+  .tabs::-webkit-scrollbar { display: none !important; }
+  .tab-btn { padding: 8px 14px !important; font-size: 13px !important; white-space: nowrap !important; }
+  
+  /* ══ STEP 26: FILTERS PANEL MOBILE ══════════════════════════════════ */
+  #m-filters { 
+    display: none !important; 
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #m-filters.show { 
+    display: flex !important; 
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ══ STEP 27: MOBILE MORE MENU (BOTTOM SHEET) ══════════════════════ */
+  .mobile-menu-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10001;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .mobile-menu-overlay.show {
+    display: block; opacity: 1;
+  }
+
+  .mobile-more-menu {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--bg-elevated);
+    border-radius: 24px 24px 0 0;
+    padding: 20px;
+    z-index: 10002;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-bottom: none;
+  }
+  .mobile-more-menu.show {
+    transform: translateY(0);
+  }
+
+  .menu-handle {
+    width: 40px; height: 5px; background: rgba(255,255,255,0.2);
+    border-radius: 3px; margin: -10px auto 20px;
+  }
+
+  .menu-header {
+    font-size: 16px; font-weight: 800; color: var(--text-primary);
+    margin-bottom: 20px; text-align: center; letter-spacing: -0.3px;
+  }
+
+  .menu-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    padding-bottom: 20px;
+  }
+
+  .menu-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: var(--text-primary); cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .menu-item:active {
+    background: var(--bg-hover); transform: scale(0.95);
+    border-color: var(--primary-light);
+  }
+
+  .menu-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--primary-subtle); color: var(--primary-light);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .menu-icon svg { width: 24px; height: 24px; }
+  .menu-item span { font-size: 13px; font-weight: 700; }
+
+}
+
+  /*  STEP 28: PIPELINE ENHANCEMENTS  */
+  .kanban-card.elite-card {
+    padding: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    border-left: 3px solid var(--primary) !important;
+  }
+  .kanban-card-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .card-rif {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    color: var(--text-muted) !important;
+    background: rgba(255,255,255,0.05) !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+  }
+  .kanban-card-details {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    font-size: 11px !important;
+    color: var(--text-secondary) !important;
+  }
+  .kanban-card-details span {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .kanban-card-quote {
+    margin-top: 4px !important;
+    padding: 8px !important;
+    background: rgba(45, 212, 191, 0.05) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border: 1px solid rgba(45, 212, 191, 0.1) !important;
+  }
+  .kanban-card-quote.empty {
+    background: transparent !important;
+    border: 1px dashed var(--border) !important;
+    justify-content: center !important;
+  }
+  .quote-amount {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: var(--primary-light) !important;
+  }
+  
+  #pipeline-search {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    outline: none !important;
+  }
+}
+

@@ -637,6 +637,48 @@ const Utils = (() => {
     };
     return map[stage] || '•';
   }
+  /**
+   * Intenta abrir WhatsApp App; si falla en 1s, abre WhatsApp Web.
+   */
+  function smartWhatsApp(phoneRaw, text = "") {
+    const phone = formatWhatsApp(phoneRaw);
+    if (!phone) {
+      showToast("Número de teléfono no válido", "error");
+      return;
+    }
+    const msg = encodeURIComponent(text);
+    const appUrl = `whatsapp://send?phone=${phone}&text=${msg}`;
+    const webUrl = `https://web.whatsapp.com/send?phone=${phone}&text=${msg}`;
+
+    const start = Date.now();
+    // Intento abrir el protocolo de la App
+    window.location.href = appUrl;
+
+    setTimeout(() => {
+      // Si después de 1s el tiempo transcurrido es pequeño, 
+      // es probable que el protocolo no haya disparado la app.
+      if (Date.now() - start < 1500) {
+        window.open(webUrl, "_blank");
+      }
+    }, 1000);
+  }
+
+  function validateRIF(rif) {
+    if (!rif) return false;
+    const regex = /^[VGJEP]-[0-9]{8}-[0-9]$/i;
+    return regex.test(formatRIF(rif));
+  }
+
+  function formatRIF(rif) {
+    if (!rif) return '';
+    let clean = String(rif).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.length < 2) return clean;
+    const letra = clean.charAt(0);
+    const cuerpo = clean.substring(1, clean.length - 1);
+    const digito = clean.charAt(clean.length - 1);
+    const cuerpoPad = cuerpo.padStart(8, '0');
+    return `${letra}-${cuerpoPad}-${digito}`;
+  }
 
   // ─── Public API ────────────────────────────────────────────────────────
   return {
@@ -672,7 +714,7 @@ const Utils = (() => {
 
     debounce, getFormData, setFormData,
     showToast, showModal, closeModal, confirm,
-    validateRIF, formatRIF,
+    validateRIF, formatRIF, smartWhatsApp,
 
     // ─── Simple Markdown to HTML ───────────────────────────────────────────
     mdToHtml: (md) => {

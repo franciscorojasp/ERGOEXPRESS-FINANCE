@@ -1705,3 +1705,27 @@ body.lock-scroll {
   background: rgba(255,255,255,0.06); border-color: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-dim); outline: none;
 }
+/* ─── Admin Eye: Privacy Mode ────────────────────────────────────────── */
+.blur-sensitive {
+  filter: blur(8px);
+  transition: filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Cuando el 'Admin Eye' está activo en el body, se quita el desenfoque */
+body.admin-eye-active .blur-sensitive {
+  filter: none;
+  user-select: auto;
+  pointer-events: auto;
+}
+
+/* Animación para el icono del ojo */
+.admin-eye-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.admin-eye-active .admin-eye-toggle svg {
+  color: var(--primary-light);
+  filter: drop-shadow(0 0 5px var(--primary-glow));
+}

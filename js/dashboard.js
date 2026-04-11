@@ -128,6 +128,25 @@ const Dashboard = (() => {
               </div>
             </div>
           </div>
+          </div>
+        </div>
+
+        <!-- Inventory Alerts Section (Fase D) -->
+        <div id="dash-inventory-alerts" style="margin-top:20px; display:none;">
+          <div class="card" style="border-left:4px solid #ef4444;">
+            <div class="card-header">
+              <h3 class="card-title" style="color:#ef4444;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Alertas de Stock Crítico
+              </h3>
+              <button class="btn btn-sm btn-ghost" onclick="App.navigate('/products')">Gestionar Inventario →</button>
+            </div>
+            <div class="card-body" id="inventory-alerts-list" style="padding:0; max-height:200px; overflow-y:auto;">
+              <!-- Alerts inject here -->
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -142,7 +161,8 @@ const Dashboard = (() => {
         Sheets.readSheet(CONFIG.SHEETS.CONTACTS),
         Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS),
         Sheets.readSheet(CONFIG.SHEETS.TRACKING),
-        Sheets.readSheet(CONFIG.SHEETS.RATES)
+        Sheets.readSheet(CONFIG.SHEETS.RATES),
+        Sheets.readSheet(CONFIG.SHEETS.PRODUCTS)
       ]);
 
       const userEmail = App.getCurrentUserEmail();
@@ -199,6 +219,9 @@ const Dashboard = (() => {
            if (period === 'todo') return true;
            return i['Fecha'] >= range.start && i['Fecha'] <= range.end;
         });
+
+      // Stock Alerts Logic (Fase D)
+      _renderStockAlerts(products);
       const totalCashIn = incomes.reduce((sum, i) => sum + Utils.toNumber(i['Total USD']), 0);
 
       // Tasa de Conversión: Aprobadas+ Cerradas / Cotizadas (Sin Borradores)
@@ -260,7 +283,7 @@ const Dashboard = (() => {
           <div class="kpi-icon" style="color:var(--accent); background:var(--accent-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Volumen Ofertado</div>
-            <div class="kpi-value" style="color:var(--accent); font-size:20px;">${symbol} ${Utils.formatNumber(displayOffered)}</div>
+            <div class="kpi-value blur-sensitive" style="color:var(--accent); font-size:20px;">${symbol} ${Utils.formatNumber(displayOffered)}</div>
             <div class="kpi-meta">En negociación</div>
           </div>
         </div>
@@ -270,7 +293,7 @@ const Dashboard = (() => {
           <div class="kpi-icon" style="color:var(--primary-light); background:var(--primary-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Ventas Cerradas</div>
-            <div class="kpi-value u-primary" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayTotal)}</div>
+            <div class="kpi-value u-primary blur-sensitive" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayTotal)}</div>
             <div class="kpi-meta">${acceptedQuotes.length} ganadas</div>
           </div>
         </div>
@@ -280,7 +303,7 @@ const Dashboard = (() => {
           <div class="kpi-icon" style="color:var(--success); background:var(--success-bg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Recaudo Real</div>
-            <div class="kpi-value u-success" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayCash)}</div>
+            <div class="kpi-value u-success blur-sensitive" style="font-size:20px;">${symbol} ${Utils.formatNumber(displayCash)}</div>
             <div class="kpi-meta">Efectivo en periodo</div>
           </div>
         </div>
@@ -299,7 +322,7 @@ const Dashboard = (() => {
           <div class="kpi-icon" style="color:#3b82f6; background:rgba(59, 130, 246, 0.1);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div>
           <div class="kpi-content">
             <div class="kpi-label">Volumen Aprobado</div>
-            <div class="kpi-value" style="color:#3b82f6; font-size:20px;">${symbol} ${Utils.formatNumber(displayApproved)}</div>
+            <div class="kpi-value blur-sensitive" style="color:#3b82f6; font-size:20px;">${symbol} ${Utils.formatNumber(displayApproved)}</div>
             <div class="kpi-meta">${approvedQuotes.length} aprobadas</div>
           </div>
         </div>
@@ -589,10 +612,41 @@ const Dashboard = (() => {
     });
   }
 
+  function _renderStockAlerts(products) {
+    const alerts = products.filter(p => {
+        const actual = Number(p['Stock_Actual']) || 0;
+        const minimo = Number(p['Stock_Minimo']) || 0;
+        return actual <= minimo && minimo > 0;
+    });
+
+    const container = document.getElementById('dash-inventory-alerts');
+    const list = document.getElementById('inventory-alerts-list');
+    if (!container || !list) return;
+
+    if (alerts.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    list.innerHTML = alerts.map(p => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-weight:700; color:#fff; font-size:14px;">${Utils.escapeHtml(p['Nombre'])}</div>
+          <div style="font-size:11px; color:var(--text-muted);">Mínimo requerido: ${p['Stock_Minimo']} unidades</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px; font-weight:900; color:#ef4444;">${p['Stock_Actual'] || 0}</div>
+          <div style="font-size:9px; color:#ef4444; font-weight:800; text-transform:uppercase;">AGOTÁNDOSE</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   function reload() {
     const container = document.getElementById('main-content');
     if (container) render(container);
   }
 
-  return { render, reload };
+  return { render, reload, _loadDashboard };
 })();

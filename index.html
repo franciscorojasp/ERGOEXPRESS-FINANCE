@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#0d7377" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>ERGOEXPRESS CRM</title>
+  <title>ERGOEXPRESS FINANCE | Elite Financial ERP</title>
 
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
@@ -20,6 +20,9 @@
   <link rel="stylesheet" href="css/main.css?v=3.2.7">
   <link rel="stylesheet" href="css/components.css?v=3.2.7">
   <link rel="stylesheet" href="css/responsive.css?v=3.2.7">
+
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
   <style>
     /* Unificación de Fuentes Elite */
@@ -82,7 +85,7 @@
       <img src="assets/logo.png" alt="ERGOEXPRESS" onerror="this.style.display='none'" />
       <div class="sidebar-brand-text">
         <span class="sidebar-brand-name">ERGOEXPRESS</span>
-        <span class="sidebar-brand-sub">CRM v1.0</span>
+        <span class="sidebar-brand-sub">FINANCE v6.0</span>
       </div>
     </div>
 
@@ -154,6 +157,40 @@
           </span>
           <span class="nav-label">Finanzas</span>
         </a>
+
+        <a class="nav-item" data-route="/productivity" onclick="App.navigate('/productivity')" id="nav-productivity">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </span>
+          <span class="nav-label">Productividad</span>
+        </a>
+
+        <a class="nav-item" data-route="/payroll" onclick="App.navigate('/payroll')" id="nav-payroll">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+          </span>
+          <span class="nav-label">Nómina</span>
+        </a>
+
+        <a class="nav-item" data-route="/fiscal" onclick="App.navigate('/fiscal')" id="nav-fiscal">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </span>
+          <span class="nav-label">Fiscal</span>
+        </a>
+
+        <a class="nav-item" data-route="/intelligence" onclick="App.navigate('/intelligence')" id="nav-intelligence">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+            </span>
+          <span class="nav-label">Inteligencia</span>
+        </a>
       </div>
 
       <div class="sidebar-section">
@@ -199,6 +236,20 @@
             </svg>
           </span>
           <span class="nav-label">Configuración</span>
+        </a>
+      </div>
+
+      <!-- Super Admin Tools -->
+      <div class="sidebar-section" id="superadmin-section" style="display:none">
+        <div class="sidebar-section-label" style="color:var(--warning)">Sistema & Control</div>
+
+        <a class="nav-item" data-route="/maintenance" onclick="App.navigate('/maintenance')" id="nav-maintenance">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </span>
+          <span class="nav-label" style="color:var(--warning)">Mantenimiento Pro</span>
         </a>
       </div>
     </nav>
@@ -266,6 +317,13 @@
         </svg>
         <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="20" height="20" style="display:block; color:var(--primary-light);">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Admin Eye (Privacy Mode) -->
+      <button class="header-btn admin-eye-toggle" onclick="App.toggleAdminEye()" title="Admin Eye: Ocultar/Mostrar Montos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
         </svg>
       </button>
 
@@ -411,9 +469,14 @@
       </div>
       <span>Gestión de Cuentas</span>
     </button>
-    <button class="menu-item" onclick="App.navigate('/settings'); App.toggleMoreMenu();">
-      <div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-      <span>Ajustes</span>
+    </button>
+    <button class="menu-item" id="mobile-maint-btn" onclick="App.navigate('/maintenance'); App.toggleMoreMenu();" style="display:none">
+      <div class="menu-icon" style="color:var(--warning)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </div>
+      <span style="color:var(--warning)">Mantenimiento Pro</span>
     </button>
   </div>
 </div>
@@ -451,14 +514,14 @@
 <script src="js/pipeline.js?v=3.2.7"></script>
 <script src="js/finances.js?v=3.2.7"></script>
 <script src="js/agenda.js?v=3.2.7"></script>
-<script src="js/settings.js?v=3.2.7"></script>
-<script src="js/accounts.js?v=3.2.7"></script>
-<script src="js/ai.js?v=3.2.7"></script>
-
-<!-- App Router -->
+<script src="js/productivity.js?v=3.2.7"></script>
+<script src="js/payroll.js?v=3.2.7"></script>
+<script src="js/fiscal.js?v=3.2.7"></script>
+<script src="js/intelligence.js?v=3.2.7"></script>
+<script src="js/MaintenanceUI.js?v=3.2.7"></script>
+<script src="js/Settings.js?v=3.2.7"></script>
+<script src="js/Accounts.js?v=3.2.7"></script>
 <script src="js/app.js?v=3.2.7"></script>
-
-<!-- No se requiere Google Identity Services -->
 
 </body>
 </html>

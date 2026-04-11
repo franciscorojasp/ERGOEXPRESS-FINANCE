@@ -1,8 +1,8 @@
 /**
- * ERGOEXPRESS CRM — Backend en Google Apps Script
+ * ERGOEXPRESS-FINANCE — Backend en Google Apps Script
  * 
  * INSTRUCCIONES:
- * 1. Abrir el Google Sheet "CRM ERGOEXPRESS"
+ * 1. Abrir el Google Sheet "ERGOEXPRESS-FINANCE"
  * 2. Extensiones → Apps Script → pegar este código completo
  * 3. Cambiar el API_KEY en la línea siguiente por uno propio
  * 4. Ejecutar la función "configurarSistema" (▶ botón Play) — solo una vez
@@ -30,18 +30,24 @@ function configurarApiKey(nuevaClave) {
   return 'API_KEY actualizada correctamente.';
 }
 
-// ─── Cabeceras de cada hoja ──────────────────────────────────────────────────
+// ─── Cabeceras de cada hoja (Sincronizadas con ERP v4) ────────────────────────────
 const HEADERS = {
-  Contactos:    ['ID','Razón Social','RIF','Persona Contacto','Teléfonos','Email','Dirección','Estado','Tipo','Fecha Registro','Notas','Etapa Pipeline','Vendedor Email'],
-  Productos:    ['ID','Nombre','Descripción','Categoría','Precio USD','Costo USD','Impuesto %'],
+  Contactos:    ['ID','Razón Social','RIF','Persona Contacto','Teléfonos','Email','Dirección','Estado','Puntaje','Tipo','Fecha Registro','Notas','Etapa Pipeline','Vendedor Email','Categoria_Fiscal','Municipio_ID','RIF_Validado','RIF_Ultimo_Digito','Contribuyente_Especial'],
+  Productos:    ['ID','Nombre','Descripción','Categoría','Precio USD','Costo USD','Impuesto %','Stock_Actual','Stock_Minimo'],
   TasasCambio:  ['ID','Fecha','Tasa Oficial','Fuente'],
-  Cotizaciones: ['ID','Número','Fecha','ID Cliente','Validez Días','Estado','Total USD','Total VES','Detalle JSON','Fecha Creación','Usuario Email','Notas'],
+  Cotizaciones: ['ID','Número','Fecha','ID Cliente','Validez Días','Estado','Total USD','Total VES','Detalle JSON','Fecha Creación','Usuario Email','Notas','Stock_Sincronizado'],
   Seguimiento:  ['ID','ID Cliente','Fecha','Tipo','Descripción','Próximo Seguimiento','Asunto Próximo','Etapa Pipeline','Fecha Cambio Etapa','Usuario Email'],
   Configuracion:['Clave','Valor'],
-  Usuarios:     ['ID','Email','Nombre','Rol','Activo','Fecha Registro','Password'],
-  Finanzas_Ingresos: ['ID','Fecha','ID Cliente','Concepto','ID Cotización','Método','Banco','Referencia Nº','Referencia', 'Tasa', 'Total USD','Total VES','Estado','Vendedor Email'],
-  Finanzas_Egresos:  ['ID','Fecha','Beneficiario','Categoría','Concepto','Referencia','Método', 'Banco', 'Referencia Nº', 'Pagador', 'Tasa', 'Total USD','Total VES','Estado','Usuario Email'],
-  Agenda:       ['ID','Fecha','Hora','ID Cliente','Asunto','Tipo','Estado','Notas','Usuario Email']
+  Usuarios:     ['ID','Email','Nombre','Rol','Activo','Fecha Registro','Password','SuperAdmin'],
+  Finanzas_Ingresos: ['ID','Fecha','ID Cliente','Concepto','ID Cotización','Método','Banco','Referencia Nº','Referencia', 'Tasa', 'Total USD','Total VES','Estado','Vendedor Email','IGTF_VES','Diferencial_Cambiario','Tasa_Factura','Nro_Control_Factura','Estatus_Retencion','Monto_Divisa_Neto'],
+  Finanzas_Egresos:  ['ID','Fecha','Beneficiario','Categoría','Concepto','Referencia','Método', 'Banco', 'Referencia Nº', 'Pagador', 'Tasa', 'Total USD','Total VES', 'Estado','Usuario Email','Retencion_IVA','Retencion_ISLR','ISLR_%','Aporte_Pension_9%','Monto_Neto_Divisa','Base_Imponible_VES'],
+  Agenda:            ['ID','Fecha','Hora','ID Cliente','Asunto','Tipo','Estado','Notas','Usuario Email'],
+  Presupuestos:      ['ID','Partida','Monto_Asignado_USD','Monto_Ejecutado_USD','Disponible_USD','Mes_Año'],
+  Nomina_Control:    ['ID_Empleado','Nombre','Sueldo_USD_Base','Sueldo_VES_Indexado','Bono_Alimentacion','Bono_Especial_Config','Total_Destajo_Mes_VES','Total_Bonos_Cumplimiento_VES','Metodo_Pago_Preferencia','Fecha_Ingreso','Ultima_Liquidacion','Apartado_Art142_A','Apartado_Art142_C'],
+  Nomina_Detalle:    ['ID','ID_Empleado','Fecha','Tipo_Pago','Descripcion_Tarea','Cantidad', 'Precio_Unitario_USD', 'Subtotal_USD', 'Estatus_Pago'],
+  Pasivos_Laborales: ['ID','ID_Empleado','Trimestre','Dias_Garantia','Monto_Garantia_VES','Intereses_Prestaciones'],
+  Logs_Auditoria:    ['ID','Fecha','Usuario_Email','Accion','Tabla','ID_Registro','Detalles'],
+  Notas_Operaciones: ['ID','Número','Fecha','Tipo','ID_Registro_Original','Tabla_Original','Concepto','Monto_Ajuste_USD','Total_VES','Tasa','Usuario_Email']
 };
 
 // ─── Punto de entrada POST ───────────────────────────────────────────────────
@@ -80,9 +86,33 @@ function doPost(e) {
         case 'DELETE':         return ok(del(req));
         case 'SYNC_TO_CALENDAR': return ok(syncToCalendar(req));
         case 'GET_NEXT_NUMBER': return ok(getNextNumber(req));
+        case 'EXECUTE_PAYROLL_ACTION': return ok(executePayrollAction(req));
         case 'RESET_ALL_PASSWORDS': return ok(resetAllPasswords(req));
         case 'RUN_MAINTENANCE': return ok({ success: true, message: repararCuentasUsuarios() });
         case 'ASK_GEMINI':     return ok(askGemini(req));
+
+        // 🛠️ MÓDULO MANTENIMIENTO SUPER-ADMIN
+        case 'HARD_RESET': 
+          if (!user.isSuper) return ok({ success: false, error: 'Acceso Denegado: Se requieren permisos de SuperAdmin' });
+          return ok(system_hardReset(req));
+        case 'GENERATE_BACKUP':
+          if (!user.isSuper) return ok({ success: false, error: 'Acceso Denegado: Se requieren permisos de SuperAdmin' });
+          return ok(system_generateBackup(req));
+
+        // 📊 MÓDULO FISCAL
+        case 'FISCAL_EXPORT_IVA_XML': return ok(generateIVAXMLExport(req.period));
+        case 'FISCAL_EXPORT_IVA_TXT': return ok(generateIVATXTExport(req.period));
+        case 'GET_FISCAL_DASHBOARD':  return ok(getFiscalDashboard(req.period));
+
+        // 🔍 MÓDULO INTELIGENCIA & BI
+        case 'BI_GET_STATS':  return ok(getBIStatsPackage(req.options));
+        case 'BI_AUDIT':      return ok(runAIAudit(req.query, req.history));
+        case 'BI_SETUP_KEY':  return ok(setupSecureAI());
+
+        // 📦 MÓDULO INVENTARIO & AUDITORÍA
+        case 'INV_REDUCE_STOCK': return ok(syncStockWithQuota(req.quotaId));
+        case 'GET_AUDIT_LOGS':   return ok(getAuditLogs(req.limit));
+
         default: return ok({ success: false, error: 'Acción desconocida o no autorizada: ' + req.action });
       }
     } catch (authErr) {
@@ -124,11 +154,11 @@ function hash(str) {
 // ─── Tokens (duración: 8 horas) ──────────────────────────────────────────────
 const TOKEN_TTL = 8 * 60 * 60 * 1000;
 
-function makeToken(email, name, role) {
+function makeToken(email, name, role, ip = '0.0.0.0') {
   const token = Utilities.getUuid();
   const exp   = Date.now() + TOKEN_TTL;
   PropertiesService.getScriptProperties()
-    .setProperty('TK:' + token, JSON.stringify({ email, name, role, exp }));
+    .setProperty('TK:' + token, JSON.stringify({ email, name, role, exp, ip }));
   return token;
 }
 
@@ -149,6 +179,14 @@ function checkToken(token) {
 function auth(req) {
   const user = checkToken(req.token);
   if (!user) throw new Error('UNAUTHORIZED');
+  
+  // VALIDACIÓN DE IP (Simulación 2FA / Fingerprinting)
+  const currentIP = req.ip || '0.0.0.0';
+  if (user.ip && user.ip !== '0.0.0.0' && user.ip !== currentIP) {
+    console.warn(`[SECURITY] IP Mismatch detected for ${user.email}. Expected: ${user.ip}, Found: ${currentIP}`);
+    // En producción podrías invalidar el token aquí
+  }
+
   return user;
 }
 
@@ -181,11 +219,14 @@ function getNextNumber(req) {
     if (idx === -1) return { success: true, next: null };
     
     let max = 0;
+    const prefix = req.prefix || '';
     for (let i = 1; i < data.length; i++) {
-      const val = parseInt(data[i][idx]) || 0;
+      const valStr = String(data[i][idx]);
+      if (prefix && !valStr.startsWith(prefix)) continue;
+      const val = parseInt(valStr.replace(prefix, '')) || 0;
       if (val > max) max = val;
     }
-    return { success: true, next: max + 1 };
+    return { success: true, next: max + 1, formatted: prefix + (max + 1) };
   } catch (e) {
     return { success: false, error: 'Timeout obteniendo número secuencial' };
   } finally {
@@ -314,25 +355,64 @@ function login(req) {
       if (!isCorrect) return { success: false, error: 'Contraseña incorrecta.' };
       if (String(r[iA]).toUpperCase() !== 'SI') return { success: false, error: 'Cuenta inactiva.' };
       
-      const token = makeToken(emailInput, r[iN], r[iR]);
-      return { success: true, token, user: { email: emailInput, name: r[iN], role: r[iR] } };
+      const superIdx = hdrs.indexOf('SuperAdmin');
+      const isSuper = (String(emailInput).toLowerCase() === 'francisco.rojasp@gmail.com') || (superIdx !== -1 && String(r[superIdx]).toUpperCase() === 'SI');
+
+      const token = makeToken(emailInput, r[iN], r[iR], req.ip);
+      return { 
+        success: true, 
+        token, 
+        user: { 
+          email: emailInput, 
+          name: r[iN], 
+          role: r[iR], 
+          isSuper: isSuper,
+          isOwner: (String(emailInput).toLowerCase() === 'francisco.rojasp@gmail.com')
+        } 
+      };
     }
   }
   return { success: false, error: 'Usuario no encontrado.' };
 }
 
 function read(req) {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(req.sheet);
-  if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
-  const all  = sheet.getDataRange().getValues();
-  const hdrs = all[0];
-  const isUserSheet = (req.sheet === 'Usuarios');
+  const user = auth(req);
+  if (!user) return { success: false, error: 'No autorizado' };
 
-  const rows = all.slice(1).map((row, i) => {
+  const res = _getMaskedRows(req.sheet, user);
+  return res;
+}
+
+function _getMaskedRows(sheetName, user) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  
+  // BLOQUEO TOTAL DE HOJAS SENSIBLES (Zero-Trust)
+  const blacklist = ['Nomina_Control', 'Finanzas_Ingresos', 'Configuracion', 'Logs_Auditoria'];
+  const isHighSilver = ['admin', 'socio', 'gerente'].includes(user.role);
+  
+  if (blacklist.includes(sheetName) && !isHighSilver) {
+    return { success: false, error: 'Acceso denegado a datos sensibles' };
+  }
+
+  if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
+  
+  const all = sheet.getDataRange().getValues();
+  const hdrs = all[0];
+  const isUserSheet = (sheetName === 'Usuarios');
+
+  // FILTRADO POR VENDEDOR (Seguridad Horizontal)
+  let rowsRaw = all.slice(1);
+  if (user.role === 'vendedor') {
+    const idxVendedor = hdrs.indexOf('Vendedor_ID') !== -1 ? hdrs.indexOf('Vendedor_ID') : hdrs.indexOf('Email_Vendedor');
+    if (idxVendedor !== -1 && (sheetName === 'Cotizaciones' || sheetName === 'Seguimiento')) {
+      rowsRaw = rowsRaw.filter(r => String(r[idxVendedor]).toLowerCase() === String(user.email).toLowerCase());
+    }
+  }
+
+  const rowsProcessed = rowsRaw.map((row, i) => {
     const o = { _rowIndex: i + 2 };
     hdrs.forEach((h, j) => { 
-      // Seguridad: No enviar hashes de password al frontend
       if (isUserSheet && h === 'Password') {
         o[h] = '********';
         return;
@@ -346,14 +426,15 @@ function read(req) {
         if (isDateCol) {
           val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
         } else {
-          val = String(val); // Fallback normal
+          val = String(val);
         }
       }
       o[h] = (val === undefined || val === null) ? '' : val; 
     });
     return o;
   });
-  return { success: true, data: rows };
+
+  return { success: true, data: rowsProcessed };
 }
 
 /**
@@ -399,31 +480,13 @@ function habilitarUsuarioSolicitado() {
 }
 
 function batchRead(req) {
-  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const user = auth(req);
+  if (!user) return { success: false, error: 'No autorizado' };
+
   const out = {};
   for (const name of (req.sheets || [])) {
-    const sh = ss.getSheetByName(name);
-    if (!sh || sh.getLastRow() < 2) { out[name] = []; continue; }
-    const all  = sh.getDataRange().getValues();
-    const hdrs = all[0];
-    out[name]  = all.slice(1).map((row, i) => {
-      const o = { _rowIndex: i + 2 };
-      hdrs.forEach((h, j) => { 
-        let val = row[j];
-        const dateHdrs = ['Fecha','Registro','Seguimiento','Validez'];
-        const isDateCol = dateHdrs.some(dh => h.includes(dh));
-
-        if (val instanceof Date) {
-          if (isDateCol) {
-            val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "yyyy-MM-dd");
-          } else {
-            val = String(val); // Fallback normal
-          }
-        }
-        o[h] = (val === undefined || val === null) ? '' : val; 
-      });
-      return o;
-    });
+    const res = _getMaskedRows(name, user);
+    out[name] = res.success ? res.data : [];
   }
   return { success: true, data: out };
 }
@@ -434,13 +497,57 @@ function append(req) {
   if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
   const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   
-  // Si estamos agregando un usuario, hashear el password
+  // ─── INTERCEPTORES FINANCE ERP (v6) ─────────────────────────────────────────────
+  
+  // A. Redondeo de Tasa (Obligatorio SENIAT)
+  if (req.data.Tasa) {
+    req.data.Tasa = _roundVES(req.data.Tasa);
+  }
+
+  // B. Ingresos: Cálculos Fiscales
+  if (req.sheet === 'Finanzas_Ingresos') {
+    const tasaActual = Number(req.data.Tasa || 0);
+    const montoUSD = Number(req.data['Total USD'] || 0);
+
+    // Validar Secuencia Legal
+    if (req.data.Nro_Control_Factura) {
+      const seqCheck = validarSecuenciaFactura(req.data.Nro_Control_Factura);
+      if (!seqCheck.success) return { success: false, error: seqCheck.error };
+    }
+    
+    // Auto-cálculo de IGTF y Redondeo
+    const fiscal = calcFiscalidad(montoUSD, tasaActual, false, req.data['Método']);
+    req.data['Total VES'] = fiscal.total_con_igtf_ves;
+    req.data['IGTF_VES'] = fiscal.igtf_ves;
+  }
+
+  // C. Egresos: Nómina y Productividad
+  if (req.sheet === 'Finanzas_Egresos') {
+    const montoUSD = Number(req.data['Total USD'] || 0);
+    const categoria = req.data['Categoría'];
+    
+    // Validar Presupuesto
+    const budgetCheck = checkBudget(categoria, montoUSD);
+    if (!budgetCheck.success) {
+      return { success: false, error: budgetCheck.error, type: 'BUDGET_EXCEEDED' };
+    }
+
+    if (categoria === 'Nómina') {
+       _updateLaborLiabilities(req.data);
+       // Liquidar tareas a destajo si se proporciona ID_Empleado
+       if (req.data.ID_Empleado) {
+         _settlePieceworkTasks(req.data.ID_Empleado);
+       }
+    }
+  }
+  
+  // ─── LÓGICA ESTÁNDAR ───────────────────────────────────────────────────────
+  
   if (req.sheet === 'Usuarios') {
     if (req.data.Password) req.data.Password = hash(req.data.Password);
     if (req.data.Activo) req.data.Activo = String(req.data.Activo).toUpperCase();
   }
 
-  // Generación automática de ID si falta y la columna existe
   if (cols.includes('ID') && (!req.data.ID || req.data.ID === '')) {
     req.data.ID = Utilities.getUuid();
   }
@@ -450,6 +557,10 @@ function append(req) {
     if (typeof req.data[h] === 'number') return req.data[h];
     return String(req.data[h]);
   }));
+
+  // 4. Log Auditoría
+  logAction('CREATE', req.sheet, req.data.ID || 'N/A', req.data);
+
   return { success: true };
 }
 
@@ -491,11 +602,25 @@ function clearSheets(req) {
 }
 
 function update(req) {
+  const user = auth(req);
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(req.sheet);
   if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+  
+  // BLOQUEO DE INALTERABILIDAD FISCAL (SNAT/2024/00121)
+  const fiscalSheets = ['Finanzas_Ingresos', 'Finanzas_Egresos', 'Cotizaciones', 'Nomina_Control'];
+  if (fiscalSheets.includes(req.sheet) && !req.permitidoOverride) {
+    return { success: false, error: 'CERTIFICACIÓN SNAT/2024/00121: Los registros fiscales son inalterables. Todo ajuste debe realizarse mediante Notas de Crédito/Débito en el módulo de Notas de Operaciones.' };
+  }
+
   const cols  = HEADERS[req.sheet] || sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   
+  // 0. Interceptores ERP para Update
+  if (req.sheet === 'Finanzas_Egresos' && req.data['Total USD']) {
+     const budgetCheck = checkBudget(req.data['Categoría'], Number(req.data['Total USD']), true); // true = update mode
+     if (!budgetCheck.success) return budgetCheck;
+  }
+
   // 1. Obtener datos actuales de la fila (para no perder campos no enviados)
   const currentRowValues = sheet.getRange(req.rowIndex, 1, 1, cols.length).getValues()[0];
   const mergedData = {};
@@ -537,14 +662,34 @@ function update(req) {
   rng.setValues([row]);
   rng.setNumberFormat(""); // Limpiar formatos forzados
   
+  // 6. Log Auditoría
+  logAction('UPDATE', req.sheet, mergedData['ID'] || 'N/A', { anterior: currentRowValues, nuevo: row });
+
   return { success: true };
 }
 
 function del(req) {
-  try { auth(req); } catch(e) { return { success: false, error: 'UNAUTHORIZED' }; }
+  const user = auth(req);
+  if (!user) return { success: false, error: 'No autorizado' };
+  
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(req.sheet);
   if (!sheet) return { success: false, error: 'Hoja no encontrada: ' + req.sheet };
+
+  // BLOQUEO DE INALTERABILIDAD FISCAL (SNAT/2024/00121)
+  const fiscalSheets = ['Finanzas_Ingresos', 'Finanzas_Egresos', 'Cotizaciones', 'Nomina_Control'];
+  if (fiscalSheets.includes(req.sheet)) {
+    return { success: false, error: 'CERTIFICACIÓN SNAT/2024/00121: Prohibido eliminar registros con valor fiscal. Use Notas de Crédito para ajustes.' };
+  }
+  
+  // Log Auditoría antes de borrar
+  const cols = HEADERS[req.sheet] || [];
+  const rowData = sheet.getRange(req.rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const idIdx = cols.indexOf('ID');
+  const recordId = idIdx !== -1 ? rowData[idIdx] : 'N/A';
+  
+  logAction('DELETE', req.sheet, recordId, rowData);
+
   sheet.deleteRow(req.rowIndex);
   return { success: true };
 }
@@ -841,4 +986,400 @@ function repararCuentasUsuarios() {
   }
   
   return `Mantenimiento completado. Se repararon ${repairs} registros de usuarios.`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🚀 MÓDULO ERP FINANCE: MIGRACIÓN Y MOTOR MATEMÁTICO
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * MIGRACIÓN AUTOMÁTICA: Expande la estructura de datos local a ERP Finance.
+ * No borra datos, solo añade columnas faltantes y crea nuevas hojas.
+ */
+function migrarEstructuraFinance() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetsToProcess = Object.keys(HEADERS);
+  let logs = [];
+
+  sheetsToProcess.forEach(sheetName => {
+    let sheet = ss.getSheetByName(sheetName);
+    const expectedHeaders = HEADERS[sheetName];
+
+    if (!sheet) {
+      // Crear hoja si no existe
+      sheet = ss.insertSheet(sheetName);
+      sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+      sheet.getRange(1, 1, 1, expectedHeaders.length).setBackground('#1e293b').setFontColor('#ffffff').setFontWeight('bold');
+      logs.push(`Hoja creada: ${sheetName}`);
+    } else {
+      // Verificar y añadir columnas faltantes
+      const existingHeaders = sheet.getDataRange().getValues()[0];
+      expectedHeaders.forEach(header => {
+        if (existingHeaders.indexOf(header) === -1) {
+          const lastCol = sheet.getLastColumn();
+          sheet.insertColumnAfter(lastCol);
+          sheet.getRange(1, lastCol + 1).setValue(header);
+          sheet.getRange(1, lastCol + 1).setBackground('#334155').setFontColor('#ffffff').setFontWeight('bold');
+          logs.push(`Columna añadida a ${sheetName}: ${header}`);
+        }
+      });
+    }
+  });
+
+  return { success: true, logs: logs };
+}
+
+// ─── MOTOR MATEMÁTICO FISCAL (Senior Accountant Logic) ────────────────────────
+
+/**
+ * Calcula IGTF (3%) sobre pagos en divisas.
+ */
+function calcIGTF(montoUSD, tasaBCV) {
+  const montoVES = montoUSD * tasaBCV;
+  return {
+    monto_usd: montoUSD,
+    igtf_ves: Number((montoVES * 0.03).toFixed(2)),
+    base_ves: Number(montoVES.toFixed(2))
+  };
+}
+
+/**
+ * Calcula Retenciones IVA (75% o 100%) e ISLR.
+ */
+function calcRetenciones(baseImponibleVES, alicuotaIVA = 0.16, esEspecial = true, islrPorcentaje = 0.03) {
+  const ivaTotal = baseImponibleVES * alicuotaIVA;
+  const retencionIVA = esEspecial ? (ivaTotal * 0.75) : (ivaTotal * 1.00);
+  const retencionISLR = baseImponibleVES * islrPorcentaje;
+  
+  return {
+    iva_total_ves: Number(ivaTotal.toFixed(2)),
+    retencion_iva_ves: Number(retencionIVA.toFixed(2)),
+    retencion_islr_ves: Number(retencionISLR.toFixed(2))
+  };
+}
+
+/**
+ * Diferencial Cambiario: Compara tasa de origen vs tasa de pago.
+ */
+function calcDiferencial(montoUSD, tasaOrigen, tasaPago) {
+  const vesOrigen = montoUSD * tasaOrigen;
+  const vesPago = montoUSD * tasaPago;
+  return {
+    diferencial_ves: Number((vesPago - vesOrigen).toFixed(2)),
+    tasa_variacion: Number((tasaPago - tasaOrigen).toFixed(4))
+  };
+}
+
+// ─── MOTOR MATEMÁTICO LABORAL (LOTTT & Parafiscal) ───────────────────────────
+
+/**
+ * Calcula Garantía de Prestaciones (15 días trimestrales).
+ */
+function calcPrestacionesGarantia(sueldoIntegralVES) {
+  const salarioDiario = sueldoIntegralVES / 30;
+  return {
+    dias: 15,
+    monto_garantia_ves: Number((salarioDiario * 15).toFixed(2))
+  };
+}
+
+/**
+ * Retorna deducciones de ley para el empleado y aportes del patrono.
+ */
+function calcAportesNomina(sueldoVES) {
+  return {
+    empleado: {
+      ivss: Number((sueldoVES * 0.04).toFixed(2)),
+      faov: Number((sueldoVES * 0.01).toFixed(2))
+    },
+    patrono: {
+      ivss: Number((sueldoVES * 0.10).toFixed(2)), // 10% fijo para medianos/grandes
+      faov: Number((sueldoVES * 0.02).toFixed(2)),
+      inces: Number((sueldoVES * 0.02).toFixed(2))
+    }
+  };
+}
+
+/**
+ * Provisión mensual para Vacaciones y Utilidades (min 15 días/año c/u).
+ */
+function calcVacacionesUtilidades(sueldoIntegralVES) {
+  const provisionMensualVac = (sueldoIntegralVES / 360) * 15;
+  const provisionMensualUtil = (sueldoIntegralVES / 360) * 15;
+  return {
+    mensual_vacaciones_ves: Number(provisionMensualVac.toFixed(2)),
+    mensual_utilidades_ves: Number(provisionMensualUtil.toFixed(2))
+  };
+}
+
+/**
+ * Indexación de sueldo según BCV.
+ */
+function indexarSueldo(montoUSD, tasaBCV) {
+  return Number((montoUSD * tasaBCV).toFixed(2));
+}
+
+/**
+ * Costo de Servicio (Estructura SUNDDE).
+ */
+function calcCostoServicio(horas, costoHora, overheadPerc = 0.3) {
+  const base = horas * costoHora;
+  const overhead = base * overheadPerc;
+  return {
+    costo_directo: base,
+    overhead: overhead,
+    costo_total: base + overhead
+  };
+}
+
+// ─── HELPERS DE INTEGRACIÓN ──────────────────────────────────────────────────
+
+/**
+ * Busca la tasa BCV original de una cotización.
+ */
+function _getQuoteRate(quoteId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Cotizaciones');
+  if (!sh) return null;
+  const data = sh.getDataRange().getValues();
+  const hdrs = data[0];
+  const iID = hdrs.indexOf('ID');
+  const iVES = hdrs.indexOf('Total VES');
+  const iUSD = hdrs.indexOf('Total USD');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][iID]) === String(quoteId)) {
+      const ves = Number(data[i][iVES] || 0);
+      const usd = Number(data[i][iUSD] || 0);
+      return usd > 0 ? Number((ves / usd).toFixed(4)) : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Valida si un gasto excede el presupuesto mensual de su partida.
+ */
+function checkBudget(partida, montoUSD, isUpdate = false) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Presupuestos');
+  if (!sh) return { success: true }; // Si no hay hoja, no bloqueamos (graceful degradation)
+
+  const now = new Date();
+  const mesAnio = _formatMesAnio(now);
+  const data = sh.getDataRange().getValues();
+  const hdrs = data[0];
+  const iPartida = hdrs.indexOf('Partida');
+  const iMes = hdrs.indexOf('Mes_Año');
+  const iAsignado = hdrs.indexOf('Monto_Asignado_USD');
+  const iEjecutado = hdrs.indexOf('Monto_Ejecutado_USD');
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][iPartida] === partida && data[i][iMes] === mesAnio) {
+      const asignado = Number(data[i][iAsignado] || 0);
+      const ejecutado = Number(data[i][iEjecutado] || 0);
+      
+      if (!isUpdate && (ejecutado + montoUSD > asignado)) {
+        return { 
+          success: false, 
+          error: `Presupuesto insuficiente para ${partida}. Disponible: $${(asignado - ejecutado).toFixed(2)}` 
+        };
+      }
+      
+      // Actualizar el ejecutado si es un append exitoso (esto se hará después en la lógica de negocio real)
+      // Por ahora solo validamos.
+      return { success: true };
+    }
+  }
+  
+  return { success: true }; // Si no hay presupuesto definido, permitimos el gasto (flexible)
+}
+
+function _formatMesAnio(date) {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return `${meses[date.getMonth()]}-${date.getFullYear()}`;
+}
+
+/**
+ * Actualiza el historial de pasivos laborales al registrar una nómina.
+ */
+function _updateLaborLiabilities(expenseData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Pasivos_Laborales');
+  if (!sh) return;
+  
+  // Lógica simplificada: Registrar el aporte a pasivos en base al sueldo pagado
+  // En una implementación real buscaría al empleado en Nomina_Control
+  const sueldoVES = Number(expenseData['Total VES'] || 0);
+  const sueldoIntegralVES = sueldoVES * 1.20; // Estimación bono vac/util
+  
+  const garantia = calcPrestacionesGarantia(sueldoIntegralVES);
+  
+  sh.appendRow([
+    Utilities.getUuid(),
+    'AUTO-GEN',
+    _getTrimestreActual(),
+    15,
+    garantia.monto_garantia_ves,
+    0
+  ]);
+}
+
+/**
+ * Liquida todas las tareas pendientes de un empleado (Cierre de Nómina mensual).
+ */
+function _settlePieceworkTasks(idEmpleado) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Nomina_Detalle');
+  if (!sh) return;
+  
+  const data = sh.getDataRange().getValues();
+  const hdrs = data[0];
+  const idxId = hdrs.indexOf('ID_Empleado');
+  const idxEst = hdrs.indexOf('Estatus_Pago');
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idxId]) === String(idEmpleado) && data[i][idxEst] !== 'PAGADO') {
+      sh.getRange(i + 1, idxEst + 1).setValue('PAGADO');
+    }
+  }
+}
+
+/**
+ * Valida que no se dupliquen números de control de facturación (Providencia 0071).
+ */
+function validarSecuenciaFactura(nroControl) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Finanzas_Ingresos');
+  if (!sh) return { success: true };
+  
+  const data = sh.getDataRange().getValues();
+  const hdrs = data[0];
+  const idxC = hdrs.indexOf('Nro_Control_Factura');
+  
+  const existe = data.slice(1).some(row => String(row[idxC]) === String(nroControl));
+  if (existe) {
+    return { success: false, error: "El Nro de Control " + nroControl + " ya existe. Bloqueo fiscal preventivo." };
+  }
+  return { success: true };
+}
+
+function _getTrimestreActual() {
+  const mes = new Date().getMonth() + 1;
+  if (mes <= 3) return 'T1';
+  if (mes <= 6) return 'T2';
+  if (mes <= 9) return 'T3';
+  return 'T4';
+}
+
+/**
+ * Acción Central de Nómina: Registra egreso, cierra tareas y notifica.
+ */
+function executePayrollAction(req) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tasa = _roundVES(fetchBCVRate().tasa || 36.5);
+  const data = req.data || {};
+  
+  try {
+    // 1. Registrar Egreso en Finanzas_Egresos
+    const shEgresos = ss.getSheetByName('Finanzas_Egresos');
+    const idEgreso = Utilities.getUuid();
+    const totalUSD = _roundVES(data.amountUSD || 0);
+    const totalVES = _roundVES(totalUSD * tasa);
+    
+    const nuevoEgreso = [
+      idEgreso,
+      new Date().toISOString().split('T')[0],
+      data.employeeId, // Beneficiario
+      'Nómina',        // Categoría
+      `Pago Nómina ${data.frequency.toUpperCase()} - Emp: ${data.employeeId}`,
+      'N/A',
+      'Transferencia', // Método default
+      'Banco Principal',
+      'REF-' + Utilities.getUuid().substring(0,8),
+      'Caja Principal',
+      tasa,
+      totalUSD,
+      totalVES,
+      'Pagado',
+      req.userEmail || 'admin@ergoexpress.com',
+      0, 0, 0, 0, totalUSD, totalVES // Fiscales vacíos para nómina simplificada
+    ];
+    shEgresos.appendRow(nuevoEgreso);
+
+    // 2. Cerrar Tareas en Nomina_Detalle
+    const shDetalle = ss.getSheetByName('Nomina_Detalle');
+    if (shDetalle) {
+      const allDet = shDetalle.getDataRange().getValues();
+      for (let i = 1; i < allDet.length; i++) {
+        // Si el empleado coincide y estaba PENDIENTE, marcar como PAGADO
+        if (String(allDet[i][1]) === String(data.employeeId) && allDet[i][8] === 'PENDIENTE') {
+          shDetalle.getRange(i + 1, 9).setValue('PAGADO');
+        }
+      }
+    }
+
+    // 3. Actualizar Ultima_Liquidacion en Nomina_Control
+    const shControl = ss.getSheetByName('Nomina_Control');
+    if (shControl) {
+      const allCtrl = shControl.getDataRange().getValues();
+      for (let i = 1; i < allCtrl.length; i++) {
+        if (String(allCtrl[i][0]) === String(data.employeeId)) {
+          shControl.getRange(i + 1, 11).setValue(new Date());
+          break;
+        }
+      }
+    }
+
+    // 4. Enviar Email (Notificación Humanizada)
+    sendPayrollNotification(data.employeeId, data.frequency, totalUSD, tasa);
+
+    return { success: true, phone: data.phone };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function addFiscalAdjustment(req) {
+  const user = auth(req);
+  if (!user) return { success: false, error: 'No autorizado' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('Notas_Operaciones');
+  if (!sh) return { success: false, error: 'Hoja Notas_Operaciones no encontrada' };
+
+  // 1. Obtener número correlativo según tipo (NC o ND)
+  const prefix = req.data.Tipo === 'Crédito' ? 'NC-' : 'ND-';
+  const next = getNextNumber({ sheet: 'Notas_Operaciones', prefix: prefix });
+  if (!next.success) return next;
+
+  const row = [
+    Utilities.getUuid(),
+    next.formatted,
+    new Date().toISOString().split('T')[0],
+    req.data.Tipo,
+    req.data.ID_Registro_Original,
+    req.data.Tabla_Original,
+    req.data.Concepto,
+    Number(req.data.Monto_Ajuste_USD || 0),
+    Number(req.data.Total_VES || 0),
+    Number(req.data.Tasa || 0),
+    user.email
+  ];
+
+  sh.appendRow(row);
+  logAction('FISCAL_ADJUST', 'Notas_Operaciones', next.formatted, row);
+
+  return { success: true, number: next.formatted };
+}
+
+/**
+ * CONFIGURACIÓN DE SEGURIDAD AI
+ * Ejecutar desde el editor de Apps Script pasando la clave como argumento:
+ * setupSecureAI('TU_CLAVE_AQUI')
+ */
+function setupSecureAI(apiKey) {
+  if (!apiKey) throw new Error('Se requiere la API Key para configurar');
+  PropertiesService.getScriptProperties().setProperty('GROQ_API_KEY', apiKey);
+  return "Clave Groq configurada exitosamente en almacenamiento seguro (PropertiesService).";
 }
