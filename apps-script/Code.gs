@@ -721,19 +721,48 @@ function setup() {
     if (!sh) {
       sh = ss.insertSheet(name);
       sh.appendRow(HEADERS[name]);
-      sh.getRange(1, 1, 1, HEADERS[name].length).setFontWeight('bold').setBackground('#f3f3f3');
+      sh.getRange(1, 1, 1, HEADERS[name].length).setFontWeight('bold').setBackground('#2d3436').setFontColor('#ffffff');
       sh.setFrozenRows(1);
     } else {
       // Verificar si faltan columnas
-      const existingHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+      const existingHeaders = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0];
       HEADERS[name].forEach(h => {
         if (existingHeaders.indexOf(h) === -1) {
-          sh.getRange(1, sh.getLastColumn() + 1).setValue(h).setFontWeight('bold').setBackground('#f3f3f3');
+          sh.getRange(1, sh.getLastColumn() + 1).setValue(h).setFontWeight('bold').setBackground('#2d3436').setFontColor('#ffffff');
         }
       });
     }
+    
+    // Auto-ajuste de columnas
+    if (sh.getLastColumn() > 0) sh.autoResizeColumns(1, sh.getLastColumn());
   });
-  return { success: true };
+
+  // Configuración Inicial de Datos de Empresa
+  _initConfig(ss);
+
+  // VALIDACIONES DE DATOS (Dropdowns sugeridos para integridad)
+  const shUser = ss.getSheetByName('Usuarios');
+  if (shUser) {
+    const hdrs = shUser.getRange(1, 1, 1, shUser.getLastColumn()).getValues()[0];
+    const iRol = hdrs.indexOf('Rol') + 1;
+    const iAct = hdrs.indexOf('Activo') + 1;
+    const iSup = hdrs.indexOf('SuperAdmin') + 1;
+
+    if (iRol > 0) {
+      const rule = SpreadsheetApp.newDataValidation().requireValueInList(['admin', 'vendedor', 'socio', 'gerente']).build();
+      shUser.getRange(2, iRol, 100).setDataValidation(rule);
+    }
+    if (iAct > 0) {
+      const rule = SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO']).build();
+      shUser.getRange(2, iAct, 100).setDataValidation(rule);
+    }
+    if (iSup > 0) {
+      const rule = SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO']).build();
+      shUser.getRange(2, iSup, 100).setDataValidation(rule);
+    }
+  }
+
+  return { success: true, message: 'Sistema configurado y sincronizado exitosamente.' };
 }
 
 function savePDFToDrive(req) {
