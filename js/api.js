@@ -52,9 +52,14 @@ const API = (() => {
         throw new Error('Sesión expirada. Inicia sesión de nuevo.');
       }
 
-      if (!data.success) {
+      if (!data.success && data.rate === undefined) {
         console.error('[API ERROR] Backend reported failure:', data.error, { action });
         throw new Error(data.error || 'Error desconocido del servidor');
+      }
+
+      // Normalizar para que devuelva success:true si entró por data.rate
+      if (data.rate !== undefined && data.success === undefined) {
+        data.success = true;
       }
 
       return data;
