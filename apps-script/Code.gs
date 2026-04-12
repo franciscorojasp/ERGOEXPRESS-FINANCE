@@ -4,7 +4,7 @@
  * Tokens Expirables (8h) y Estructura Base de Datos Maestra.
  */
 
-const SPREADSHEET_ID = '197xHdjAWz5FNY7yTDS7A97fI3bxG9EL1Se6F-SBsCvU';
+const SPREADSHEET_ID = '1sR4xAwHZd0r_z9-rwQMSNfw9VXP4jRyc6hmORJg8';
 const API_KEY_DEFAULT = 'ERGX2026';
 
 // El objeto HEADERS integra los Blueprint Maestros del PROMPT 1
