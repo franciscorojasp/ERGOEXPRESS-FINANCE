@@ -451,8 +451,19 @@ function getNextNumber(req) {
 function fetchBcvRate() {
   try {
     const res = UrlFetchApp.fetch("https://www.bcv.org.ve/", { muteHttpExceptions: true });
-    const m = res.getContentText().match(/([\d,.]+)\s*<\/strong>/);
-    if (m) return { success: true, rate: parseFloat(m[1].replace(',','.')) };
+    const html = res.getContentText();
+    // Buscar específicamente el bloque del USD (id="dolar") en la página del BCV
+    const usdBlock = html.match(/id\s*=\s*"dolar"[\s\S]*?<strong>([\d.,\s]+)<\/strong>/i);
+    if (usdBlock) {
+      const cleaned = usdBlock[1].replace(/\s/g, '').replace(',', '.');
+      return { success: true, rate: parseFloat(cleaned) };
+    }
+    // Fallback: buscar "USD" seguido del valor
+    const altMatch = html.match(/USD[\s\S]*?<strong>([\d.,\s]+)<\/strong>/i);
+    if (altMatch) {
+      const cleaned = altMatch[1].replace(/\s/g, '').replace(',', '.');
+      return { success: true, rate: parseFloat(cleaned) };
+    }
   } catch(e) {}
   return { success: true, rate: 36.50 }; // Fallback
 }

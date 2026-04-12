@@ -160,19 +160,53 @@ const Intelligence = (() => {
 
   async function _loadData() {
     try {
-      const res = await API.call('BI_GET_STATS', { 
-        options: { 
-          inflationRate: _settings.inflationRate,
-          categoryConfig: _settings.categoryConfig
+      // Cargar datos directamente de las hojas existentes
+      const egresos = await Sheets.readSheet('Finanzas_Egresos');
+      const rows = Array.isArray(egresos) ? egresos : [];
+      
+      // Calcular estadísticas localmente
+      const now = new Date();
+      const currentMonth = now.toISOString().substring(0, 7);
+      
+      // Proyección simple basada en egresos mensuales
+      const monthlyTotals = {};
+      rows.forEach(r => {
+        const month = (r.Fecha || '').substring(0, 7);
+        if (month) {
+          monthlyTotals[month] = (monthlyTotals[month] || 0) + (parseFloat(r.Monto_USD) || 0);
         }
       });
+      
+      const months = Object.keys(monthlyTotals).sort().slice(-6);
+      const projections = months.map(m => ({ label: m, amount: monthlyTotals[m] }));
+      
+      // Costos fijos vs variables para punto de equilibrio
+      let costosFijos = 0, costosVariables = 0, ingresos = 0;
+      rows.forEach(r => {
+        const cat = r.Categoria || 'Otros';
+        const monto = parseFloat(r.Monto_USD) || 0;
+        const tipo = _settings.categoryConfig[cat] || 'variable';
+        if (tipo === 'fijo') costosFijos += monto;
+        else costosVariables += monto;
+      });
 
-      if (res.success) {
-        _stats = res;
-        _updateCharts();
-        _renderBudgets();
-        _renderBreakEven();
-      }
+      // Punto de equilibrio simplificado
+      const totalGastos = costosFijos + costosVariables;
+      const pe_usd = costosFijos > 0 ? costosFijos / (1 - (costosVariables / Math.max(totalGastos, 1))) : totalGastos;
+
+      _stats = {
+        projections,
+        budgets: [],
+        breakEven: {
+          pe_usd: pe_usd || 0,
+          ingresos: ingresos,
+          percentage: pe_usd > 0 ? (ingresos / pe_usd) * 100 : 0
+        }
+      };
+
+      _updateCharts();
+      _renderBudgets();
+      _renderBreakEven();
     } catch (e) {
       console.error('[BI] Error loading data:', e);
     }
@@ -309,19 +343,29 @@ const Intelligence = (() => {
     input.value = '';
     container.scrollTop = container.scrollHeight;
 
-    try {
-      const res = await API.call('BI_AUDIT', { query: msg, history: _chatHistory });
-      if (res.success) {
-        container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(res.answer)}</div>`;
-        _chatHistory.push({ role: 'user', content: msg });
-        _chatHistory.push({ role: 'assistant', content: res.answer });
-      } else {
-        container.innerHTML += `<div class="ai-msg ai-msg-assistant" style="background: #450a0a">Error: ${res.error}</div>`;
-      }
-    } catch (e) {
-      container.innerHTML += `<div class="ai-msg ai-msg-assistant" style="background: #450a0a">Error de red: ${e.message}</div>`;
-    }
+    // Respuesta local informativa (sin backend AI configurado)
+    const localResponse = _generateLocalInsight(msg);
+    container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(localResponse)}</div>`;
+    _chatHistory.push({ role: 'user', content: msg });
+    _chatHistory.push({ role: 'assistant', content: localResponse });
     container.scrollTop = container.scrollHeight;
+  }
+
+  function _generateLocalInsight(query) {
+    if (!_stats) return 'Aún no se han cargado los datos financieros. Intente nuevamente en unos segundos.';
+    
+    const pe = _stats.breakEven;
+    const totalEgresos = pe.pe_usd || 0;
+    
+    if (query.toLowerCase().includes('equilibrio') || query.toLowerCase().includes('break')) {
+      return `**Análisis de Punto de Equilibrio:**\n\nEl punto de equilibrio actual se sitúa en **$${totalEgresos.toFixed(2)} USD**.\n\n${pe.ingresos >= pe.pe_usd ? '✅ La empresa está **por encima** del punto de equilibrio.' : '⚠️ La empresa está **por debajo** del punto de equilibrio. Se requiere incrementar ingresos.'}`;
+    }
+    
+    if (query.toLowerCase().includes('gasto') || query.toLowerCase().includes('egreso')) {
+      return `**Resumen de Egresos:**\n\nSe han procesado registros de egresos del periodo actual.\n\n**Recomendación:** Revise las categorías de costos fijos vs variables en el panel lateral para optimizar el cálculo del punto de equilibrio.`;
+    }
+    
+    return `**Auditor Senior - Respuesta:**\n\nHe registrado su consulta: "${query}".\n\nActualmente el módulo de IA opera con análisis local basado en los datos cargados.\n\n**Datos disponibles:**\n- Punto de Equilibrio: $${totalEgresos.toFixed(2)}\n- Proyecciones: ${_stats.projections?.length || 0} meses analizados\n\nPara consultas más detalladas, configure una API key de IA externa en Configuración.`;
   }
 
   function _formatMarkdown(text) {

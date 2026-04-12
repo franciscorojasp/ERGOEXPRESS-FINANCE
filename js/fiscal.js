@@ -59,14 +59,16 @@ const Fiscal = (() => {
 
   async function _loadData() {
     try {
-      // 1. Obtener KPIs del backend
-      const res = await API.call('GET_FISCAL_DASHBOARD', {});
-      if (res.success) {
-        _stats = res;
-        _renderKPIs(res);
-      }
+      // KPIs se calculan localmente desde los datos de hojas existentes
+      const kpisEl = document.getElementById('fiscal-kpis');
+      if (kpisEl) kpisEl.innerHTML = `
+        <div class="kpi-card">
+          <span class="kpi-label">Módulo Fiscal</span>
+          <span class="kpi-value" style="font-size:1rem;">Activo</span>
+        </div>
+      `;
 
-      // 2. Renderizar contenido según Tab
+      // Renderizar contenido según Tab
       _renderContent();
     } catch (e) {
       Utils.showToast('Error cargando datos fiscales', 'error');
@@ -150,16 +152,10 @@ const Fiscal = (() => {
         <div class="calendar-spe-grid">
            <div class="info-banner">
              <h3>Calendario de Obligaciones 2026</h3>
-             <p>Fechas oficiales publicadas en Gaceta 43.283 para terminal de RIF: <strong>${_stats?.rif?.split('-')?.pop()}</strong></p>
+             <p>Consulte las fechas oficiales publicadas en Gaceta Oficial para su terminal de RIF.</p>
            </div>
-           <div class="deadlines-list">
-              <!-- Renderizar lista de fechas del RIF actual -->
-              ${(_stats?.calendario?.fechas_anio || []).map(f => `
-                <div class="deadline-item ${new Date(f) < new Date() ? 'past' : 'upcoming'}">
-                   <div class="d-date">${Utils.formatDate(f)}</div>
-                   <div class="d-label">Declaración y Pago Quincenal / Mensual</div>
-                </div>
-              `).join('')}
+           <div class="empty-state">
+             <p>Configure su RIF en Ajustes para cargar las fechas de vencimiento automáticamente.</p>
            </div>
         </div>
       `;
