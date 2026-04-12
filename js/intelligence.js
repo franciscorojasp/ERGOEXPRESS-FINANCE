@@ -145,6 +145,7 @@ const Intelligence = (() => {
         .ai-msg-user { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai-chat-input-group { display: flex; gap: 10px; margin-top: 15px; }
         .ai-chat-input-group input { flex: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; }
+        .ai-typing-indicator { color: #94a3b8; font-style: italic; padding: 8px 16px; align-self: flex-start; }
         
         @media (max-width: 900px) {
           .bi-grid { grid-template-columns: 1fr; }
@@ -171,9 +172,11 @@ const Intelligence = (() => {
       // Proyección simple basada en egresos mensuales
       const monthlyTotals = {};
       rows.forEach(r => {
-        const month = (r.Fecha || '').substring(0, 7);
-        if (month) {
-          monthlyTotals[month] = (monthlyTotals[month] || 0) + (parseFloat(r.Monto_USD) || 0);
+        const raw = r.Fecha || r['Fecha'] || '';
+        const dateStr = raw instanceof Date ? raw.toISOString() : String(raw);
+        const month = dateStr.substring(0, 7);
+        if (month && month.length === 7) {
+          monthlyTotals[month] = (monthlyTotals[month] || 0) + (parseFloat(r.Monto_USD || r['Monto_USD'] || r['Total USD']) || 0);
         }
       });
       
@@ -338,17 +341,66 @@ const Intelligence = (() => {
     const msg = input.value.trim();
     if (!msg) return;
 
+    // Verificar que el usuario esté autenticado
+    const token = localStorage.getItem('crm_token');
+    if (!token) {
+      const container = document.getElementById('ai-chat-messages');
+      container.innerHTML += `<div class="ai-msg ai-msg-assistant">Error: Debes iniciar sesión para usar el auditor AI.</div>`;
+      container.scrollTop = container.scrollHeight;
+      return;
+    }
+
     const container = document.getElementById('ai-chat-messages');
-    container.innerHTML += `<div class="ai-msg ai-msg-user">${msg}</div>`;
+    container.innerHTML += `<div class="ai-msg ai-msg-user">${Utils.escapeHtml(msg)}</div>`;
     input.value = '';
     container.scrollTop = container.scrollHeight;
 
-    // Respuesta local informativa (sin backend AI configurado)
-    const localResponse = _generateLocalInsight(msg);
-    container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(localResponse)}</div>`;
     _chatHistory.push({ role: 'user', content: msg });
-    _chatHistory.push({ role: 'assistant', content: localResponse });
+    _setTyping(true);
+
+    try {
+      const res = await API.call('RUN_AI_AUDIT', {
+        query: msg,
+        history: _chatHistory.map(m => ({ role: m.role, text: m.content || m.text }))
+      });
+
+      _setTyping(false);
+      if (res.success && res.answer) {
+        const answer = String(res.answer).trim();
+        container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(answer)}</div>`;
+        _chatHistory.push({ role: 'assistant', content: answer });
+      } else {
+        const fallback = res.error ? `Error: ${res.error}` : _generateLocalInsight(msg);
+        container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(fallback)}</div>`;
+        _chatHistory.push({ role: 'assistant', content: fallback });
+      }
+    } catch (e) {
+      _setTyping(false);
+      const errorMsg = `Error de conexión: ${e.message}`;
+      container.innerHTML += `<div class="ai-msg ai-msg-assistant">${_formatMarkdown(errorMsg)}</div>`;
+      _chatHistory.push({ role: 'assistant', content: errorMsg });
+    }
+
     container.scrollTop = container.scrollHeight;
+  }
+
+  function _setTyping(typing) {
+    const container = document.getElementById('ai-chat-messages');
+    const typingIndicator = container.querySelector('.ai-typing-indicator');
+    
+    if (typing) {
+      if (!typingIndicator) {
+        const indicator = document.createElement('div');
+        indicator.className = 'ai-typing-indicator';
+        indicator.innerHTML = '<em>El auditor está analizando...</em>';
+        container.appendChild(indicator);
+        container.scrollTop = container.scrollHeight;
+      }
+    } else {
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
   }
 
   function _generateLocalInsight(query) {

@@ -1,0 +1,13 @@
+[2026-04-12T15:26:23.556Z] 🚀 Iniciando migraciones de ERGOEXPRESS FINANCE...
+[2026-04-12T15:26:23.560Z] ✅ Credenciales de Supabase configuradas correctamente
+[2026-04-12T15:26:23.560Z] 📖 Leyendo archivo de esquema...
+[2026-04-12T15:26:23.561Z] 📋 Ejecutando esquema SQL completo...
+
+Error ejecutando SQL: 
+[2026-04-12T15:26:44.921Z] ❌ ERROR: Error durante la migración: 
+[2026-04-12T15:26:44.921Z] ❌ ERROR: Stack trace:
+
+Command failed: cd /d C:/Users/Lenovo/OneDrive/Documentos/ERGOEXPRESS-FINANCE/api && node scripts/migrate.js
+Error ejecutando SQL: 
+[2026-04-12T15:26:44.921Z] ❌ ERROR: Error durante la migración: 
+[2026-04-12T15:26:44.921Z] ❌ ERROR: Stack trace:

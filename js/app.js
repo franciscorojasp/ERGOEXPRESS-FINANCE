@@ -829,40 +829,6 @@ const App = (() => {
     window.location.reload(true);
   }
 
-  // ─── Variables Globales UI (Tema, Moneda, Blur, etc) ────────────────────────
-  let _currency = localStorage.getItem('crm_currency') || 'USD';
-  let _adminEye = false;
-
-  function getCurrency() { return _currency; }
-  
-  function toggleCurrency() {
-    _currency = _currency === 'USD' ? 'VES' : 'USD';
-    localStorage.setItem('crm_currency', _currency);
-    if(typeof Utils !== 'undefined') Utils.showToast('Moneda Global: ' + _currency, 'success');
-  }
-
-  function toggleAdminEye() {
-    _adminEye = !_adminEye;
-    const body = document.body;
-    if (_adminEye) {
-      body.classList.add('admin-blur');
-      if(typeof Utils !== 'undefined') Utils.showToast('Modo Privacidad (Admin Eye) Activado', 'info');
-    } else {
-      body.classList.remove('admin-blur');
-      if(typeof Utils !== 'undefined') Utils.showToast('Modo Privacidad Desactivado', 'info');
-    }
-  }
-
-  function toggleTheme() {
-    // Si necesitas un toggle oscuro/claro
-    const b = document.body;
-    b.classList.toggle('light-theme');
-  }
-
-  function setFontScale() {
-     // placeholder util
-  }
-
   // ─── Daily Rate Mandatory logic ──────────────────────────────────────────
   async function _checkDailyRate() {
     try {

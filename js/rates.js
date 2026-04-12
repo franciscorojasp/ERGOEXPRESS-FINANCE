@@ -20,7 +20,11 @@ const Rates = (() => {
             <h1 class="page-title" style="font-size: 32px; letter-spacing: -1px; margin-bottom: 4px;">Tasa BCV</h1>
             <p class="page-subtitle" style="font-weight: 600; opacity: 0.8;">Consola de Gestión y Tendencia Cambiaria</p>
           </div>
-          <div class="page-header-actions" style="margin-top: 8px;">
+          <div class="page-header-actions" style="margin-top: 8px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="Rates.syncNow()" title="Sincronizar BCV Dólar" style="background: var(--primary); padding: 8px 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 8px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <span>Sincronizar Dólar</span>
+            </button>
             <button class="btn btn-secondary" onclick="Rates.exportPDF()" title="Exportar Reporte" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 8px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
               <span>Exportar Reporte</span>
@@ -31,9 +35,9 @@ const Rates = (() => {
         <div class="rates-hero-grid" style="margin-bottom: 32px;">
           <div class="rate-hero-card card" style="border-radius: 16px; min-height: 240px;">
              <div class="rate-hero-content">
-                <div class="rate-hero-label">
-                   <span class="icon-pulse">🔥</span> TASA OFICIAL HOY
-                </div>
+                 <div class="rate-hero-label">
+                    <span class="icon-pulse">🔥</span> TASA OFICIAL USD (BCV)
+                 </div>
                 <div class="rate-hero-main" id="hero-main-value">
                    <span class="currency-symbol">Bs</span> <span class="value-loading">...</span>
                 </div>
@@ -625,5 +629,29 @@ const Rates = (() => {
     });
   }
 
-  return { render, reload: _load, quickSave, setFilter, openForm, save, exportPDF, delete: deleteRate };
+  async function syncNow() {
+    try {
+      Utils.showToast('Sincronizando Tasa Dólar BCV...', 'info');
+      const res = await API.call('FETCH_BCV_RATE', {});
+      if (res.success && res.rate) {
+        const today = Utils.todayISO();
+        // Buscar si ya existe hoy para sobrescribir o añadir
+        await Sheets.appendRow(CONFIG.SHEETS.RATES, {
+          ID: Utils.generateId(),
+          Fecha: today,
+          'Tasa Oficial': res.rate,
+          Fuente: 'BCV (Sincronizado)'
+        });
+        
+        Utils.showToast(`Dólar BCV actualizado: Bs. ${res.rate}`, 'success');
+        await _load(true);
+      } else {
+        Utils.showToast('No se pudo conectar con el BCV', 'error');
+      }
+    } catch(e) {
+      Utils.showToast('Error de conexión: ' + e.message, 'error');
+    }
+  }
+
+  return { render, reload: _load, quickSave, setFilter, openForm, save, exportPDF, delete: deleteRate, syncNow };
 })();

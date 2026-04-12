@@ -273,6 +273,13 @@ const Utils = (() => {
     return '$ ' + formatUSD(usd);
   }
 
+  function formatCurrency(amount, currency = 'USD') {
+    if (String(currency).toUpperCase() === 'VES') {
+      return 'Bs. ' + formatVES(amount);
+    }
+    return '$ ' + formatUSD(amount);
+  }
+
   function usdToVes(usd, rate) {
     return toNumber(usd) * toNumber(rate);
   }
@@ -451,12 +458,33 @@ const Utils = (() => {
     return overlay;
   }
 
-  function closeModal() {
+  function closeModal(modalId) {
+    if (modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 250);
+      }
+      return;
+    }
+
     const modal = document.getElementById('modal-overlay');
     if (modal) {
       modal.classList.remove('show');
       setTimeout(() => modal.remove(), 250);
     }
+  }
+
+  function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+      console.warn('[Utils] openModal: modal not found', modalId);
+      return;
+    }
+    modal.style.display = 'block';
+    requestAnimationFrame(() => modal.classList.add('show'));
   }
 
 
@@ -713,8 +741,8 @@ const Utils = (() => {
     },
 
     debounce, getFormData, setFormData,
-    showToast, showModal, closeModal, confirm,
-    validateRIF, formatRIF, smartWhatsApp,
+    showToast, showModal, openModal, closeModal, confirm,
+    validateRIF, formatRIF, smartWhatsApp, formatCurrency,
 
     // ─── Simple Markdown to HTML ───────────────────────────────────────────
     mdToHtml: (md) => {
