@@ -17,10 +17,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Cliente para operaciones del cliente (frontend)
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Cliente para operaciones del servidor (backend) - tiene permisos elevados
-const supabaseAdmin = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+// Cliente para operaciones del servidor (backend) - requiere SUPABASE_SERVICE_ROLE_KEY
+let supabaseAdmin = null;
+if (supabaseServiceKey) {
+  try {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    console.log('✅ Cliente Supabase Admin inicializado');
+  } catch (err) {
+    console.error('❌ Error inicializando Supabase Admin:', err.message);
+  }
+} else {
+  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY no encontrada en variables de entorno.');
+}
 
 // Función para verificar conexión
 const testConnection = async () => {

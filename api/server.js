@@ -90,9 +90,10 @@ const log = async (level, message, data = {}) => {
 
   // Persistir en audit.logs_auditoria si es un error o una acción relevante
   try {
+    // Verificamos si supabaseAdmin existe antes de usarlo
     if (supabaseAdmin && level !== 'debug') {
       const logEntry = {
-        accion: message.substring(0, 100),
+        accion: message.substring(0, 500), // Aumentamos límite para ver más detalles en la acción si es necesario
         usuario_email: data.user_email || data.email || 'Sistema/API',
         usuario_id: data.user_id || null,
         detalles: data,
@@ -100,17 +101,23 @@ const log = async (level, message, data = {}) => {
         registro_id: data.record_id || null
       };
 
-      // Si tenemos IP y User-Agent en el request original (si se pasa data.req)
+      // Si tenemos IP y User-Agent en el request original
       if (data.req) {
         logEntry.ip_address = data.req.ip;
         logEntry.user_agent = data.req.headers['user-agent'];
         delete data.req; // Evitar circular refs en JSON
       }
 
-      await supabaseAdmin.from('audit.logs_auditoria').insert([logEntry]);
+      const { error } = await supabaseAdmin.from('audit.logs_auditoria').insert([logEntry]);
+      if (error) {
+        console.warn('⚠️ No se pudo persistir el log:', error.message);
+      }
+    } else if (!supabaseAdmin && level === 'error') {
+      console.warn('⚠️ Log persistente omitido: SUPABASE_SERVICE_ROLE_KEY no configurado.');
     }
   } catch (err) {
-    console.error('Error persistiendo log en DB:', err.message);
+    // El logging nunca debe romper el flujo de la aplicación
+    console.error('Error crítico en sistema de audidoria:', err.message);
   }
 };
 
@@ -699,6 +706,14 @@ app.delete('/api/products/:id', authenticate, authorize('admin'), async (req, re
 // Obtener logs de auditoría
 app.get('/api/audit', authenticate, authorize('admin', 'manager'), async (req, res) => {
   try {
+    if (!supabaseAdmin) {
+      return res.status(503).json({
+        success: false,
+        error: 'Servicio de auditoría no configurado',
+        message: 'La clave SUPABASE_SERVICE_ROLE_KEY es requerida para esta operación.'
+      });
+    }
+
     const { limit = 100, offset = 0, action, table } = req.query;
 
     let query = supabaseAdmin

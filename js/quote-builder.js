@@ -48,7 +48,7 @@ const QuoteBuilder = (() => {
         
         <!-- CABECERA -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6mm;">
-          <img src="${logoUrl}" style="height:25mm; width:25mm; object-fit:contain; border-radius:50%; background:#ffffff;" />
+          <img src="${logoUrl}" style="height:25mm; width:35mm; object-fit:contain; object-position:left center; background:#ffffff;" />
           <div style="text-align:right; flex:1;">
              <h2 style="margin:0; font-size:22px; font-weight:900; color:${colorText}; letter-spacing:-0.5px;">${empresa}</h2>
              <div style="font-size:11px; color:${colorPrimary}; font-weight:800; margin-top:2px;">RIF: ${rif}</div>
@@ -162,12 +162,16 @@ const QuoteBuilder = (() => {
     </div>`;
   }
 
-  function generatePDF(quoteId) {
+  async function generatePDF(quoteId) {
     if (typeof html2pdf === 'undefined') { Utils.showToast('El módulo PDF no está cargado.', 'error'); return; }
     const quote = Quotations.getQuotation(quoteId);
     if (!quote) return;
     const client = Quotations.getContacts().find(c => c['ID'] === quote['ID Cliente']);
-    const config = Quotations.getConfig();
+    
+    // Preparar configuración con logo Base64
+    const config = { ...Quotations.getConfig() };
+    config.empresa_logo_url = await Utils.imgToBase64(config.empresa_logo_url || 'assets/logo.png', 800);
+
     Utils.showToast('Generando descarga local...', 'info');
     const wrapper = document.createElement('div');
     wrapper.style.position = 'absolute';
@@ -199,7 +203,11 @@ const QuoteBuilder = (() => {
     const quote = Quotations.getQuotation(quoteId);
     if (!quote) return;
     const client = Quotations.getContacts().find(c => c['ID'] === quote['ID Cliente']);
-    const config = Quotations.getConfig();
+    
+    // Preparar configuración con logo Base64
+    const config = { ...Quotations.getConfig() };
+    config.empresa_logo_url = await Utils.imgToBase64(config.empresa_logo_url || 'assets/logo.png', 800);
+
     if (!client) { Utils.showToast('No se encontró el cliente.', 'warning'); return; }
     
     Utils.showToast('Subiendo PDF a Drive para WhatsApp...', 'info');
@@ -276,7 +284,11 @@ const QuoteBuilder = (() => {
     const quote = Quotations.getQuotation(quoteId);
     if (!quote) return;
     const client = Quotations.getContacts().find(c => c['ID'] === quote['ID Cliente']);
-    const config = Quotations.getConfig();
+    
+    // Preparar configuración con logo Base64
+    const config = { ...Quotations.getConfig() };
+    config.empresa_logo_url = await Utils.imgToBase64(config.empresa_logo_url || 'assets/logo.png', 800);
+
     if (!client) { Utils.showToast('No se encontró el cliente.', 'warning'); return; }
 
     Utils.showToast('Preparando envío por Email...', 'info');

@@ -19,6 +19,8 @@ const ReportBuilder = (() => {
       
       const config = await Sheets.getAllConfig();
       const logoUrl = config['empresa_logo_url'] || 'assets/logo.png';
+      const logoBase64 = await Utils.imgToBase64(logoUrl, 800);
+
       const empresa = config['empresa_nombre'] || 'ERGOEXPRESS, C.A.';
       const rif = config['empresa_rif'] || 'J-50251246-2';
       const dir = config['empresa_direccion'] || 'Venezuela';
@@ -30,7 +32,7 @@ const ReportBuilder = (() => {
         <div id="elite-report-root" style="width:100%; max-width:800px; background:#ffffff; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1e293b; padding:40px; box-sizing:border-box;">
           
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
-            <img src="${logoUrl}" style="height:80px; width:80px; object-fit:contain; border-radius:50%; background:#ffffff;" crossorigin="anonymous" />
+            <img src="${logoBase64}" style="height:100px; width:150px; object-fit:contain; object-position:left center; background:#ffffff;" crossorigin="anonymous" />
             <div style="text-align:right; flex:1;">
                <h2 style="margin:0; font-size:24px; font-weight:bold;">${empresa}</h2>
                <div style="font-size:14px; color:#0d7377; font-weight:bold; margin-top:2px;">RIF: ${rif}</div>

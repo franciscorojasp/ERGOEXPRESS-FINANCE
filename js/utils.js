@@ -1,5 +1,6 @@
 /* ════════════════════════════════════════════════════════════════════════════
    ERGOEXPRESS CRM — Utilidades Globales
+   v6.0.4 - Añadido imgToBase64 para optimización de reportes PDF.
    ════════════════════════════════════════════════════════════════════════════ */
 
 const Utils = (() => {
@@ -743,6 +744,49 @@ const Utils = (() => {
     debounce, getFormData, setFormData,
     showToast, showModal, openModal, closeModal, confirm,
     validateRIF, formatRIF, smartWhatsApp, formatCurrency,
+
+    /**
+     * Convierte una URL/Ruta de imagen a Base64 de forma asíncrona.
+     * Incluye optimización de tamaño (maxW) para evitar bloqueos por imágenes pesadas.
+     */
+    imgToBase64: function(url, maxW = 500) {
+      return new Promise((resolve) => {
+        if (!url) return resolve('');
+        // Si ya es base64, devolver directo
+        if (url.startsWith('data:')) return resolve(url);
+
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          
+          // Redimensionar si es necesario para optimizar PDF
+          if (w > maxW) {
+             const ratio = maxW / w;
+             w = maxW;
+             h = h * ratio;
+          }
+
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          try {
+            resolve(canvas.toDataURL('image/png'));
+          } catch(e) {
+            console.warn('[Utils] Error conversion canvas:', e);
+            resolve(url); 
+          }
+        };
+        img.onerror = () => {
+          console.warn('[Utils] Error cargando imagen:', url);
+          resolve(url);
+        };
+        img.src = url;
+      });
+    },
 
     // ─── Simple Markdown to HTML ───────────────────────────────────────────
     mdToHtml: (md) => {
