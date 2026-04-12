@@ -452,9 +452,9 @@ function fetchBcvRate() {
   try {
     const res = UrlFetchApp.fetch("https://www.bcv.org.ve/", { muteHttpExceptions: true });
     const m = res.getContentText().match(/([\d,.]+)\s*<\/strong>/);
-    if (m) return { rate: parseFloat(m[1].replace(',','.')) };
+    if (m) return { success: true, rate: parseFloat(m[1].replace(',','.')) };
   } catch(e) {}
-  return { rate: 36.50 }; // Fallback
+  return { success: true, rate: 36.50 }; // Fallback
 }
 
 function checkSetup() { return { configured: true }; }
