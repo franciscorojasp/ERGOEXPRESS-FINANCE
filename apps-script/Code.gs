@@ -121,7 +121,7 @@ function login(req) {
       const statusVal = String(r[idxStatus] || '').trim().toUpperCase();
       const statusMatch = (statusVal === 'ACTIVO' || statusVal === 'SI');
 
-      if (!passMatch) return { success: false, error: 'La contraseña es incorrecta.' };
+      if (!passMatch) return { success: false, error: `La contraseña es incorrecta. (Debug: sheet='${sheetPass}', input='${reqPass}', idx=${idxPass})` };
       if (!statusMatch) return { success: false, error: 'La cuenta existe pero está: ' + statusVal };
       
       const deviceInfo = req.fingerprint || 'Desconocido/Temporal';

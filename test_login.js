@@ -2,8 +2,8 @@ const url = 'https://script.google.com/macros/s/AKfycbyewLsUxongldudRxZEj6J8DCND
 const body = JSON.stringify({
   apiKey: 'ERGX2026',
   action: 'LOGIN',
-  email: 'francisco.rojaso@gmail.com',
-  password: 'admin',
+  email: 'francisco.rojasp@gmail.com',
+  password: 'Admin123*',
   env: 'shared',
   fingerprint: ''
 });
