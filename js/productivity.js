@@ -147,11 +147,16 @@ const Productivity = (() => {
         }
       }
 
-      // Update KPIs
-      document.getElementById('kpi-total-usd').textContent = `$${totalUSD.toFixed(2)}`;
-      document.getElementById('kpi-pending-tasks').textContent = pendingTasks.length;
-      document.getElementById('kpi-top-employee').textContent = topEmp;
-      document.getElementById('kpi-total-ves').textContent = `Bs. ${totalVES.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      // Update KPIs (with safety checks for rapid navigation)
+      const setSafeText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+
+      setSafeText('kpi-total-usd', `$${totalUSD.toFixed(2)}`);
+      setSafeText('kpi-pending-tasks', pendingTasks.length);
+      setSafeText('kpi-top-employee', topEmp);
+      setSafeText('kpi-total-ves', `Bs. ${totalVES.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})}`);
 
       _renderCharts(byTask, empCount);
       _renderTable(tasks.slice(0, 15));
