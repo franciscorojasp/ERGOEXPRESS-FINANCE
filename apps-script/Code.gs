@@ -456,13 +456,14 @@ function fetchBcvRate() {
     const usdBlock = html.match(/id\s*=\s*"dolar"[\s\S]*?<strong>([\d.,\s]+)<\/strong>/i);
     if (usdBlock) {
       const cleaned = usdBlock[1].replace(/\s/g, '').replace(',', '.');
-      return { success: true, rate: parseFloat(cleaned) };
+      // Redondeo a 2 decimales — regla vigente Venezuela
+      return { success: true, rate: Math.round(parseFloat(cleaned) * 100) / 100 };
     }
     // Fallback: buscar "USD" seguido del valor
     const altMatch = html.match(/USD[\s\S]*?<strong>([\d.,\s]+)<\/strong>/i);
     if (altMatch) {
       const cleaned = altMatch[1].replace(/\s/g, '').replace(',', '.');
-      return { success: true, rate: parseFloat(cleaned) };
+      return { success: true, rate: Math.round(parseFloat(cleaned) * 100) / 100 };
     }
   } catch(e) {}
   return { success: true, rate: 36.50 }; // Fallback
