@@ -501,8 +501,9 @@ const App = (() => {
       return;
     }
 
-    // Match route with params
-    let handler = routes[route];
+    // Match route with params (Normalizar a minúsculas para robustez)
+    const normalizedRoute = _currentRoute.toLowerCase();
+    let handler = routes[normalizedRoute];
     let params  = {};
 
     if (!handler) {
@@ -510,7 +511,7 @@ const App = (() => {
       for (const [pattern, fn] of Object.entries(routes)) {
         if (!pattern.includes(':')) continue;
         const re = new RegExp('^' + pattern.replace(/:([^/]+)/g, '([^/]+)') + '$');
-        const m  = route.match(re);
+        const m  = _currentRoute.match(re); // match original for case-sensitive params if needed, or normalizedRoute
         if (m) {
           const keys = [...pattern.matchAll(/:([^/]+)/g)].map(x => x[1]);
           keys.forEach((k, i) => { params[k] = m[i + 1]; });
