@@ -277,19 +277,18 @@ const Payroll = (() => {
         Utils.closeModal();
         Utils.showToast("Generando reporte y procesando pago...", "info");
 
-        const response = await App.callServer("executePayrollAction", [{
+        const response = await API.call("EXECUTE_PAYROLL", {
           employeeId: idEmp,
           frequency: _currentFrequency,
-          amountUSD: calc.netoUSD,
-          phone: emp['Teléfono'] || emp['Telefono'] || '580000000'
-        }]);
+          amountUSD: calc.netoUSD
+        });
 
         if (response.success) {
           Utils.showToast(`Pago procesado para ${emp.Nombre}`, "success");
           
           // Smart WhatsApp Redirection
-          const msg = `¡Hola ${emp.Nombre.split(' ')[0]}! 🌟 Esperamos que tengas un excelente día. Te informamos que se ha procesado tu pago de Nómina (${_currentFrequency.toUpperCase()}). Adjunto a tu correo encontrarás el recibo PDF detallado. ¡Gracias por tu gran trabajo!`;
-          Utils.smartWhatsApp(response.phone, msg);
+          const msg = `¡Hola ${emp.Nombre.split(' ')[0]}! se ha procesado tu pago de Nómina.`;
+          Utils.smartWhatsApp(emp['Teléfono'] || emp['Telefono'], msg);
 
           loadData();
         } else {

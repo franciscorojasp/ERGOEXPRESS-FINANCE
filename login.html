@@ -204,6 +204,16 @@
           </button>
         </div>
       </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label" style="display:flex; justify-content:space-between;">
+          <span>Entorno de Seguridad</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text-muted);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </label>
+        <select class="form-input" id="login-env" style="appearance:none; border:1px solid rgba(13,115,119,0.3); background-color:rgba(15,24,38,0.5);">
+          <option value="personal">Equipo Personal (Sesión 8 horas)</option>
+          <option value="shared" selected>Equipo Compartido (Cierre 15 min)</option>
+        </select>
+      </div>
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="loginSubmit()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -212,6 +222,28 @@
           <line x1="15" y1="12" x2="3" y2="12"/>
         </svg>
         Entrar al CRM
+      </button>
+    </div>
+
+    <!-- ── 2FA FORM (Zero-Trust) ──────────────────────────────────────── -->
+    <div id="panel-2fa" style="display:none;">
+      <p class="login-title" style="font-size:13px; color:var(--warning); text-align:left; margin-bottom:12px;">
+        ⚠️ Dispositivo Desconocido Bloqueado. Ingresa el código OTP (123456) para autorizar este equipo.
+      </p>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Código de Seguridad (OTP)</label>
+        <input class="form-input" id="login-otp" placeholder="000000" maxlength="6"
+               onkeydown="if(event.key==='Enter') verify2FASubmit()" style="text-align:center; font-size:18px; letter-spacing:4px;" />
+      </div>
+      <div class="login-error" id="2fa-error"></div>
+      <button class="login-btn" id="2fa-btn" onclick="verify2FASubmit()" style="background:var(--warning); color:#000;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Verificar Identidad
+      </button>
+      <button class="login-btn" onclick="showTab('login')" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.1);">
+        Volver al Inicio
       </button>
     </div>
 
@@ -293,6 +325,9 @@
     async function loginSubmit() {
       const email = document.getElementById('login-email').value.trim();
       const pass  = document.getElementById('login-pass').value;
+      const env   = document.getElementById('login-env').value;
+      const baseFingerprint = btoa(navigator.userAgent + '|' + screen.width + 'x' + screen.height).substring(0,32);
+
       setError('login-error', '');
 
       if (!email || !pass) {
@@ -311,7 +346,18 @@
       btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;"></span> Verificando…';
 
       try {
-        const res = await Auth.login(email, pass);
+        const res = await Auth.login(email, pass, env, baseFingerprint);
+        
+        if (res.error === 'REQUIRES_2FA') {
+           document.getElementById('panel-login').style.display = 'none';
+           document.getElementById('tab-switch').style.display = 'none';
+           document.getElementById('panel-2fa').style.display = 'block';
+           window._pending2FAConf = { email, env, fingerprint: baseFingerprint };
+           btn.innerHTML = 'Entrar al CRM';
+           btn.disabled = false;
+           return;
+        }
+        
         if (res.success) {
           window.location.href = 'index.html';
         } else {
@@ -324,6 +370,35 @@
         btn.disabled = false;
         btn.innerHTML = 'Entrar al CRM';
       }
+    }
+
+    async function verify2FASubmit() {
+       const otp = document.getElementById('login-otp').value.trim();
+       if(otp.length !== 6) return setError('2fa-error', 'El código debe tener 6 dígitos');
+       
+       const btn = document.getElementById('2fa-btn');
+       btn.disabled = true;
+       btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;border-top-color:#000;"></span> Verificando…';
+       
+       try {
+         const payload = Object.assign({}, window._pending2FAConf, { action: 'VERIFY_2FA', otp });
+         const res = await API.call('VERIFY_2FA', payload);
+         
+         if (res.success) {
+             localStorage.setItem('crm_token', res.token);
+             localStorage.setItem('crm_user', JSON.stringify(res.user));
+             localStorage.setItem('crm_user_role', res.user.rol || res.user.role || '');
+             window.location.href = 'index.html';
+         } else {
+             setError('2fa-error', res.error || 'Código inválido');
+             btn.disabled = false;
+             btn.innerHTML = 'Verificar Identidad';
+         }
+       } catch (err) {
+         setError('2fa-error', err.message);
+         btn.disabled = false;
+         btn.innerHTML = 'Verificar Identidad';
+       }
     }
 
     // ── Setup (crear admin) ────────────────────────────────────────────────

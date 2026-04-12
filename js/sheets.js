@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════════════════════════════════
    ERGOEXPRESS CRM — Capa de Datos (vía Google Apps Script)
-   Mantiene la misma interfaz pública que antes, pero llama al Apps Script.
+   v6.0.0 - Soporte Total: BATCH_READ, retrocompatibilidad y Gestión de Configuración.
    ════════════════════════════════════════════════════════════════════════════ */
 
 const Sheets = (() => {
@@ -19,8 +19,18 @@ const Sheets = (() => {
   }
 
   function _invalidate(key) { delete _cache[key]; }
-
   function invalidateAll() { Object.keys(_cache).forEach(k => delete _cache[k]); }
+
+  // ─── INIT & AUTH HELPERS ──────────────────────────────────────────────────
+  async function init() {
+    // Función de inicialización requerida por App.js
+    return true; 
+  }
+
+  async function findUser(email) {
+    const rows = await readSheet(CONFIG.SHEETS.USERS);
+    return rows.find(r => String(r.Email).toLowerCase() === String(email).toLowerCase()) || null;
+  }
 
   // ─── READ ─────────────────────────────────────────────────────────────────
   async function readSheet(sheetName, useCache = true) {
@@ -29,7 +39,7 @@ const Sheets = (() => {
       if (cached) return cached;
     }
     const res = await API.call('READ', { sheet: sheetName });
-    return _cached(sheetName, res.data);
+    return _cached(sheetName, res.data || []);
   }
 
   async function batchRead(sheetNames) {
@@ -47,6 +57,12 @@ const Sheets = (() => {
     }
   }
 
+  // Especial para módulos antiguos que esperan { success: true, data: [...] }
+  async function get(sheetName) {
+    const data = await readSheet(sheetName);
+    return { success: true, data: data };
+  }
+
   // ─── APPEND ───────────────────────────────────────────────────────────────
   async function appendRow(sheetName, obj) {
     await API.call('APPEND', { sheet: sheetName, data: obj });
@@ -55,144 +71,81 @@ const Sheets = (() => {
 
   // ─── UPDATE ───────────────────────────────────────────────────────────────
   async function updateRow(sheetName, id, obj) {
-    try {
-      // 1. Fetch fresh data to get the current true rowIndex for this ID
-      const rows = await readSheet(sheetName, false);
-      const target = rows.find(r => String(r['ID']).trim() === String(id).trim());
-      if (!target) {
-        console.error(`[Sheets] ID no encontrado: "${id}" en hoja: ${sheetName}`, rows);
-        throw new Error(`Registro no encontrado para actualización: ${id}`);
-      }
-
-      console.log(`[Sheets] Actualizando ${sheetName} ID:${id} en fila:${target._rowIndex}`);
-      // Incluimos el ID en el payload por seguridad para el backend
-      const payload = { ...obj, ID: id };
-      await API.call('UPDATE', { sheet: sheetName, rowIndex: target._rowIndex, data: payload });
-      _invalidate(sheetName);
-    } catch (e) {
-      console.error('[Sheets] Error en updateRow:', e);
-      throw e;
-    }
+    const payload = { ...obj, ID: id };
+    await API.call('UPDATE', { sheet: sheetName, id: id, data: payload });
+    _invalidate(sheetName);
   }
 
   // ─── DELETE ───────────────────────────────────────────────────────────────
   async function deleteRow(sheetName, id) {
-    // 1. Fetch fresh data to get the current true rowIndex for this ID
-    const rows = await readSheet(sheetName, false);
-    const target = rows.find(r => r['ID'] === id);
-    if (!target) throw new Error('Registro no encontrado para eliminación: ' + id);
-
-    await API.call('DELETE', { sheet: sheetName, rowIndex: target._rowIndex });
+    await API.call('DELETE', { sheet: sheetName, id: id });
     _invalidate(sheetName);
   }
 
   // ─── FIND helpers ─────────────────────────────────────────────────────────
   async function findRow(sheetName, field, value) {
     const rows = await readSheet(sheetName);
-    return rows.find(r => r[field] === String(value)) || null;
+    return rows.find(r => String(r[field]) === String(value)) || null;
   }
 
   async function findRows(sheetName, field, value) {
     const rows = await readSheet(sheetName);
-    return rows.filter(r => r[field] === String(value));
+    return rows.filter(r => String(r[field]) === String(value));
   }
 
-  // ─── SETUP (primer inicio) ────────────────────────────────────────────────
-  async function init() { /* no-op: no necesitamos IDs numéricos de hojas */ }
-
-  async function checkSetup() {
-    return API.call('CHECK_SETUP', {});
+  // ─── CONFIG ───────────────────────────────────────────────────────────────
+  async function getAllConfig() {
+    const rows = await readSheet(CONFIG.SHEETS.CONFIG);
+    const obj = {};
+    rows.forEach(r => { if(r.Clave) obj[r.Clave] = r.Valor; });
+    return obj;
   }
 
+  async function getConfig(key) {
+    const rows = await readSheet(CONFIG.SHEETS.CONFIG);
+    const row  = rows.find(r => r.Clave === key);
+    return row ? row.Valor : null;
+  }
+
+  async function setConfig(key, value) {
+    await API.call('UPDATE', { 
+      sheet: CONFIG.SHEETS.CONFIG, 
+      id: key, // El backend debe saber buscar por 'Clave' si pasamos el ID
+      data: { 'Clave': key, 'Valor': value } 
+    });
+    _invalidate(CONFIG.SHEETS.CONFIG);
+  }
+
+  // ─── SETUP ────────────────────────────────────────────────────────────────
+  async function checkSetup() { return API.call('CHECK_SETUP', {}); }
   async function runSetup() {
     const res = await API.call('SETUP', {});
     invalidateAll();
     return res;
   }
 
-  async function createAdmin(email, name, password) {
-    const res = await API.call('CREATE_ADMIN', { email, name, password });
-    _invalidate(CONFIG.SHEETS.USERS);
-    return res;
-  }
-
-  // ─── CONFIG key/value helpers ─────────────────────────────────────────────
-  async function getConfig(key) {
-    const rows = await readSheet(CONFIG.SHEETS.CONFIG);
-    const row  = rows.find(r => r['Clave'] === key);
-    return row ? row['Valor'] : null;
-  }
-
-  async function setConfig(key, value) {
-    const rows = await readSheet(CONFIG.SHEETS.CONFIG, false);
-    const existing = rows.find(r => r['Clave'] === key);
-    if (existing) {
-      await API.call('UPDATE', { 
-        sheet: CONFIG.SHEETS.CONFIG, 
-        rowIndex: existing._rowIndex, 
-        data: { 'Clave': key, 'Valor': value } 
-      });
-    } else {
-      await appendRow(CONFIG.SHEETS.CONFIG, { 'Clave': key, 'Valor': value });
-    }
-    _invalidate(CONFIG.SHEETS.CONFIG);
-  }
-
-  async function getAllConfig() {
-    const rows = await readSheet(CONFIG.SHEETS.CONFIG);
-    const cfg  = {};
-    rows.forEach(r => { cfg[r['Clave']] = r['Valor']; });
-    return cfg;
-  }
-
-  // ─── User helpers ─────────────────────────────────────────────────────────
-  async function findUser(email) {
-    return findRow(CONFIG.SHEETS.USERS, 'Email', email);
-  }
-
-  async function createUser(email, name, role = 'vendedor', password = '') {
-    const existing = await findUser(email);
-    if (existing) return existing;
-    const user = {
-      'ID': Utils.generateId(), 'Email': email, 'Nombre': name,
-      'Rol': role, 'Activo': 'SI',
-      'Fecha Registro': Utils.todayISO(), 'Password': password
-    };
-    await appendRow(CONFIG.SHEETS.USERS, user);
-    return user;
-  }
-
-  // ─── Next numbers (ATOMIC) ───────────────────────────────────────────────
+  // ─── Otros ────────────────────────────────────────────────────────────────
   async function nextQuoteNumber() {
     const res = await API.call('GET_NEXT_NUMBER', { sheet: CONFIG.SHEETS.QUOTATIONS });
     return res.next || 1;
   }
 
-  // ─── PDF Share (Drive) ────────────────────────────────────────────────────
+  async function latestRate() {
+    const rows = await readSheet(CONFIG.SHEETS.RATES, false);
+    if (!rows || !rows.length) return null;
+    return [...rows].sort((a, b) => String(b.Fecha).localeCompare(String(a.Fecha)))[0];
+  }
+
   async function savePDFToDrive(filename, base64) {
     return API.call('SAVE_PDF_TO_DRIVE', { filename, base64 });
   }
 
-  // ─── Google Calendar Sync ─────────────────────────────────────────────────
-  async function syncToCalendar(data) {
-    return API.call('SYNC_TO_CALENDAR', { data });
-  }
-
-  // ─── Latest exchange rate ─────────────────────────────────────────────────
-  async function latestRate() {
-    const rows = await readSheet(CONFIG.SHEETS.RATES, false);
-    if (!rows || !rows.length) return null;
-    return [...rows].sort((a, b) => b['Fecha'].localeCompare(a['Fecha']))[0];
-  }
-
   return {
-    init, checkSetup, runSetup, createAdmin,
-    readSheet, batchRead, appendRow, updateRow, deleteRow,
-    findRow, findRows,
-    getConfig, setConfig, getAllConfig,
-    findUser, createUser,
-    nextQuoteNumber, latestRate,
-    savePDFToDrive,
+    init, findUser, getAllConfig,
+    get, readSheet, batchRead, appendRow, updateRow, deleteRow,
+    findRow, findRows, getConfig, setConfig,
+    checkSetup, runSetup,
+    nextQuoteNumber, latestRate, savePDFToDrive,
     invalidateAll
   };
 })();

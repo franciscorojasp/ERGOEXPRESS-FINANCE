@@ -71,6 +71,18 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .fab:active { transform: scale(0.9); }
+
+    /* Admin Eye (Zero-Trust Blur) */
+    .admin-blur .blur-sensitive {
+      filter: blur(8px) contrast(0.8) !important;
+      opacity: 0.7 !important;
+      user-select: none !important;
+      pointer-events: none !important;
+      transition: all 0.3s ease;
+    }
+    .blur-sensitive {
+      transition: all 0.3s ease;
+    }
   </style>
 </head>
 <body>

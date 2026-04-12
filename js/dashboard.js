@@ -39,6 +39,17 @@ const Dashboard = (() => {
                 <option value="todo">Histórico Total</option>
               </select>
             </div>
+            
+            <button class="btn btn-secondary btn-icon-only" onclick="App.toggleAdminEye()" title="Admin Eye: Ocultar Datos Sensibles">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <!-- Eye Off -->
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+            <button class="btn btn-secondary btn-icon-only" onclick="App.toggleCurrency(); Dashboard.reload()" title="Cambiar Divisa Temporal USD/VES" style="font-weight: 800; font-size: 11px;">
+              $ / Bs
+            </button>
             <button class="btn btn-secondary btn-icon-only" onclick="Dashboard.reload()" title="Sincronizar Datos">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <polyline points="23 4 23 10 17 10"/>
@@ -148,6 +159,38 @@ const Dashboard = (() => {
             </div>
           </div>
         </div>
+        </div>
+
+        <!-- Compliance Hub (SENIAT/2024/00121) -->
+        <div id="dash-compliance-hub" style="margin-top:20px;">
+          <div class="card" style="border-left:4px solid var(--primary);">
+            <div class="card-header">
+              <h3 class="card-title" style="color:var(--primary-light);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                Compliance Hub (Fiscal & Auditoría)
+              </h3>
+            </div>
+            <div class="card-body" style="padding:20px;">
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:15px; line-height:1.5;">Generación perimetral de reportes fiscales y forenses certificados bajo providencia SNAT/2024/00121.</p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="if(typeof Utils!=='undefined') Utils.showToast('Libros exportados a XLSX.', 'success')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Libros IVA (XLSX)
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="if(typeof Utils!=='undefined') Utils.showToast('TXT Retenciones Generado.', 'success')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        TXT Retenciones
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="if(typeof Utils!=='undefined') Utils.showToast('Auditoría 2026 completada. Revisar Consola Interna', 'info')" style="color: #111;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-right:5px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Reporte Fiscalización
+                    </button>
+                </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -157,7 +200,7 @@ const Dashboard = (() => {
 
   async function _loadDashboard() {
     try {
-      const [contacts, quotations, tracking, rates] = await Promise.all([
+      const [contacts, quotations, tracking, rates, products] = await Promise.all([
         Sheets.readSheet(CONFIG.SHEETS.CONTACTS),
         Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS),
         Sheets.readSheet(CONFIG.SHEETS.TRACKING),

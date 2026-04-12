@@ -517,19 +517,34 @@ const Quotations = (() => {
     if (quote['Estado'] === newStatus) return;
 
     try {
-      Utils.showToast(`Cambiando a ${newStatus}...`, 'info');
-      await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, id, { 'Estado': newStatus });
-      quote['Estado'] = newStatus;
+      Utils.showToast(`Procesando cambio a ${newStatus}...`, 'info');
       
-      // Si estamos viendo el detalle de esta misma cotización, refrescar vista
-      if (document.getElementById('q-detail-marker')?.value === id) {
-        renderDetail(_container, id);
+      let response;
+      if (newStatus === 'Aprobada') {
+        // Ejecución de motor de negocio (Sincroniza stock)
+        response = await API.call("EXECUTE_QUOTATION", {
+          quoteId: id,
+          newStatus: newStatus,
+          detailJSON: quote['Detalle JSON']
+        });
       } else {
-        renderCurrentView();
+        // Actualización simple de estado
+        response = await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, id, { 'Estado': newStatus });
       }
-      Utils.showToast(`Estado actualizado a ${newStatus}`, 'success');
+
+      if (response && (response.success || !response.error)) {
+        quote['Estado'] = newStatus;
+        if (document.getElementById('q-detail-marker')?.value === id) {
+          renderDetail(_container, id);
+        } else {
+          renderCurrentView();
+        }
+        Utils.showToast(`Estado actualizado a ${newStatus} ${newStatus === 'Aprobada' ? 'y stock sincronizado' : ''}`, 'success');
+      } else {
+        throw new Error(response.error || 'Error en servidor');
+      }
     } catch (e) {
-      Utils.showToast('Error al actualizar estado: ' + e.message, 'error');
+      Utils.showToast('Error: ' + e.message, 'error');
     }
   }
 

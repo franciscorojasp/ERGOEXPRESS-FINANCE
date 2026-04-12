@@ -15,14 +15,15 @@ const Auth = (() => {
   }
 
   // ─── Login ────────────────────────────────────────────────────────────────
-  async function login(email, password) {
-    const res = await API.call('LOGIN', { email, password });
+  async function login(email, password, env = 'shared', fingerprint = '') {
+    const res = await API.call('LOGIN', { email, password, env, fingerprint });
     if (res.success) {
       _token = res.token;
       _user  = res.user;
       localStorage.setItem('crm_token',      _token);
       localStorage.setItem('crm_user',       JSON.stringify(_user));
-      localStorage.setItem('crm_user_role',  _user.role);
+      // Usa obj.rol en frontend retrocompatible
+      localStorage.setItem('crm_user_role',  _user.rol || _user.role || '');
     }
     return res;
   }
