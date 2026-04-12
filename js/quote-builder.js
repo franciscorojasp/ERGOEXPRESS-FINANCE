@@ -48,7 +48,7 @@ const QuoteBuilder = (() => {
         
         <!-- CABECERA -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6mm;">
-          <img src="${logoUrl}" style="height:25mm; width:25mm; object-fit:contain;" />
+          <img src="${logoUrl}" style="height:25mm; width:25mm; object-fit:contain; border-radius:50%; background:#ffffff;" />
           <div style="text-align:right; flex:1;">
              <h2 style="margin:0; font-size:22px; font-weight:900; color:${colorText}; letter-spacing:-0.5px;">${empresa}</h2>
              <div style="font-size:11px; color:${colorPrimary}; font-weight:800; margin-top:2px;">RIF: ${rif}</div>

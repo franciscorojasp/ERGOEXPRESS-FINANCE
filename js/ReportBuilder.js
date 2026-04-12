@@ -30,7 +30,7 @@ const ReportBuilder = (() => {
         <div id="elite-report-root" style="width:100%; max-width:800px; background:#ffffff; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1e293b; padding:40px; box-sizing:border-box;">
           
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
-            <img src="${logoUrl}" style="height:80px; width:80px; object-fit:contain;" crossorigin="anonymous" />
+            <img src="${logoUrl}" style="height:80px; width:80px; object-fit:contain; border-radius:50%; background:#ffffff;" crossorigin="anonymous" />
             <div style="text-align:right; flex:1;">
                <h2 style="margin:0; font-size:24px; font-weight:bold;">${empresa}</h2>
                <div style="font-size:14px; color:#0d7377; font-weight:bold; margin-top:2px;">RIF: ${rif}</div>
