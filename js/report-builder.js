@@ -29,38 +29,40 @@ const ReportBuilder = (() => {
 
       const wrapper = document.createElement('div');
       wrapper.innerHTML = `
-        <div id="elite-report-root" style="width:100%; max-width:800px; background:#ffffff; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1e293b; padding:40px; box-sizing:border-box;">
+        <div id="elite-report-root" style="width:100%; max-width:800px; background:#ffffff; font-family:'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; color:#1e293b; padding:40px; box-sizing:border-box;">
           
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
-            <img src="${logoBase64}" style="height:100px; width:150px; object-fit:contain; object-position:left center; background:#ffffff;" crossorigin="anonymous" />
-            <div style="text-align:right; flex:1;">
-               <h2 style="margin:0; font-size:24px; font-weight:bold;">${empresa}</h2>
-               <div style="font-size:14px; color:#0d7377; font-weight:bold; margin-top:2px;">RIF: ${rif}</div>
-               <p style="font-size:12px; color:#64748b; margin-top:6px; line-height:1.4;">
+          <!-- Header del Reporte -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:2px solid #0d7377; padding-bottom:20px;">
+            <div style="width:160px; height:100px; display:flex; align-items:center; justify-content:center; background:#ffffff; border-radius:8px;">
+               <img src="${logoBase64}" style="max-height:100%; max-width:100%; object-fit:contain;" />
+            </div>
+            
+            <div style="text-align:right; flex:1; padding-left:20px;">
+               <h2 style="margin:0; font-size:22px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:-0.5px;">${empresa}</h2>
+               <div style="font-size:13px; color:#0d7377; font-weight:800; margin-top:4px; letter-spacing:1px;">RIF: ${rif}</div>
+               <p style="font-size:11px; color:#64748b; margin-top:8px; line-height:1.5; font-weight:500;">
                  ${dir}<br/>
-                 Tel: ${tel} | ${email}
+                 <span style="color:#0d7377; font-weight:700;">TEL:</span> ${tel} &nbsp;|&nbsp; <span style="color:#0d7377; font-weight:700;">EMAIL:</span> ${email}
                </p>
             </div>
           </div>
 
-          <div style="width:100%; height:1px; background:#e2e8f0; margin-bottom:24px;"></div>
-
-          <div style="margin-bottom:24px; text-align:center;">
-             <h1 style="margin:0; font-size:24px; font-weight:bold; text-transform:uppercase; border-bottom:3px solid #0d7377; display:inline-block; padding-bottom:6px;">
+          <div style="margin-bottom:30px; text-align:center;">
+             <h1 style="margin:0; font-size:26px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:1px;">
                ${title}
              </h1>
-             <div style="margin-top:8px; font-size:12px; color:#64748b; font-weight:bold;">
-               Emitido el ${Utils.formatDateLong(new Date().toISOString())}
+             <div style="margin-top:10px; display:inline-block; background:#f1f5f9; padding:4px 12px; border-radius:20px; font-size:10px; color:#475569; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+               Generado: ${Utils.formatDateLong(new Date().toISOString())}
              </div>
           </div>
 
-          <div style="flex:1;">
+          <div style="flex:1; min-height:400px;">
              ${contentHTML}
           </div>
 
-          <div style="margin-top:40px; padding-top:16px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between;">
-             <div style="font-size:10px; color:#64748b;">ERGOEXPRESS CRM — v6.0.4</div>
-             <div style="font-size:10px; color:#64748b;">Documento Digital de Validez Administrativa</div>
+          <div style="margin-top:50px; padding-top:20px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+             <div style="font-size:9px; color:#94a3b8; font-weight:600;">PLATAFORMA ELITE ERP — v${CONFIG.APP_VERSION}</div>
+             <div style="font-size:9px; color:#94a3b8; font-weight:600; text-transform:uppercase;">© ${new Date().getFullYear()} CONTROL DE GESTIÓN CORPORATIVA</div>
           </div>
         </div>
       `;

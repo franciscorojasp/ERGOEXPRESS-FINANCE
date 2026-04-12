@@ -193,10 +193,30 @@ const Payroll = (() => {
     const destajoUSD = empProd.reduce((sum, p) => sum + Utils.toNumber(p.Subtotal_USD), 0);
 
     const totalBrutoUSD = fixedUSD + destajoUSD;
-    const deduccionesUSD = totalBrutoUSD * 0.05; // Simplificado para demo
+
+    // Deducciones exactas según Ley Venezolana
+    const ssoUSD = totalBrutoUSD * 0.04; // Seguro Social (4%)
+    const lphUSD = totalBrutoUSD * 0.01; // Ley Política Habitacional (1%)
+    const spfUSD = totalBrutoUSD * 0.005; // Seguro Paro Forzoso (0.5%)
+    
+    const deduccionesUSD = ssoUSD + lphUSD + spfUSD;
     const netoUSD = totalBrutoUSD - deduccionesUSD;
 
-    return { fixedUSD, destajoUSD, tasks: empProd.length, totalBrutoUSD, deduccionesUSD, netoUSD, tasa };
+    // Cálculo Art. 142 LOTTT (Simplificado para vista previa)
+    // Garantía Social: 5 días por mes (depositados trimestralmente)
+    const garantiaMesUSD = (sueldoMensualUSD / 30) * 5; 
+
+    return { 
+      fixedUSD, 
+      destajoUSD, 
+      tasks: empProd.length, 
+      totalBrutoUSD, 
+      deduccionesUSD, 
+      netoUSD, 
+      tasa,
+      desglose: { ssoUSD, lphUSD, spfUSD },
+      garantiaMesUSD 
+    };
   }
 
   async function previewPaystub(idEmp) {
@@ -244,9 +264,21 @@ const Payroll = (() => {
               <td style="padding:10px; border-bottom:1px solid var(--border-color); text-align:right;">—</td>
             </tr>
             <tr>
-              <td style="padding:10px; border-bottom:1px solid var(--border-color);">Retenciones de Ley (Est.)</td>
+              <td style="padding:10px; border-bottom:1px solid var(--border-color);">Deducciones Legales (SSO 4%, LPH 1%, SPF 0.5%)</td>
               <td style="padding:10px; border-bottom:1px solid var(--border-color); text-align:right;">—</td>
               <td style="padding:10px; border-bottom:1px solid var(--border-color); text-align:right; color:var(--error-color); font-weight:600;">$ ${Utils.formatUSD(calc.deduccionesUSD)}</td>
+            </tr>
+            <tr style="background:var(--bg-secondary); font-size:11px;">
+              <td colspan="3" style="padding:5px 10px;">
+                <b>Desglose:</b> SSO: $${Utils.formatUSD(calc.desglose.ssoUSD)} | 
+                LPH: $${Utils.formatUSD(calc.desglose.lphUSD)} | 
+                SPF: $${Utils.formatUSD(calc.desglose.spfUSD)}
+              </td>
+            </tr>
+            <tr style="background:var(--bg-highlight); font-size:11px;">
+              <td colspan="3" style="padding:5px 10px; color:var(--primary-color);">
+                <b>Aporte Prestaciones (Art. 142):</b> Garantía del mes proyectada: $${Utils.formatUSD(calc.garantiaMesUSD)}
+              </td>
             </tr>
           </table>
 

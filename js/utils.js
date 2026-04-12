@@ -747,22 +747,42 @@ const Utils = (() => {
 
     /**
      * Convierte una URL/Ruta de imagen a Base64 de forma asíncrona.
-     * Incluye optimización de tamaño (maxW) para evitar bloqueos por imágenes pesadas.
+     * Incluye optimización de tamaño y formato (JPEG) para evitar bloqueos por imágenes pesadas.
      */
-    imgToBase64: function(url, maxW = 500) {
+    imgToBase64: function(url, maxW = 800) {
       return new Promise((resolve) => {
         if (!url) return resolve('');
         // Si ya es base64, devolver directo
         if (url.startsWith('data:')) return resolve(url);
 
+        // Convertir ruta relativa a absoluta para evitar fallos de carga en SPA
+        let targetUrl = url;
+        if (!url.startsWith('http') && !url.startsWith('/')) {
+           const origin = window.location.origin;
+           const path = window.location.pathname.replace(/\/[^\/]*$/, '');
+           targetUrl = origin + path + '/' + url;
+        }
+        
+        // Agregar cache-buster si es URL remota para evitar problemas de CORS/Cache
+        if (targetUrl.startsWith('http')) {
+           targetUrl += (targetUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+        }
+
         const img = new Image();
         img.crossOrigin = 'Anonymous';
+        
+        const timeout = setTimeout(() => {
+          img.src = ''; // Cancelar carga
+          console.warn('[Utils] Timeout cargando imagen:', url);
+          resolve(url); 
+        }, 10000); // 10 segundos para logos extremadamente pesados
+
         img.onload = () => {
+          clearTimeout(timeout);
           const canvas = document.createElement('canvas');
           let w = img.width;
           let h = img.height;
           
-          // Redimensionar si es necesario para optimizar PDF
           if (w > maxW) {
              const ratio = maxW / w;
              w = maxW;
@@ -774,17 +794,19 @@ const Utils = (() => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
           try {
-            resolve(canvas.toDataURL('image/png'));
+            // Usar JPEG 0.8 para reducir drásticamente el peso del base64 (crítico para logos de 4MB)
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
           } catch(e) {
             console.warn('[Utils] Error conversion canvas:', e);
             resolve(url); 
           }
         };
         img.onerror = () => {
-          console.warn('[Utils] Error cargando imagen:', url);
+          clearTimeout(timeout);
+          console.warn('[Utils] Error cargando imagen:', targetUrl);
           resolve(url);
         };
-        img.src = url;
+        img.src = targetUrl;
       });
     },
 

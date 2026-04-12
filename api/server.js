@@ -22,6 +22,7 @@ dotenv.config();
 
 // Configuración de la aplicación
 const app = express();
+app.set('trust proxy', true); // Requerido para capturar IP real en Vercel/Proxies
 const PORT = process.env.PORT || 3001;
 
 // Middlewares de seguridad
