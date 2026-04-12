@@ -204,16 +204,7 @@
           </button>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label" style="display:flex; justify-content:space-between;">
-          <span>Entorno de Seguridad</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text-muted);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </label>
-        <select class="form-input" id="login-env" style="appearance:none; border:1px solid rgba(13,115,119,0.3); background-color:rgba(15,24,38,0.5);">
-          <option value="personal">Equipo Personal (Sesión 8 horas)</option>
-          <option value="shared" selected>Equipo Compartido (Cierre 15 min)</option>
-        </select>
-      </div>
+
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="loginSubmit()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -325,7 +316,7 @@
     async function loginSubmit() {
       const email = document.getElementById('login-email').value.trim();
       const pass  = document.getElementById('login-pass').value;
-      const env   = document.getElementById('login-env').value;
+      const env   = 'personal'; // Hardcoded a petición del usuario (8 horas)
       const baseFingerprint = btoa(navigator.userAgent + '|' + screen.width + 'x' + screen.height).substring(0,32);
 
       setError('login-error', '');
