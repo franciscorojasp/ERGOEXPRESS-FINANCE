@@ -109,13 +109,13 @@ const Productivity = (() => {
       // Intentamos cargar Nomina_Detalle, si no existe devolvemos vacio
       let tasks = [];
       try {
-        tasks = await Sheets.get('Nomina_Detalle');
+        tasks = await Sheets.readSheet('Nomina_Detalle', false);
       } catch(e) {
         console.warn('Hoja Nomina_Detalle no encontrada. ¿Se ejecutó la migración?');
       }
 
-      const rates = await Sheets.get('TasasCambio');
-      const latestRate = rates.length > 0 ? Utils.toNumber(rates[0]['Tasa Oficial']) : 0;
+      const rates = await Sheets.readSheet('TasasCambio', false);
+      const latestRate = rates && rates.length > 0 ? Utils.toNumber(rates[0]['Tasa Oficial']) : 0;
 
       // Filter Pending
       const pendingTasks = tasks.filter(t => String(t['Estatus_Pago']).toUpperCase() === 'PENDIENTE');
