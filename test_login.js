@@ -1,11 +1,7 @@
 const url = 'https://script.google.com/macros/s/AKfycbyewLsUxongldudRxZEj6J8DCNDmgc6lSzKEFVAHdMsjAe5ubnNo8yREtGsFyuV9CY2/exec';
 const body = JSON.stringify({
   apiKey: 'ERGX2026',
-  action: 'LOGIN',
-  email: 'admin@ergoexpress.com',
-  password: 'admin',
-  env: 'shared',
-  fingerprint: ''
+  action: 'FETCH_BCV_RATE'
 });
 
 fetch(url, {

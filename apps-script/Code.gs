@@ -110,10 +110,16 @@ function login(req) {
 
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
-    const passMatch = (String(r[idxPass]) === String(hashedInput) || String(r[idxPass]) === String(req.password));
-    const statusMatch = (String(r[idxStatus]).toUpperCase() === 'ACTIVO' || String(r[idxStatus]).toUpperCase() === 'SI');
+    const sheetEmail = String(r[idxEmail] || '').toLowerCase().trim();
+    const reqEmail = String(req.email || '').toLowerCase().trim();
+    
+    if (sheetEmail === reqEmail && reqEmail !== '') {
+      const passMatch = (String(r[idxPass]) === String(hashedInput) || String(r[idxPass]) === String(req.password));
+      const statusVal = String(r[idxStatus] || '').trim().toUpperCase();
+      const statusMatch = (statusVal === 'ACTIVO' || statusVal === 'SI');
 
-    if (String(r[idxEmail]).toLowerCase() === String(req.email).toLowerCase() && passMatch && statusMatch) {
+      if (!passMatch) return { success: false, error: 'La contraseña es incorrecta.' };
+      if (!statusMatch) return { success: false, error: 'La cuenta existe pero está: ' + statusVal };
       
       const deviceInfo = req.fingerprint || 'Desconocido/Temporal';
       const userFingerprint = (idxFingerprint !== -1) ? String(r[idxFingerprint] || '') : '';
@@ -129,7 +135,7 @@ function login(req) {
       return generateTokenAndSync(req, uSh, i+1, r, h, deviceInfo);
     }
   }
-  return { success: false, error: 'Credenciales inválidas o cuenta Inactiva.' };
+  return { success: false, error: 'El correo ' + req.email + ' no se encuentra en Usuarios.' };
 }
 
 function verify2FA(req) {
