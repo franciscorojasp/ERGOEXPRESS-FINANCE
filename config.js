@@ -74,7 +74,7 @@ const CONFIG = {
     'Guárico','Lara','Mérida','Miranda','Monagas','Nueva Esparta',
     'Portuguesa','Sucre','Táchira','Trujillo','Vargas','Yaracuy','Zulia'],
 
-  APP_VERSION: '6.0.1 (Elite ERP)',
+  APP_VERSION: '6.0.2 (Elite ERP)',
   APP_NAME:    'ERGOEXPRESS-FINANCE',
   SPREADSHEET_NAME: 'ERGOEXPRESS-FINANCE',
   GEMINI_MODEL: 'gemini-1.5-flash'
