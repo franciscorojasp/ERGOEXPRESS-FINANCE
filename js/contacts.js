@@ -21,7 +21,7 @@ const Contacts = (() => {
     if (!target) return;
 
     if (force) {
-      target.innerHTML = `<div class="loading-spinner" style="margin:100px auto;"><div class="spinner"></div><p>Sincronizando con Google Sheets...</p></div>`;
+      target.innerHTML = `<div class="loading-spinner" style="margin:100px auto;"><div class="spinner"></div><p>Sincronizando con Supabase...</p></div>`;
       await _loadContacts();
     }
 
@@ -81,16 +81,16 @@ const Contacts = (() => {
 
   async function _loadContacts() {
     try {
-      _contacts = await Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false);
+      const response = await API.callVercel('/contacts');
+      if (response.success) {
+        _contacts = response.data;
+      } else {
+        throw new Error(response.error || 'Error desconocido al cargar contactos');
+      }
       
       // Safety check: Is the contacts screen still active?
       if (!document.getElementById('contacts-table-wrap')) return;
 
-      if (!App.isAdmin()) {
-        const email = App.getCurrentUserEmail();
-        _contacts = _contacts.filter(c => c['Vendedor Email'] === email);
-      }
-      
       _renderCurrentView();
     } catch(e) {
       console.error('[Contacts] Load error:', e);
@@ -310,21 +310,19 @@ const Contacts = (() => {
 
     try {
       if (id) {
-        // Update existing
-        const contact = _contacts.find(c => c['ID'] === id);
-        if (!contact) throw new Error('Contacto no encontrado');
-        const updated = { ...contact, ...data };
-        await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, id, updated);
+        // Update existing via Vercel API
+        const response = await API.callVercel(`/contacts/${id}`, data, 'PUT');
+        if (!response.success) throw new Error(response.error);
+        
         Utils.showToast('Contacto actualizado', 'success');
       } else {
-        // New contact
-        const newContact = {
-          'ID': Utils.generateId(),
+        // New contact via Vercel API
+        const response = await API.callVercel('/contacts', {
           ...data,
-          'Fecha Registro': Utils.todayISO(),
-          'Vendedor Email': App.getCurrentUserEmail()
-        };
-        await Sheets.appendRow(CONFIG.SHEETS.CONTACTS, newContact);
+          'Fecha Registro': Utils.todayISO()
+        }, 'POST');
+        
+        if (!response.success) throw new Error(response.error);
         Utils.showToast('Contacto creado exitosamente', 'success');
       }
 
@@ -341,7 +339,9 @@ const Contacts = (() => {
       '¿Eliminar este contacto? Esta acción no se puede deshacer.',
       async () => {
         try {
-          await Sheets.deleteRow(CONFIG.SHEETS.CONTACTS, id);
+          const response = await API.callVercel(`/contacts/${id}`, {}, 'DELETE');
+          if (!response.success) throw new Error(response.error);
+          
           Utils.showToast('Contacto eliminado', 'success');
           await _loadContacts();
         } catch(e) {
@@ -458,13 +458,16 @@ const Contacts = (() => {
     `;
 
     try {
-      const [allContacts, allTracking, allQuotes] = await Promise.all([
-        Sheets.readSheet(CONFIG.SHEETS.CONTACTS, false),
+      const [contactResponse, allTracking, allQuotes] = await Promise.all([
+        API.callVercel(`/contacts/${id}`),
         Sheets.readSheet(CONFIG.SHEETS.TRACKING, false),
         Sheets.readSheet(CONFIG.SHEETS.QUOTATIONS, false)
       ]);
 
-      const contact = allContacts.find(c => String(c.ID || '').trim() === String(id || '').trim());
+      if (!contactResponse.success) {
+        throw new Error(contactResponse.error || 'No se pudo cargar el contacto');
+      }
+      const contact = contactResponse.data;
 
       if (!contact) {
          container.innerHTML = `<div class="empty-state">Cliente no encontrado</div>`;
@@ -658,11 +661,7 @@ const Contacts = (() => {
       await Sheets.appendRow(CONFIG.SHEETS.TRACKING, row);
 
       if (data['Etapa Pipeline']) {
-        const contact = _contacts.find(c => c['ID'] === contactId);
-        if (contact) {
-          const updated = { ...contact, 'Etapa Pipeline': data['Etapa Pipeline'] };
-          await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, contact.ID, updated);
-        }
+        await API.callVercel(`/contacts/${contactId}`, { 'Etapa Pipeline': data['Etapa Pipeline'] }, 'PUT');
       }
 
       Utils.showToast('Interacción registrada', 'success');
@@ -703,8 +702,10 @@ const Contacts = (() => {
     updateField: async (id, field, value) => {
       try {
         Utils.showToast('Actualizando...', 'info');
-        await Sheets.updateRow(CONFIG.SHEETS.CONTACTS, id, { [field]: value });
-        const c = _contacts.find(x => x['ID'] === id);
+        const response = await API.callVercel(`/contacts/${id}`, { [field]: value }, 'PUT');
+        if (!response.success) throw new Error(response.error);
+        
+        const c = _contacts.find(x => x['ID'] === id || x['id'] === id);
         if (c) c[field] = value;
         Utils.showToast('Actualizado correctamente', 'success');
         _renderCurrentView();

@@ -211,6 +211,53 @@ const authorize = (...roles) => {
   };
 };
 
+/**
+ * UTILS - Mapeo de entidades Supabase <-> Frontend
+ */
+const mapEntityToFrontend = (entity) => {
+  return {
+    'ID': entity.id,
+    'Razón Social': entity.razon_social,
+    'RIF': entity.rif,
+    'Persona Contacto': entity.persona_contacto || '',
+    'Teléfonos': entity.telefonos?.principal || '',
+    'Email': entity.email || '',
+    'Dirección': entity.direccion?.direccion || entity.direccion?.texto || '',
+    'Estado': entity.estado || '',
+    'Puntaje': entity.puntaje || 0,
+    'Tipo': entity.tipo,
+    'Fecha Registro': entity.fecha_registro,
+    'Notas': entity.notas || '',
+    'Etapa Pipeline': entity.etapa_pipeline || 'Nuevo',
+    'Vendedor Email': entity.vendedor_email || '',
+    'Categoria_Fiscal': entity.categoria_fiscal,
+    'Municipio_ID': entity.municipio_id || '',
+    'RIF_Validado': entity.rif_validado,
+    'RIF_Ultimo_Digito': entity.rif_ultimo_digito,
+    'Contribuyente_Especial': entity.contribuyente_especial,
+    'id': entity.id // Para compatibilidad con frameworks modernos
+  };
+};
+
+const mapFrontendToEntity = (data) => {
+  return {
+    razon_social: data['Razón Social'],
+    rif: data['RIF'],
+    persona_contacto: data['Persona Contacto'],
+    telefonos: typeof data['Teléfonos'] === 'string' ? { principal: data['Teléfonos'] } : data['Teléfonos'],
+    email: data['Email'],
+    direccion: typeof data['Dirección'] === 'string' ? { direccion: data['Dirección'] } : data['Dirección'],
+    estado: data['Estado'],
+    puntaje: parseInt(data['Puntaje']) || 0,
+    tipo: data['Tipo'] || 'cliente',
+    notas: data['Notas'],
+    etapa_pipeline: data['Etapa Pipeline'] || 'Nuevo',
+    vendedor_email: data['Vendedor Email'],
+    categoria_fiscal: data['Categoria_Fiscal'] || 'ordinario',
+    contribuyente_especial: data['Contribuyente_Especial'] === true || data['Contribuyente_Especial'] === 'true'
+  };
+};
+
 // ===========================================
 // RUTAS DE LA API
 // ===========================================
@@ -707,6 +754,215 @@ app.delete('/api/products/:id', authenticate, authorize('admin'), async (req, re
       success: false,
       error: 'Error al eliminar producto'
     });
+  }
+});
+
+// ===========================================
+// CONTACTOS (ENTIDADES)
+// ===========================================
+
+// Obtener contactos
+app.get('/api/contacts', authenticate, async (req, res) => {
+  try {
+    const { tipo, search, limit = 1000, offset = 0 } = req.query;
+
+    let query = supabase
+      .from('finance.entidades')
+      .select('*', { count: 'exact' })
+      .eq('activo', true);
+
+    // Si no es admin ni manager, solo ve sus propios contactos
+    if (req.user.rol !== 'admin' && req.user.rol !== 'manager') {
+      // Intentamos filtrar por vendedor_email si la columna existe. 
+      // Por ahora la consulta fallará si la columna no existe en Supabase.
+      query = query.eq('vendedor_email', req.user.email);
+    }
+
+    if (tipo) {
+      query = query.eq('tipo', tipo.toLowerCase());
+    }
+
+    if (search) {
+      query = query.or(`razon_social.ilike.%${search}%,rif.ilike.%${search}%,persona_contacto.ilike.%${search}%`);
+    }
+
+    const { data: entities, error, count } = await query
+      .order('razon_social', { ascending: true })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    if (error) {
+      // Fallback si la columna vendedor_email o etapa_pipeline no existen aún
+      if (error.message.includes('column') && error.message.includes('not found')) {
+        log('warn', 'Fallback detectado: Algunas columnas de contactos no existen en schema.');
+        
+        // Ejecutamos query limpia sin los filtros problemáticos
+        let fallbackQuery = supabase
+          .from('finance.entidades')
+          .select('*', { count: 'exact' })
+          .eq('activo', true);
+          
+        if (tipo) fallbackQuery = fallbackQuery.eq('tipo', tipo.toLowerCase());
+        
+        const { data: fbEntities, error: fbError, count: fbCount } = await fallbackQuery
+          .order('razon_social', { ascending: true })
+          .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+          
+        if (fbError) throw fbError;
+        
+        return res.json({
+          success: true,
+          data: fbEntities.map(mapEntityToFrontend),
+          total: fbCount
+        });
+      }
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      data: entities.map(mapEntityToFrontend),
+      total: count
+    });
+
+  } catch (error) {
+    log('error', 'Error obteniendo contactos:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener contactos'
+    });
+  }
+});
+
+// Obtener contacto por ID
+app.get('/api/contacts/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: entity, error } = await supabase
+      .from('finance.entidades')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !entity) {
+      return res.status(404).json({ success: false, error: 'Contacto no encontrado' });
+    }
+
+    res.json({
+      success: true,
+      data: mapEntityToFrontend(entity)
+    });
+  } catch (error) {
+    log('error', `Error obteniendo contacto ${req.params.id}:`, error);
+    res.status(500).json({ success: false, error: 'Error al obtener el contacto' });
+  }
+});
+
+// Crear contacto
+app.post('/api/contacts', authenticate, async (req, res) => {
+  try {
+    const entityData = mapFrontendToEntity(req.body);
+    
+    // Asignar vendedor si no es admin
+    if (req.user.rol !== 'admin' && !entityData.vendedor_email) {
+      entityData.vendedor_email = req.user.email;
+    }
+
+    const { data, error } = await supabase
+      .from('finance.entidades')
+      .insert([entityData])
+      .select()
+      .single();
+
+    if (error) {
+      // Manejar error de columnas faltantes en el insert
+      if (error.message.includes('column') && error.message.includes('not found')) {
+        delete entityData.etapa_pipeline;
+        delete entityData.vendedor_email;
+        const { data: fbData, error: fbError } = await supabase
+          .from('finance.entidades')
+          .insert([entityData])
+          .select()
+          .single();
+        if (fbError) throw fbError;
+        return res.status(201).json({ success: true, data: mapEntityToFrontend(fbData) });
+      }
+      throw error;
+    }
+
+    log('info', `Contacto creado: ${entityData.razon_social} por ${req.user.email}`);
+
+    res.status(201).json({
+      success: true,
+      data: mapEntityToFrontend(data)
+    });
+  } catch (error) {
+    log('error', 'Error creando contacto:', error);
+    res.status(500).json({ success: false, error: 'Error al crear contacto' });
+  }
+});
+
+// Actualizar contacto
+app.put('/api/contacts/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const entityData = mapFrontendToEntity(req.body);
+
+    const { data, error } = await supabase
+      .from('finance.entidades')
+      .update(entityData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.message.includes('column') && error.message.includes('not found')) {
+        delete entityData.etapa_pipeline;
+        delete entityData.vendedor_email;
+        const { data: fbData, error: fbError } = await supabase
+          .from('finance.entidades')
+          .update(entityData)
+          .eq('id', id)
+          .select()
+          .single();
+        if (fbError) throw fbError;
+        return res.json({ success: true, data: mapEntityToFrontend(fbData) });
+      }
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      data: mapEntityToFrontend(data)
+    });
+  } catch (error) {
+    log('error', `Error actualizando contacto ${req.params.id}:`, error);
+    res.status(500).json({ success: false, error: 'Error al actualizar contacto' });
+  }
+});
+
+// Eliminar contacto (Soft delete marcando activo=false)
+app.delete('/api/contacts/:id', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('finance.entidades')
+      .update({ activo: false })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    log('info', `Contacto eliminado: ${id} por ${req.user.email}`);
+
+    res.json({
+      success: true,
+      message: 'Contacto eliminado correctamente'
+    });
+  } catch (error) {
+    log('error', `Error eliminando contacto ${req.params.id}:`, error);
+    res.status(500).json({ success: false, error: 'Error al eliminar contacto' });
   }
 });
 
