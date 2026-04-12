@@ -83,40 +83,50 @@ try {
   console.warn('⚠️ Redis no disponible:', error.message);
 }
 
-// Función de logging con persistencia en Supabase
+// Función de logging con persistencia en Supabase (Versión Ultra-Segura)
 const log = async (level, message, data = {}) => {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, data);
-
-  // Persistir en audit.logs_auditoria si es un error o una acción relevante
+  // Limpieza de datos para evitar referencias circulares (frecuente en errores de Node/Vercel)
+  let cleanData = {};
   try {
-    // Verificamos si supabaseAdmin existe antes de usarlo
+    if (data instanceof Error) {
+      cleanData = { message: data.message, stack: data.stack };
+    } else if (typeof data === 'object' && data !== null) {
+      // Clonado básico para evitar mutaciones y circularidad simple
+      cleanData = JSON.parse(JSON.stringify(data, (key, value) => 
+        (typeof value === 'object' && value !== null && key === 'req') ? '[Request Object]' : value
+      ));
+    } else {
+      cleanData = { value: data };
+    }
+  } catch (e) {
+    cleanData = { error: 'No se pudieron serializar los detalles del log' };
+  }
+
+  console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, cleanData);
+
+  try {
     if (supabaseAdmin && level !== 'debug') {
       const logEntry = {
-        accion: message.substring(0, 500), // Aumentamos límite para ver más detalles en la acción si es necesario
-        usuario_email: data.user_email || data.email || 'Sistema/API',
-        usuario_id: data.user_id || null,
-        detalles: data,
-        tabla: data.table || 'Backend',
-        registro_id: data.record_id || null
+        accion: (message || 'Sin mensaje').substring(0, 500),
+        usuario_email: cleanData.user_email || cleanData.email || 'Sistema/API',
+        usuario_id: cleanData.user_id || null,
+        detalles: cleanData,
+        tabla: cleanData.table || 'Backend',
+        registro_id: cleanData.record_id || null
       };
 
-      // Si tenemos IP y User-Agent en el request original
       if (data.req) {
-        logEntry.ip_address = data.req.ip;
-        logEntry.user_agent = data.req.headers['user-agent'];
-        delete data.req; // Evitar circular refs en JSON
+        logEntry.ip_address = data.req.ip || '0.0.0.0';
+        logEntry.user_agent = data.req.headers ? data.req.headers['user-agent'] : 'unknown';
       }
 
-      const { error } = await supabaseAdmin.from('audit.logs_auditoria').insert([logEntry]);
-      if (error) {
-        console.warn('⚠️ No se pudo persistir el log:', error.message);
-      }
-    } else if (!supabaseAdmin && level === 'error') {
-      console.warn('⚠️ Log persistente omitido: SUPABASE_SERVICE_ROLE_KEY no configurado.');
+      // No esperamos a que termine (fire and forget) para no retrasar la API principal
+      supabaseAdmin.from('audit.logs_auditoria').insert([logEntry]).then(({ error }) => {
+        if (error) console.warn('⚠️ No se pudo persistir el log:', error.message);
+      }).catch(e => console.warn('⚠️ Error en promesa de log:', e.message));
     }
   } catch (err) {
-    // El logging nunca debe romper el flujo de la aplicación
     console.error('Error crítico en sistema de audidoria:', err.message);
   }
 };
