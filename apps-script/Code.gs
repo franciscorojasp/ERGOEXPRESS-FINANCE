@@ -97,14 +97,15 @@ function login(req) {
   if (data.length <= 1) return { success: false, error: 'No hay usuarios' };
   
   const h = data[0];
-  const idxEmail = h.indexOf('Email');
-  const idxPass = h.indexOf('Password_Hash') !== -1 ? h.indexOf('Password_Hash') : h.indexOf('Password');
-  const idxStatus = h.indexOf('Status') !== -1 ? h.indexOf('Status') : h.indexOf('Activo');
-  const idxToken = h.indexOf('Token');
-  const idxTokenExp = h.indexOf('Token_Expira');
-  const idxName = h.indexOf('Nombre');
-  const idxRole = h.indexOf('Rol');
-  const idxFingerprint = h.indexOf('Fingerprint');
+  const getIdx = (words) => h.findIndex(col => words.includes(String(col).trim().toLowerCase()));
+  const idxEmail       = getIdx(['email', 'correo']);
+  const idxPass        = getIdx(['password_hash', 'password', 'contraseña', 'clave']);
+  const idxStatus      = getIdx(['status', 'activo', 'estado', 'estatus']);
+  const idxToken       = getIdx(['token']);
+  const idxTokenExp    = getIdx(['token_expira']);
+  const idxName        = getIdx(['nombre', 'name', 'usuario']);
+  const idxRole        = getIdx(['rol', 'role']);
+  const idxFingerprint = getIdx(['fingerprint', 'huella']);
 
   const hashedInput = computeSHA256(req.password);
 
@@ -114,7 +115,9 @@ function login(req) {
     const reqEmail = String(req.email || '').toLowerCase().trim();
     
     if (sheetEmail === reqEmail && reqEmail !== '') {
-      const passMatch = (String(r[idxPass]) === String(hashedInput) || String(r[idxPass]) === String(req.password));
+      const sheetPass = String(r[idxPass] || '').trim();
+      const reqPass = String(req.password || '').trim();
+      const passMatch = (sheetPass === String(hashedInput) || sheetPass === reqPass);
       const statusVal = String(r[idxStatus] || '').trim().toUpperCase();
       const statusMatch = (statusVal === 'ACTIVO' || statusVal === 'SI');
 
