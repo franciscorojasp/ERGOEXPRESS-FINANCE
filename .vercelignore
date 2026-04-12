@@ -86,3 +86,17 @@ docs/
 
 # Legacy files
 _backup_restore_point_20260409/
+
+# Vercel Function Limit Fix (Hobby Plan)
+# Solo permite que api/server.js se trate como función
+api/scripts/**
+api/tests/**
+api/debug_run_migrate.js
+api/config/
+api/Dockerfile
+api/docker-compose.yml
+api/jest.config.json
+api/.eslintrc.json
+api/.prettierrc.json
+api/README.md
+api/migration-error.txt
