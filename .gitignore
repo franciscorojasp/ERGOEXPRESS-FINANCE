@@ -8,11 +8,19 @@ Desktop.ini
 *.log
 *.tmp
 
-# Archivos de configuración local (si los hubiera)
+# Archivos de configuración local
 .env
+.env.local
+.env.*.local
 .vercel
+*.pem
+*.key
+credentials.json
 
-# PDF temporales
+# Archivos de Office (Potencialmente contienen claves/datos sensibles)
+*.docx
+*.xlsx
+*.pptx
 *.pdf
 Cotizacion_*.pdf
 
@@ -22,3 +30,6 @@ __pycache__/
 migrate_data.py
 read_products.ps1
 tmp_read_headers*.ps1
+node_modules/
+dist/
+build/
