@@ -69,5 +69,39 @@ const API = (() => {
     }
   }
 
-  return { call };
+  async function callVercel(endpoint, params = {}, method = 'GET') {
+    const baseUrl = CONFIG.API_VERCEL_URL;
+    const token = localStorage.getItem('crm_token'); // Supabase JWT
+
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    };
+
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    let url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+
+    if (method === 'GET' && Object.keys(params).length > 0) {
+      const qs = new URLSearchParams(params).toString();
+      url += `?${qs}`;
+    } else if (method !== 'GET') {
+      options.body = JSON.stringify(params);
+    }
+
+    const res = await fetch(url, options);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || `Error API Vercel: ${res.status}`);
+    }
+
+    return data;
+  }
+
+  return { call, callVercel };
 })();

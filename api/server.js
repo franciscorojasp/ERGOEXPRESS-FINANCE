@@ -83,10 +83,35 @@ try {
   console.warn('⚠️ Redis no disponible:', error.message);
 }
 
-// Función de logging
-const log = (level, message, data = {}) => {
+// Función de logging con persistencia en Supabase
+const log = async (level, message, data = {}) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, data);
+
+  // Persistir en audit.logs_auditoria si es un error o una acción relevante
+  try {
+    if (supabaseAdmin && level !== 'debug') {
+      const logEntry = {
+        accion: message.substring(0, 100),
+        usuario_email: data.user_email || data.email || 'Sistema/API',
+        usuario_id: data.user_id || null,
+        detalles: data,
+        tabla: data.table || 'Backend',
+        registro_id: data.record_id || null
+      };
+
+      // Si tenemos IP y User-Agent en el request original (si se pasa data.req)
+      if (data.req) {
+        logEntry.ip_address = data.req.ip;
+        logEntry.user_agent = data.req.headers['user-agent'];
+        delete data.req; // Evitar circular refs en JSON
+      }
+
+      await supabaseAdmin.from('audit.logs_auditoria').insert([logEntry]);
+    }
+  } catch (err) {
+    console.error('Error persistiendo log en DB:', err.message);
+  }
 };
 
 // Middleware de autenticación con Supabase
@@ -663,6 +688,45 @@ app.delete('/api/products/:id', authenticate, authorize('admin'), async (req, re
     res.status(500).json({
       success: false,
       error: 'Error al eliminar producto'
+    });
+  }
+});
+
+// ===========================================
+// AUDITORÍA
+// ===========================================
+
+// Obtener logs de auditoría
+app.get('/api/audit', authenticate, authorize('admin', 'manager'), async (req, res) => {
+  try {
+    const { limit = 100, offset = 0, action, table } = req.query;
+
+    let query = supabaseAdmin
+      .from('audit.logs_auditoria')
+      .select('*', { count: 'exact' });
+
+    if (action) query = query.ilike('accion', `%${action}%`);
+    if (table) query = query.ilike('tabla', `%${table}%`);
+
+    const { data: logs, error, count } = await query
+      .order('fecha', { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data: logs,
+      total: count,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+  } catch (error) {
+    log('error', 'Error obteniendo logs de auditoría:', { error: error.message, user_email: req.user.email });
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener logs de auditoría'
     });
   }
 });

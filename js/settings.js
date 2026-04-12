@@ -285,8 +285,8 @@ const Settings = (() => {
     c.innerHTML = `
       <div class="card">
         <div class="card-header" style="justify-content:space-between;">
-          <h3 class="card-title">Logs de Auditoría</h3>
-          <button class="btn btn-sm btn-ghost" onclick="Settings._renderAuditoria(document.getElementById('settings-content'))">🔄 Refrescar</button>
+          <h3 class="card-title">Logs de Auditoría (Supabase)</h3>
+          <button class="btn btn-sm btn-ghost" onclick="Settings._tab('auditoria', this)">🔄 Refrescar</button>
         </div>
         <div class="card-body" style="padding:0; max-height:600px; overflow-y:auto;">
           <div id="audit-logs-list">
@@ -294,21 +294,23 @@ const Settings = (() => {
           </div>
         </div>
         <div class="card-footer">
-          <p class="text-muted text-sm">Mostrando los últimos 100 eventos del sistema. Solo visible para personal autorizado.</p>
+          <p class="text-muted text-sm">Mostrando los registros de auditoría forense desde Supabase. Solo personal con permisos administrativos puede ver esta información.</p>
         </div>
       </div>
     `;
 
     try {
-      const res = await API.call('GET_AUDIT_LOGS', { limit: 100 });
+      // Llamada a la nueva API de Supabase en Vercel
+      const res = await API.callVercel('/audit', { limit: 100 });
       const list = document.getElementById('audit-logs-list');
+      
       if (!res.success) {
-        list.innerHTML = `<div style="padding:20px; color:var(--error);">${res.error}</div>`;
+        list.innerHTML = `<div style="padding:20px; color:var(--error);">Error: ${res.error}</div>`;
         return;
       }
 
-      if (res.data.length === 0) {
-        list.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros aún.</div>`;
+      if (!res.data || res.data.length === 0) {
+        list.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros en Supabase aún.</div>`;
         return;
       }
 
@@ -324,25 +326,56 @@ const Settings = (() => {
             </tr>
           </thead>
           <tbody style="font-size:12px;">
-            ${res.data.map(l => `
-              <tr>
-                <td style="white-space:nowrap;">${Utils.formatDate(l.fecha)} ${new Date(l.fecha).toLocaleTimeString()}</td>
-                <td><span style="color:var(--primary-light); font-weight:600;">${l.usuario}</span></td>
-                <td><span class="badge ${l.accion==='DELETE'?'badge-error':l.accion==='CREATE'?'badge-success':'badge-primary'}">${l.accion}</span></td>
-                <td class="td-bold">${l.tabla}</td>
-                <td>
-                  <div style="font-size:10px; font-family:monospace; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; color:var(--text-muted);" 
-                       onclick="Utils.showModal({title:'Detalles de Auditoría', content:'<pre style=\'font-size:11px; white-space:pre-wrap;\'>' + Utils.escapeHtml(JSON.stringify(JSON.parse(l.detalles || '{}'), null, 2)) + '</pre>' })">
-                    ${Utils.escapeHtml(l.detalles)}
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
+            ${res.data.map((l, index) => {
+              const detallesStr = typeof l.detalles === 'object' ? JSON.stringify(l.detalles) : (l.detalles || '{}');
+              const safeDetalles = Utils.escapeHtml(detallesStr);
+              const dateStr = l.fecha ? `${Utils.formatDate(l.fecha)} ${new Date(l.fecha).toLocaleTimeString()}` : '---';
+              
+              return `
+                <tr>
+                  <td style="white-space:nowrap;">${dateStr}</td>
+                  <td><span style="color:var(--primary-light); font-weight:600;">${Utils.escapeHtml(l.usuario_email || 'Sistema')}</span></td>
+                  <td><span class="badge ${l.accion==='DELETE'?'badge-error':l.accion==='CREATE'||l.accion==='INSERT'?'badge-success':'badge-primary'}">${Utils.escapeHtml(l.accion)}</span></td>
+                  <td class="td-bold">${Utils.escapeHtml(l.tabla || '---')}</td>
+                  <td>
+                    <div class="audit-details-cell" 
+                         style="font-size:10px; font-family:monospace; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; color:var(--text-muted);"
+                         data-index="${index}">
+                      ${safeDetalles}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;
+
+      // Agregar eventos para ver detalles
+      list.querySelectorAll('.audit-details-cell').forEach(cell => {
+        cell.onclick = () => {
+          const index = cell.getAttribute('data-index');
+          const log = res.data[index];
+          const formatted = JSON.stringify(log.detalles, null, 2);
+          Utils.showModal({
+            title: 'Detalles de Auditoría',
+            content: `<pre style="font-size:11px; white-space:pre-wrap; background:var(--bg-body); padding:15px; border-radius:8px; border:1px solid var(--border-color);">${Utils.escapeHtml(formatted)}</pre>`
+          });
+        };
+      });
+
     } catch (e) {
-      document.getElementById('audit-logs-list').innerHTML = `<div style="padding:20px; color:var(--error);">${e.message}</div>`;
+      console.error('Audit Load Error:', e);
+      const list = document.getElementById('audit-logs-list');
+      if (list) {
+        list.innerHTML = `
+          <div style="padding:40px; text-align:center;">
+            <div style="color:var(--error); margin-bottom:10px;">⚠️ No se pudo conectar con la API de Supabase</div>
+            <p class="text-sm text-muted">${e.message}</p>
+            <button class="btn btn-sm btn-primary" style="margin-top:15px;" onclick="Settings._tab('auditoria', this.parentElement)">Reintentar</button>
+          </div>
+        `;
+      }
     }
   }
 
