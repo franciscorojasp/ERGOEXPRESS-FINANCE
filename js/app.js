@@ -49,6 +49,8 @@ const App = (() => {
     '/intelligence': () => Intelligence.render(content()),
     '/settings':    () => Settings.render(content()),
     '/accounts':    () => Accounts.render(content()),
+    '/billing':     () => Billing.render(content()),
+    '/costs':       () => Costs.render(content()),
     '/maintenance': () => MaintenanceUI.render(content()),
   };
 
@@ -67,6 +69,8 @@ const App = (() => {
     '/intelligence': 'Inteligencia de Negocios (BI)',
     '/settings':    'Configuración',
     '/accounts':    'Gestión de Cuentas',
+    '/billing':     'Facturación y Documentos Fiscales',
+    '/costs':       'Estructura de Costos de Productos',
     '/maintenance': 'Mantenimiento Pro & Sistema',
   };
 

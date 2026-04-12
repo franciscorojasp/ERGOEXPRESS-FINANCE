@@ -36,6 +36,7 @@ const Settings = (() => {
           <button class="tab-btn" onclick="Settings._tab('usuarios', this)">👥 Usuarios</button>
           <button class="tab-btn" onclick="Settings._tab('auditoria', this)">🛡️ Auditoría</button>
           <button class="tab-btn" onclick="Settings._tab('interfaz', this)">📱 Interfaz</button>
+          <button class="tab-btn" onclick="Settings._tab('sistema', this)">⚙️ Sistema</button>
           <button class="tab-btn" onclick="Settings._tab('info', this)">ℹ️ Info</button>
         </div>
 
@@ -70,6 +71,7 @@ const Settings = (() => {
     if (name === 'usuarios')  _renderUsuarios(c);
     if (name === 'auditoria') _renderAuditoria(c);
     if (name === 'interfaz')  _renderInterfaz(c);
+    if (name === 'sistema')   _renderSistema(c);
     if (name === 'info')      _renderInfo(c);
   }
 
@@ -410,6 +412,56 @@ const Settings = (() => {
     `;
   }
 
+  function _renderSistema(c) {
+    const isOwner = App.getCurrentUserEmail() === (_config['empresa_email1'] || ''); // Propietario por email
+    
+    c.innerHTML = `
+      <div class="card card-padded" style="border-top: 4px solid var(--error); margin-bottom: 40px;">
+        <div class="form-section-title" style="color:var(--error); margin-bottom:8px;">Zona de Peligro: Mantenimiento Crítico</div>
+        <p class="text-muted text-sm" style="margin-bottom:24px;">
+          Estas acciones son irreversibles y afectan la integridad legal de los registros financieros. 
+          Solo el propietario del proyecto puede ejecutar estas funciones.
+        </p>
+
+        <div style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.1); padding:24px; border-radius:12px;">
+          <h4 style="margin:0 0 8px 0; font-size:16px; font-weight:700;">Reiniciar Ciclo Fiscal (Nuclear Reset)</h4>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px;">
+            Elimina todos los registros de Facturería, Notas de Entrega, Ajustes y reinicia las secuencias a cero.
+            Se recomienda realizar una copia de seguridad manual de los datos antes de proceder.
+          </p>
+          
+          <button class="btn btn-error" ${!isOwner ? 'disabled' : ''} onclick="Settings.resetFiscalData()">
+             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:8px;"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+             REINICIAR TODOS LOS DATOS FISCALES
+          </button>
+          ${!isOwner ? `<p style="margin-top:16px; font-size:12px; color:var(--error); font-weight:700;">ACCESO DENEGADO: Tu email no coincide con el propietario configurado.</p>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  async function resetFiscalData() {
+    const confirmed = await Utils.confirm('¿ESTÁS SEGURO? Se eliminarán permanentemente Facturas, Notas de Entrega y Secuencias.');
+    if (!confirmed) return;
+
+    const code = prompt('Para confirmar la destrucción de datos fiscales, escribe exactamente: RESET-ERGOEXPRESS');
+    if (code !== 'RESET-ERGOEXPRESS') {
+        Utils.showToast('Código incorrecto. Operación cancelada.', 'error');
+        return;
+    }
+
+    try {
+        Utils.showToast('Llamando a la función de limpieza en Supabase...', 'info');
+        const { error } = await supabase.rpc('reset_fiscal_data');
+        if (error) throw error;
+
+        Utils.showToast('Data fiscal reseteada exitosamente', 'success');
+        _renderTab('sistema');
+    } catch (e) {
+        Utils.showToast('Error: ' + e.message, 'error');
+    }
+  }
+
   // ─── Save ─────────────────────────────────────────────────────────────────
   async function saveEmpresa() {
     const data = Utils.getFormData('empresa-form');
@@ -517,6 +569,6 @@ const Settings = (() => {
 
   return {
     render, _tab, saveEmpresa, saveTextos,
-    openUserForm, saveUser, toggleUser, changeRole
+    openUserForm, saveUser, toggleUser, changeRole, resetFiscalData
   };
 })();

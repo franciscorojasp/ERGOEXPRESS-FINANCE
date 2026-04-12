@@ -60,9 +60,33 @@ const ReportBuilder = (() => {
              ${contentHTML}
           </div>
 
-          <div style="margin-top:50px; padding-top:20px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-             <div style="font-size:9px; color:#94a3b8; font-weight:600;">PLATAFORMA ELITE ERP — v${CONFIG.APP_VERSION}</div>
-             <div style="font-size:9px; color:#94a3b8; font-weight:600; text-transform:uppercase;">© ${new Date().getFullYear()} CONTROL DE GESTIÓN CORPORATIVA</div>
+          <!-- Firma y QR Fiscal -->
+          <div style="margin-top:40px; border:1px solid #e2e8f0; border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:flex-end; background:#f8fafc;">
+            <div style="flex:1;">
+               <div style="font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:12px; letter-spacing:0.5px;">Validación Digital</div>
+               <div style="display:flex; align-items:center; gap:15px;">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(filename)}" style="width:70px; height:70px; border:4px solid #fff; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.05);" />
+                  <div>
+                    <div style="font-size:11px; font-weight:800; color:#0f172a;">CERTIFICADO FISCAL DIGITAL</div>
+                    <div style="font-size:9px; color:#64748b; font-family:monospace; margin-top:2px;">DOCID: ${filename.split('.')[0]}</div>
+                    <div style="font-size:9px; color:#64748b; font-family:monospace;">HASH: ${btoa(filename).substring(0,16).toUpperCase()}</div>
+                  </div>
+               </div>
+            </div>
+            
+            <div style="text-align:center; min-width:200px;">
+               <div style="height:50px; border-bottom:1px solid #94a3b8; margin-bottom:10px;">
+                  <!-- Espacio para firma manuscrita o sello digital -->
+                  <div style="font-family:'Dancing Script', cursive; font-size:18px; color:#0d7377; opacity:0.6;">ErgoExpress Fiscal</div>
+               </div>
+               <div style="font-size:10px; font-weight:800; color:#0f172a;">${config['cotizacion_firma_nombre'] || 'ADMINISTRACIÓN'}</div>
+               <div style="font-size:9px; color:#64748b;">${config['cotizacion_firma_cargo'] || 'Firma Autorizada'}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px; padding-top:15px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+             <div style="font-size:8px; color:#94a3b8; font-weight:600;">PLATAFORMA ERGOEXPRESS CRM — v${CONFIG.APP_VERSION}</div>
+             <div style="font-size:8px; color:#94a3b8; font-weight:600; text-transform:uppercase;">DOCUMENTO ELECTRÓNICO ORIGINAL © ${new Date().getFullYear()}</div>
           </div>
         </div>
       `;

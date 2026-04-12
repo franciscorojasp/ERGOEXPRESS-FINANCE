@@ -756,6 +756,16 @@ const Quotations = (() => {
              <button class="btn" style="background:var(--bg-surface); border:1px solid var(--border-light); color:var(--text-primary); font-weight:700;" onclick="QuoteBuilder.downloadPDF('${q['ID']}')">
                <svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
              </button>
+
+             ${status === 'Aprobada' ? `
+               <div style="height:24px; width:1px; background:var(--border-light); margin:0 4px;"></div>
+               <button class="btn btn-primary" style="background:var(--text-primary); color:var(--bg-base); font-weight:800;" onclick="Quotations.convertToDeliveryNote('${q['ID']}')">
+                 Despachar (NE)
+               </button>
+               <button class="btn btn-primary" onclick="Quotations.convertToInvoice('${q['ID']}')">
+                 Facturar (FAC)
+               </button>
+             ` : ''}
           </div>
         </div>
 
@@ -857,9 +867,123 @@ const Quotations = (() => {
   }
 
   // ─── EXPOSICIÓN DE API ──────────────────────────────────────────────────
+  // ─── CONVERSIÓN FISCAL ──────────────────────────────────────────────────
+  async function convertToDeliveryNote(id) {
+    const q = State.quotes.find(x => x['ID'] === id);
+    if (!q) return;
+    Utils.confirm(`¿Estás seguro de generar la Nota de Entrega para la Cotización ERGOX-${q['Número']}?`, async () => {
+      try {
+        const detail = JSON.parse(q['Detalle JSON'] || '{}');
+        const num = await _getNextSequence('nota_entrega');
+        
+        const ne = {
+          numero: `NE-${String(num).padStart(5, '0')}`,
+          cliente_id: (await _getEntidadId(q['ID Cliente'])), 
+          subtotal_usd: q['Total USD'] / (detail.applyTax ? 1.16 : 1),
+          total_usd: q['Total USD'],
+          items: detail.items,
+          usuario_id: Auth.getUser().id
+        };
+
+        const { error } = await supabase.from('notas_entrega').insert(ne);
+        if (error) throw error;
+
+        Utils.showToast('Nota de Entrega generada con éxito', 'success');
+        App.navigate('/billing');
+      } catch (err) {
+        Utils.showToast('Error al convertir: ' + err.message, 'error');
+      }
+    });
+  }
+
+  async function convertToInvoice(id) {
+    const q = State.quotes.find(x => x['ID'] === id);
+    if (!q) return;
+
+    Utils.showModal({
+      title: `Facturar Cotización ERGOX-${q['Número']}`,
+      size: 'md',
+      content: `
+        <div class="form-grid">
+           <div class="form-group full">
+             <label class="form-label">Número de Control (Papelería Física)</label>
+             <input type="text" id="frm-fac-control" class="form-input" placeholder="Ej. 00-000001" required>
+           </div>
+           <div class="form-group">
+             <label class="form-label">Tasa BCV del día</label>
+             <input type="number" id="frm-fac-rate" class="form-input" value="${State.rate}" step="0.01">
+           </div>
+        </div>
+      `,
+      footer: `
+        <button class="btn btn-ghost" onclick="Utils.closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="Quotations.processInvoice('${id}')">Generar Factura Fiscal</button>
+      `
+    });
+  }
+
+  async function processInvoice(id) {
+    const q = State.quotes.find(x => x['ID'] === id);
+    const controlNum = document.getElementById('frm-fac-control')?.value;
+    const rate = parseFloat(document.getElementById('frm-fac-rate')?.value);
+
+    if (!controlNum) { Utils.showToast('El nro de control es obligatorio', 'warning'); return; }
+
+    try {
+      const num = await _getNextSequence('factura');
+      const detail = JSON.parse(q['Detalle JSON'] || '{}');
+      const subtotal = q['Total USD'] / (detail.applyTax ? 1.16 : 1);
+
+      const invoice = {
+        numero: num,
+        numero_control: controlNum,
+        cliente_id: await _getEntidadId(q['ID Cliente']),
+        tasa_bcv: rate,
+        subtotal_usd: subtotal,
+        iva_usd: detail.applyTax ? subtotal * 0.16 : 0,
+        total_usd: q['Total USD'],
+        total_ves: q['Total USD'] * rate,
+        items: detail.items,
+        usuario_id: Auth.getUser().id
+      };
+
+      const { error } = await supabase.from('facturas').insert(invoice);
+      if (error) throw error;
+
+      await supabase.from('secuencias_fiscales').update({ ultimo_control: controlNum }).eq('tipo', 'factura');
+
+      Utils.showToast('Factura Fiscal emitida correctamente', 'success');
+      Utils.closeModal();
+      
+      await Sheets.updateRow(CONFIG.SHEETS.QUOTATIONS, id, { 'Estado': 'Facturada' });
+      App.navigate('/billing');
+    } catch (err) {
+      Utils.showToast('Error al facturar: ' + err.message, 'error');
+    }
+  }
+
+  async function _getNextSequence(type) {
+    const { data, error } = await supabase.rpc('obtener_proximo_numero', { p_tipo: type });
+    if (error) throw error;
+    return data;
+  }
+
+  async function _getEntidadId(googleClientId) {
+    const clientGoogle = State.contacts.find(c => c['ID'] === googleClientId);
+    if (!clientGoogle) throw new Error('Cliente no encontrado en red local.');
+    
+    const { data, error } = await supabase.from('entidades').select('id').eq('rif', clientGoogle['RIF']).maybeSingle();
+    if (error || !data) {
+        const { data: d2 } = await supabase.from('entidades').select('id').eq('razon_social', clientGoogle['Razón Social']).maybeSingle();
+        if (d2) return d2.id;
+        throw new Error('El cliente no existe en la base de datos fiscal. Regístralo en Entidades primero.');
+    }
+    return data.id;
+  }
+
   return {
     render, renderList, renderForm, saveForm, renderDetail, deleteForm, updateStatus,
-    renderCurrentView, reactivateQuote,
+    renderCurrentView, reactivateQuote, convertToDeliveryNote, convertToInvoice, processInvoice,
     getQuotation: (id) => State.quotes.find(x => x['ID']===id),
     getContacts: () => State.contacts,
     getConfig: () => State.config,
