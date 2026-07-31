@@ -205,6 +205,12 @@
         </div>
       </div>
 
+      <div style="text-align:right; margin: 6px 0 10px 0;">
+        <a href="#" onclick="showTab('recovery'); return false;" style="color:var(--primary-light); font-size:12px; text-decoration:none;">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </div>
+
       <div class="login-error" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="loginSubmit()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -235,6 +241,76 @@
       </button>
       <button class="login-btn" onclick="showTab('login')" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.1);">
         Volver al Inicio
+      </button>
+    </div>
+
+    <!-- ── RECOVERY FORM (solicitar correo) ───────────────────────────── -->
+    <div id="panel-recovery" style="display:none;">
+      <p class="login-title" style="font-size:13px; color:var(--text-muted); text-align:left; margin-bottom:12px;">
+        Ingresa tu correo electrónico registrado y te enviaremos las instrucciones para restablecer tu contraseña.
+      </p>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Correo electrónico</label>
+        <input class="form-input" type="email" id="recovery-email" placeholder="usuario@correo.com"
+               autocomplete="email" onkeydown="if(event.key==='Enter') recoverySubmit()" />
+      </div>
+      <div class="login-error" id="recovery-error"></div>
+      <div id="recovery-success" style="display:none; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.3); color:#10b981; font-size:13px; border-radius:var(--r-sm); padding:10px 12px; margin-top:8px;"></div>
+      <button class="login-btn" id="recovery-btn" onclick="recoverySubmit()" style="margin-top:12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        Enviar Correo de Recuperación
+      </button>
+      <button class="login-btn" onclick="showTab('login')" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.1);">
+        Volver a Iniciar Sesión
+      </button>
+    </div>
+
+    <!-- ── RESET PASSWORD FORM (ingresar nueva contraseña) ─────────────── -->
+    <div id="panel-reset" style="display:none;">
+      <p class="login-title" style="font-size:13px; color:var(--text-muted); text-align:left; margin-bottom:12px;">
+        Ingresa el código o token recibido por correo y define tu nueva contraseña.
+      </p>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Código o Token de Recuperación</label>
+        <input class="form-input" id="reset-token" placeholder="Código OTP de 6 dígitos o Token completo"
+               style="letter-spacing:1px;" />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Nueva Contraseña</label>
+        <div class="password-wrap">
+          <input class="form-input" type="password" id="reset-new-pass" placeholder="Mínimo 6 caracteres" />
+          <button class="toggle-pass" type="button" onclick="togglePass('reset-new-pass')" tabindex="-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:4px;">
+        <label class="form-label">Confirmar Nueva Contraseña</label>
+        <div class="password-wrap">
+          <input class="form-input" type="password" id="reset-confirm-pass" placeholder="Repite la nueva contraseña"
+                 onkeydown="if(event.key==='Enter') resetPasswordSubmit()" />
+          <button class="toggle-pass" type="button" onclick="togglePass('reset-confirm-pass')" tabindex="-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="login-error" id="reset-error"></div>
+      <div id="reset-success" style="display:none; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.3); color:#10b981; font-size:13px; border-radius:var(--r-sm); padding:10px 12px; margin-top:8px;"></div>
+      <button class="login-btn" id="reset-btn" onclick="resetPasswordSubmit()" style="margin-top:12px; background:linear-gradient(135deg,#0d7377,#10b981);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        Guardar Nueva Contraseña
+      </button>
+      <button class="login-btn" onclick="showTab('login')" style="margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.1);">
+        Volver a Iniciar Sesión
       </button>
     </div>
 
@@ -294,10 +370,20 @@
 
     function showTab(tab) {
       _activeTab = tab;
-      document.getElementById('panel-login').style.display  = tab === 'login' ? 'block' : 'none';
-      document.getElementById('panel-setup').style.display  = tab === 'setup' ? 'block' : 'none';
-      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-setup').classList.toggle('active', tab === 'setup');
+      document.getElementById('panel-login').style.display    = tab === 'login' ? 'block' : 'none';
+      document.getElementById('panel-setup').style.display    = tab === 'setup' ? 'block' : 'none';
+      document.getElementById('panel-2fa').style.display      = tab === '2fa' ? 'block' : 'none';
+      document.getElementById('panel-recovery').style.display = tab === 'recovery' ? 'block' : 'none';
+      document.getElementById('panel-reset').style.display    = tab === 'reset' ? 'block' : 'none';
+
+      const tabSwitch = document.getElementById('tab-switch');
+      if (tab === 'login' || tab === 'setup') {
+        tabSwitch.style.display = 'flex';
+        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-setup').classList.toggle('active', tab === 'setup');
+      } else {
+        tabSwitch.style.display = 'none';
+      }
     }
 
     function togglePass(id) {
@@ -340,9 +426,7 @@
         const res = await Auth.login(email, pass, env, baseFingerprint);
         
         if (res.error === 'REQUIRES_2FA') {
-           document.getElementById('panel-login').style.display = 'none';
-           document.getElementById('tab-switch').style.display = 'none';
-           document.getElementById('panel-2fa').style.display = 'block';
+           showTab('2fa');
            window._pending2FAConf = { email, env, fingerprint: baseFingerprint };
            btn.innerHTML = 'Entrar al CRM';
            btn.disabled = false;
@@ -390,6 +474,91 @@
          btn.disabled = false;
          btn.innerHTML = 'Verificar Identidad';
        }
+    }
+
+    // ── Recuperación y Restablecimiento de Contraseña ───────────────────────
+    async function recoverySubmit() {
+      const email = document.getElementById('recovery-email').value.trim();
+      setError('recovery-error', '');
+      const succEl = document.getElementById('recovery-success');
+      succEl.style.display = 'none';
+
+      if (!email) {
+        setError('recovery-error', 'Por favor ingresa tu correo electrónico.');
+        return;
+      }
+      if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL.includes('PEGA_AQUÍ')) {
+        setError('recovery-error', '⚠️ Primero configura la URL del Apps Script en config.js');
+        return;
+      }
+
+      const btn = document.getElementById('recovery-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;"></span> Enviando correo…';
+
+      try {
+        const res = await Auth.requestPasswordReset(email);
+        btn.disabled = false;
+        btn.innerHTML = 'Enviar Correo de Recuperación';
+
+        if (res.success) {
+          succEl.textContent = res.message || 'Correo enviado exitosamente.';
+          succEl.style.display = 'block';
+        } else {
+          setError('recovery-error', res.error || 'Error al solicitar la recuperación.');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = 'Enviar Correo de Recuperación';
+        setError('recovery-error', err.message);
+      }
+    }
+
+    async function resetPasswordSubmit() {
+      const token = document.getElementById('reset-token').value.trim();
+      const newPass = document.getElementById('reset-new-pass').value;
+      const confirmPass = document.getElementById('reset-confirm-pass').value;
+
+      setError('reset-error', '');
+      const succEl = document.getElementById('reset-success');
+      succEl.style.display = 'none';
+
+      if (!token) {
+        setError('reset-error', 'Ingresa el código o token de recuperación.');
+        return;
+      }
+      if (!newPass || newPass.length < 6) {
+        setError('reset-error', 'La nueva contraseña debe tener al menos 6 caracteres.');
+        return;
+      }
+      if (newPass !== confirmPass) {
+        setError('reset-error', 'Las contraseñas no coinciden.');
+        return;
+      }
+
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;"></span> Actualizando…';
+
+      try {
+        const res = await Auth.resetPassword(token, newPass);
+        btn.disabled = false;
+        btn.innerHTML = 'Guardar Nueva Contraseña';
+
+        if (res.success) {
+          succEl.textContent = res.message || 'Contraseña restablecida exitosamente.';
+          succEl.style.display = 'block';
+          setTimeout(() => {
+            showTab('login');
+          }, 3000);
+        } else {
+          setError('reset-error', res.error || 'Error al restablecer la contraseña.');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = 'Guardar Nueva Contraseña';
+        setError('reset-error', err.message);
+      }
     }
 
     // ── Setup (crear admin) ────────────────────────────────────────────────
@@ -441,8 +610,19 @@
       }
     }
 
-    // Auto-check: ¿ya existe sesión válida?
+    // Auto-check: ¿viene token en la URL o ya existe sesión válida?
     (async () => {
+      // 1. Detectar parámetro resetToken o token en la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetTokenParam = urlParams.get('resetToken') || urlParams.get('token');
+      if (resetTokenParam) {
+        const tokenInput = document.getElementById('reset-token');
+        if (tokenInput) tokenInput.value = resetTokenParam;
+        showTab('reset');
+        return;
+      }
+
+      // 2. Verificar sesión existente
       Auth.init();
       if (Auth.isAuthenticated()) {
         try {

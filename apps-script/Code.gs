@@ -45,17 +45,19 @@ function doPost(e) {
     if (!req.apiKey || req.apiKey !== API_KEY) return ok({ success: false, error: 'Acceso Denegado: AuthKey' });
     
     // Rutas protegidas sólo por AuthKey
-    if (['LOGIN', 'VERIFY_2FA', 'CHECK_SETUP', 'SETUP', 'CREATE_ADMIN', 'REQUEST_ACCESS', 'VALIDATE_TOKEN', 'FETCH_BCV_RATE', 'MIGRAR_FINANCE'].includes(req.action)) {
+    if (['LOGIN', 'VERIFY_2FA', 'CHECK_SETUP', 'SETUP', 'CREATE_ADMIN', 'REQUEST_ACCESS', 'VALIDATE_TOKEN', 'FETCH_BCV_RATE', 'MIGRAR_FINANCE', 'REQUEST_PASSWORD_RESET', 'RESET_PASSWORD'].includes(req.action)) {
       switch (req.action) {
-        case 'CHECK_SETUP':    return ok(checkSetup());
-        case 'SETUP':          return ok(setup());
-        case 'MIGRAR_FINANCE': return ok(migrarEstructuraFinance());
-        case 'LOGIN':          return ok(login(req));
-        case 'VERIFY_2FA':     return ok(verify2FA(req));
-        case 'VALIDATE_TOKEN': return ok({ success: true, user: auth(req) });
-        case 'FETCH_BCV_RATE': return ok(fetchBcvRate());
-        case 'CREATE_ADMIN':   return ok(createAdmin(req));
-        case 'REQUEST_ACCESS': return ok(requestAccess(req));
+        case 'CHECK_SETUP':            return ok(checkSetup());
+        case 'SETUP':                  return ok(setup());
+        case 'MIGRAR_FINANCE':         return ok(migrarEstructuraFinance());
+        case 'LOGIN':                  return ok(login(req));
+        case 'VERIFY_2FA':             return ok(verify2FA(req));
+        case 'VALIDATE_TOKEN':         return ok({ success: true, user: auth(req) });
+        case 'FETCH_BCV_RATE':         return ok(fetchBcvRate());
+        case 'CREATE_ADMIN':           return ok(createAdmin(req));
+        case 'REQUEST_ACCESS':         return ok(requestAccess(req));
+        case 'REQUEST_PASSWORD_RESET': return ok(requestPasswordReset(req));
+        case 'RESET_PASSWORD':          return ok(resetPassword(req));
       }
     }
 
@@ -241,6 +243,221 @@ function auth(req) {
   }
 
   return { email: userRow[idxEmail], nombre: userRow[idxName], rol: userRow[idxRole] };
+}
+
+// ─── RECUPERACIÓN DE CONTRASEÑA VÍA CORREO ────────────────────────────────────
+
+function ensureResetColumnsExist(uSh, headers) {
+  let idxResetToken = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token');
+  let idxResetExp   = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token_expira');
+
+  if (idxResetToken === -1 || idxResetExp === -1) {
+    const lastCol = uSh.getLastColumn();
+    if (idxResetToken === -1) {
+      uSh.getRange(1, lastCol + 1).setValue('Reset_Token');
+    }
+    const currentLastCol = uSh.getLastColumn();
+    if (idxResetExp === -1) {
+      uSh.getRange(1, currentLastCol + 1).setValue('Reset_Token_Expira');
+    }
+    return uSh.getDataRange().getValues()[0];
+  }
+  return headers;
+}
+
+function requestPasswordReset(req) {
+  if (!req.email || !String(req.email).trim()) {
+    return { success: false, error: 'Por favor ingresa tu correo electrónico.' };
+  }
+
+  const uSh = getSS().getSheetByName('Usuarios');
+  if (!uSh) throw new Error('Sistema no configurado.');
+
+  let data = uSh.getDataRange().getValues();
+  if (data.length <= 1) return { success: false, error: 'No existen usuarios registrados.' };
+
+  let headers = data[0];
+  const getIdx = (words) => headers.findIndex(col => words.includes(String(col).trim().toLowerCase()));
+  const idxEmail  = getIdx(['email', 'correo']);
+  const idxStatus = getIdx(['status', 'activo', 'estado', 'estatus']);
+  const idxName   = getIdx(['nombre', 'name', 'usuario']);
+
+  const reqEmail = String(req.email).toLowerCase().trim();
+  let userRowIndex = -1;
+  let userName = 'Usuario';
+
+  for (let i = 1; i < data.length; i++) {
+    const sheetEmail = String(data[i][idxEmail] || '').toLowerCase().trim();
+    if (sheetEmail === reqEmail) {
+      const statusVal = String(data[i][idxStatus] || '').trim().toUpperCase();
+      if (statusVal !== 'ACTIVO' && statusVal !== 'SI') {
+        return { success: false, error: 'La cuenta existe pero está inactiva o deshabilitada.' };
+      }
+      userRowIndex = i + 1;
+      if (idxName !== -1 && data[i][idxName]) userName = String(data[i][idxName]);
+      break;
+    }
+  }
+
+  if (userRowIndex === -1) {
+    return { success: true, message: 'Si el correo está registrado, recibirás un mensaje con las instrucciones de recuperación.' };
+  }
+
+  headers = ensureResetColumnsExist(uSh, headers);
+  const idxResetToken = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token');
+  const idxResetExp   = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token_expira');
+
+  const rawUuid = Utilities.getUuid().replace(/-/g, '').substring(0, 12).toUpperCase();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetToken = rawUuid + '-' + otpCode;
+  const expirationTime = new Date().getTime() + (30 * 60 * 1000); // 30 mins
+
+  uSh.getRange(userRowIndex, idxResetToken + 1).setValue(resetToken);
+  uSh.getRange(userRowIndex, idxResetExp + 1).setValue(expirationTime);
+
+  const appUrl = req.appUrl || 'https://ergoexpress.vercel.app/login.html';
+  const resetLink = appUrl + (appUrl.includes('?') ? '&' : '?') + 'resetToken=' + resetToken;
+
+  const emailSubject = 'ERGOEXPRESS CRM — Restablecer Contraseña';
+  const htmlBody = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 580px; margin: 0 auto; padding: 30px; background-color: #0f1826; color: #e2e8f0; border-radius: 16px; border: 1px solid #1e293b;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="color: #0d7377; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: 1px;">ERGOEXPRESS CRM</h2>
+        <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px;">Sistema ERP & CRM Financiero</p>
+      </div>
+
+      <div style="background-color: #1e293b; padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+        <h3 style="color: #ffffff; font-size: 18px; margin-top: 0; margin-bottom: 12px;">Hola, ${userName}</h3>
+        <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+          Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>ERGOEXPRESS CRM</strong>.
+        </p>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetLink}" style="background-color: #0d7377; color: #ffffff; padding: 14px 28px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 12px rgba(13, 115, 119, 0.4);">
+            Restablecer Contraseña
+          </a>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin-bottom: 10px;">
+          O si lo prefieres, puedes ingresar manualmente este código de recuperación de 6 dígitos en la pantalla de restablecimiento:
+        </p>
+        <div style="text-align: center; margin: 16px 0;">
+          <span style="font-family: monospace; font-size: 24px; font-weight: 800; color: #38bdf8; background: #0f172a; padding: 8px 20px; border-radius: 6px; letter-spacing: 4px; border: 1px dashed #38bdf8;">
+            ${otpCode}
+          </span>
+        </div>
+
+        <p style="color: #f59e0b; font-size: 12px; margin-top: 20px; line-height: 1.4;">
+          ⚠️ <strong>Nota de Seguridad:</strong> Este enlace y código expiran en <strong>30 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.
+        </p>
+      </div>
+
+      <div style="text-align: center; border-top: 1px solid #334155; padding-top: 16px; color: #64748b; font-size: 11px;">
+        &copy; ERGOEXPRESS CRM · Seguridad de Grado Financiero
+      </div>
+    </div>
+  `;
+
+  try {
+    MailApp.sendEmail({
+      to: reqEmail,
+      subject: emailSubject,
+      htmlBody: htmlBody
+    });
+  } catch (err) {
+    try {
+      GmailApp.sendEmail(reqEmail, emailSubject, '', { htmlBody: htmlBody });
+    } catch(e) {
+      return { success: false, error: 'Error al enviar el correo: ' + e.message };
+    }
+  }
+
+  if (typeof AuditEngine !== 'undefined' && AuditEngine.log) {
+    AuditEngine.log('PASSWORD_RESET_REQUESTED', reqEmail, 'Solicitud de restablecimiento enviada por correo', '');
+  }
+
+  return {
+    success: true,
+    message: 'Hemos enviado las instrucciones para restablecer tu contraseña a tu correo electrónico.'
+  };
+}
+
+function resetPassword(req) {
+  const tokenInput = String(req.token || '').trim();
+  const newPass = String(req.newPassword || '').trim();
+
+  if (!tokenInput) {
+    return { success: false, error: 'El código o token de recuperación es requerido.' };
+  }
+  if (!newPass || newPass.length < 6) {
+    return { success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  const uSh = getSS().getSheetByName('Usuarios');
+  if (!uSh) throw new Error('Sistema no configurado.');
+
+  const data = uSh.getDataRange().getValues();
+  if (data.length <= 1) return { success: false, error: 'No existen usuarios.' };
+
+  const headers = data[0];
+  const idxResetToken = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token');
+  const idxResetExp   = headers.findIndex(col => String(col).trim().toLowerCase() === 'reset_token_expira');
+  const idxPass       = headers.findIndex(col => ['password_hash', 'password', 'contraseña', 'clave'].includes(String(col).trim().toLowerCase()));
+  const idxEmail      = headers.findIndex(col => ['email', 'correo'].includes(String(col).trim().toLowerCase()));
+  const idxToken      = headers.findIndex(col => String(col).trim().toLowerCase() === 'token');
+  const idxTokenExp   = headers.findIndex(col => String(col).trim().toLowerCase() === 'token_expira');
+
+  if (idxResetToken === -1 || idxResetExp === -1) {
+    return { success: false, error: 'Código o token de recuperación inválido o no encontrado.' };
+  }
+
+  let userRowIndex = -1;
+  let userEmail = '';
+
+  for (let i = 1; i < data.length; i++) {
+    const storedToken = String(data[i][idxResetToken] || '').trim();
+    if (!storedToken) continue;
+
+    const isFullMatch = (storedToken.toLowerCase() === tokenInput.toLowerCase());
+    const isOtpMatch  = (storedToken.endsWith('-' + tokenInput) || storedToken.includes(tokenInput));
+
+    if (isFullMatch || isOtpMatch) {
+      userRowIndex = i + 1;
+      userEmail = String(data[i][idxEmail] || '');
+
+      const expTime = Number(data[i][idxResetExp] || 0);
+      const currentTime = new Date().getTime();
+
+      if (currentTime > expTime) {
+        uSh.getRange(userRowIndex, idxResetToken + 1).setValue('');
+        uSh.getRange(userRowIndex, idxResetExp + 1).setValue('');
+        return { success: false, error: 'El código o token de recuperación ha expirado. Por favor solicita uno nuevo.' };
+      }
+      break;
+    }
+  }
+
+  if (userRowIndex === -1) {
+    return { success: false, error: 'El código o token de recuperación es inválido.' };
+  }
+
+  const newHash = computeSHA256(newPass);
+  uSh.getRange(userRowIndex, idxPass + 1).setValue(newHash);
+
+  uSh.getRange(userRowIndex, idxResetToken + 1).setValue('');
+  uSh.getRange(userRowIndex, idxResetExp + 1).setValue('');
+
+  if (idxToken !== -1) uSh.getRange(userRowIndex, idxToken + 1).setValue('');
+  if (idxTokenExp !== -1) uSh.getRange(userRowIndex, idxTokenExp + 1).setValue('');
+
+  if (typeof AuditEngine !== 'undefined' && AuditEngine.log) {
+    AuditEngine.log('PASSWORD_RESET_SUCCESS', userEmail, 'Contraseña restablecida exitosamente via correo', '');
+  }
+
+  return {
+    success: true,
+    message: 'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+  };
 }
 
 // ─── ESTRUCTURA FUNDACIONAL ──────────────────────────────────────────────────

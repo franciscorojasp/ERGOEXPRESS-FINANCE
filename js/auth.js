@@ -45,10 +45,20 @@ const Auth = (() => {
     window.location.href = 'login.html';
   }
 
+  // ─── Recuperación de contraseña por correo ─────────────────────────────────
+  async function requestPasswordReset(email) {
+    const appUrl = window.location.origin + window.location.pathname;
+    return await API.call('REQUEST_PASSWORD_RESET', { email, appUrl });
+  }
+
+  async function resetPassword(token, newPassword) {
+    return await API.call('RESET_PASSWORD', { token, newPassword });
+  }
+
   // ─── Getters ──────────────────────────────────────────────────────────────
   function getUser()          { return _user; }
   function getToken()         { return _token; }
   function isAuthenticated()  { return !!_token && !!_user; }
 
-  return { init, login, validate, signOut, getUser, getToken, isAuthenticated };
+  return { init, login, validate, signOut, requestPasswordReset, resetPassword, getUser, getToken, isAuthenticated };
 })();

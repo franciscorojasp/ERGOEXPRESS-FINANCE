@@ -510,6 +510,58 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
+// Solicitar recuperación de contraseña (forgot-password)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email, redirectTo } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'El correo electrónico es requerido' });
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectTo || 'https://ergoexpress.vercel.app/login.html'
+    });
+
+    if (error) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    log('info', `Solicitud de recuperación de contraseña enviada a: ${email}`);
+    res.json({
+      success: true,
+      message: 'Si el correo está registrado, se han enviado las instrucciones de restablecimiento.'
+    });
+  } catch (error) {
+    log('error', 'Error en forgot-password:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Restablecer contraseña (reset-password)
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { new_password } = req.body;
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const { data, error } = await supabase.auth.updateUser({ password: new_password });
+
+    if (error) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
+    log('info', `Contraseña actualizada exitosamente para usuario ID: ${data.user ? data.user.id : 'N/A'}`);
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada exitosamente'
+    });
+  } catch (error) {
+    log('error', 'Error en reset-password:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
 // ===========================================
 // PRODUCTOS
 // ===========================================
