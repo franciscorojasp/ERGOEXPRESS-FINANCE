@@ -296,14 +296,14 @@ const Settings = (() => {
           </div>
         </div>
         <div class="card-footer">
-          <p class="text-muted text-sm">Mostrando los registros de auditoría forense desde Supabase. Solo personal con permisos administrativos puede ver esta información.</p>
+          <p class="text-muted text-sm">Mostrando los registros de auditoría forense desde Google Sheets. Solo personal con permisos administrativos puede ver esta información.</p>
         </div>
       </div>
     `;
 
     try {
-      // Llamada a la nueva API de Supabase en Vercel
-      const res = await API.callVercel('/audit', { limit: 100 });
+      // Llamada a la API de auditoría en Google Apps Script
+      const res = await API.call('GET_AUDIT_LOGS', { limit: 100 });
       const list = document.getElementById('audit-logs-list');
       
       if (!res.success) {
@@ -312,7 +312,7 @@ const Settings = (() => {
       }
 
       if (!res.data || res.data.length === 0) {
-        list.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros en Supabase aún.</div>`;
+        list.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No hay registros de auditoría aún.</div>`;
         return;
       }
 
