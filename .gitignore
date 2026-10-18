@@ -1,35 +1,72 @@
-# Archivos temporales de Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.class
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-# Archivos de caché del navegador
-.DS_Store
-*.log
-*.tmp
-
-# Archivos de configuración local
+# Dependencies
+node_modules/
+venv/
+.venv/
 .env
 .env.local
-.env.*.local
-.vercel
-*.pem
-*.key
-credentials.json
+*.env.*
 
-# Archivos de Office (Potencialmente contienen claves/datos sensibles)
-*.docx
-*.xlsx
-*.pptx
-*.pdf
-Cotizacion_*.pdf
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
-# Python / Scripts basura
-__pycache__/
-*.pyc
-migrate_data.py
-read_products.ps1
-tmp_read_headers*.ps1
-node_modules/
+# Editors
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build systems
 dist/
 build/
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+```
