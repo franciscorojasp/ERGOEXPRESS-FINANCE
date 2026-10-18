@@ -101,11 +101,22 @@ function computeSHA256(text) {
 }
 
 function login(req) {
+  // Rate limiting y bloqueo por intentos fallidos
+  const rateCheck = checkRateLimit(req.email || 'unknown', 'login');
+  if (!rateCheck.permitido) {
+    return { success: false, error: rateCheck.mensaje };
+  }
+  
+  const lockoutCheck = checkLoginLockout(req.email);
+  if (lockoutCheck.bloqueado) {
+    return { success: false, error: lockoutCheck.mensaje };
+  }
+  
   const uSh = getSS().getSheetByName('Usuarios');
   if (!uSh) throw new Error('Sistema no configurado. Ejecute Setup.');
   const data = uSh.getDataRange().getValues();
   if (data.length <= 1) return { success: false, error: 'No hay usuarios' };
-  
+
   const h = data[0];
   const getIdx = (words) => h.findIndex(col => words.includes(String(col).trim().toLowerCase()));
   const idxEmail       = getIdx(['email', 'correo']);
@@ -116,6 +127,7 @@ function login(req) {
   const idxName        = getIdx(['nombre', 'name', 'usuario']);
   const idxRole        = getIdx(['rol', 'role']);
   const idxFingerprint = getIdx(['fingerprint', 'huella']);
+  const idxTOTPSecret  = getIdx(['totp_secret', 'secret_totp', '2fa_secret']);
 
   const hashedInput = computeSHA256(req.password);
 
@@ -123,7 +135,7 @@ function login(req) {
     const r = data[i];
     const sheetEmail = String(r[idxEmail] || '').toLowerCase().trim();
     const reqEmail = String(req.email || '').toLowerCase().trim();
-    
+
     if (sheetEmail === reqEmail && reqEmail !== '') {
       const sheetPass = String(r[idxPass] || '').trim();
       const reqPass = String(req.password || '').trim();
@@ -131,33 +143,74 @@ function login(req) {
       const statusVal = String(r[idxStatus] || '').trim().toUpperCase();
       const statusMatch = (statusVal === 'ACTIVO' || statusVal === 'SI');
 
-      if (!passMatch) return { success: false, error: `La contraseña es incorrecta. (Debug: sheet='${sheetPass}', input='${reqPass}', idx=${idxPass})` };
-      if (!statusMatch) return { success: false, error: 'La cuenta existe pero está: ' + statusVal };
+      if (!passMatch) {
+        recordFailedLogin(reqEmail);
+        return { success: false, error: `La contraseña es incorrecta.` };
+      }
+      
+      if (!statusMatch) {
+        return { success: false, error: 'La cuenta existe pero está: ' + statusVal };
+      }
       
       const deviceInfo = req.fingerprint || 'Desconocido/Temporal';
       const userFingerprint = (idxFingerprint !== -1) ? String(r[idxFingerprint] || '') : '';
       
+      // Verificar si tiene TOTP configurado
+      const hasTOTP = idxTOTPSecret !== -1 && r[idxTOTPSecret] && r[idxTOTPSecret] !== '';
+      
       // Bloqueo Zero-Trust por dispositivo
       if (idxFingerprint !== -1 && userFingerprint !== '' && userFingerprint !== deviceInfo && deviceInfo !== 'Desconocido/Temporal') {
          AuditEngine.log('LOGIN_BLOCKED', r[idxEmail], `Intento de acceso desde dispositivo extraño: ${deviceInfo}`, '');
-         return { success: false, error: 'REQUIRES_2FA', message: 'Dispositivo no reconocido. Verificación 2FA requerida por seguridad bancaria.' };
+         
+         // Si tiene TOTP, requerirlo; si no, requerir 2FA básico
+         if (hasTOTP) {
+           return { 
+             success: false, 
+             error: 'REQUIRES_TOTP', 
+             message: 'Dispositivo no reconocido. Verificación TOTP requerida.',
+             requiresTOTP: true
+           };
+         } else {
+           return { 
+             success: false, 
+             error: 'REQUIRES_2FA', 
+             message: 'Dispositivo no reconocido. Verificación 2FA requerida por seguridad bancaria.',
+             requires2FA: true
+           };
+         }
       } else if (idxFingerprint !== -1 && userFingerprint === '' && deviceInfo !== 'Desconocido/Temporal') {
-         uSh.getRange(i + 1, idxFingerprint + 1).setValue(deviceInfo); // Guardar primer dispositivo
+         uSh.getRange(i + 1, idxFingerprint + 1).setValue(deviceInfo);
       }
 
+      // Resetear intentos fallidos tras login exitoso
+      resetLoginAttempts(reqEmail);
+      AuditEngine.log('LOGIN_SUCCESS', r[idxEmail], `Acceso exitoso. Entorno: ${req.env}. Huella: ${deviceInfo}`, '');
+      
       return generateTokenAndSync(req, uSh, i+1, r, h, deviceInfo);
     }
+  }
+  
+  // Usuario no encontrado - registrar intento fallido
+  if (req.email) {
+    recordFailedLogin(req.email);
   }
   return { success: false, error: 'El correo ' + req.email + ' no se encuentra en Usuarios.' };
 }
 
 function verify2FA(req) {
+  // Rate limiting también en verificación 2FA (previene brute-force de códigos)
+  const rateCheck2FA = checkRateLimit(req.email || 'unknown', 'verify2fa');
+  if (!rateCheck2FA.permitido) {
+    return { success: false, error: rateCheck2FA.mensaje };
+  }
+
   const uSh = getSS().getSheetByName('Usuarios');
   const data = uSh.getDataRange().getValues();
   const h = data[0];
   const idxEmail = h.indexOf('Email');
   const idxFingerprint = h.indexOf('Fingerprint');
-  
+  const idxTOTPSecret = h.indexOf('TOTP_Secret');
+
   let userRow = -1;
   let shData = null;
   for (let i = 1; i < data.length; i++) {
@@ -168,23 +221,74 @@ function verify2FA(req) {
     }
   }
   if (userRow === -1) return { success: false, error: 'Usuario no encontrado' };
+
+  // Verificar si el usuario tiene TOTP configurado
+  const hasTOTP = idxTOTPSecret !== -1 && shData[idxTOTPSecret] && shData[idxTOTPSecret] !== '';
   
-  // Simulacion de validación de código para certificación
-  if (req.otp !== '123456') {
-     AuditEngine.log('2FA_FAILED', req.email, `Falló validación 2FA con OTP: ${req.otp}`, '');
-     return { success: false, error: 'OTP Incorrecto' };
+  let otpValido = false;
+  
+  const currentStep = Math.floor(Date.now() / (TOTP_TIME_STEP * 1000));
+
+  if (hasTOTP) {
+    // Validar con TOTP real usando el secreto almacenado
+    const secret = shData[idxTOTPSecret];
+    otpValido = verifyTOTP(secret, req.otp, 1);
+    if (!otpValido) {
+      // Anti-replay: rechazar códigos ya usados en este mismo período de tiempo
+      const replayKey = `totp_used_${req.email}_${currentStep}`;
+      const usedCache = CacheService.getScriptCache();
+      if (usedCache.get(replayKey)) {
+        AuditEngine.log('2FA_TOTP_REPLAY', req.email, 'Código TOTP reutilizado en el mismo período', '');
+        return { success: false, error: 'Este código ya fue utilizado. Espere al siguiente.' };
+      }
+      recordFailedLogin(String(req.email || '').toLowerCase());
+      AuditEngine.log('2FA_TOTP_FAILED', req.email, `Falló validación TOTP`, '');
+      return { success: false, error: 'Código TOTP incorrecto o expirado' };
+    }
+    // Marcar código como usado durante el resto del período + ventana
+    try {
+      CacheService.getScriptCache().put(`totp_used_${req.email}_${currentStep}`, '1', TOTP_TIME_STEP * 3);
+    } catch(e) {}
+  } else {
+    // Fallback de emergencia '123456': SOLO permitido si la propiedad de script
+    // ALLOW_FALLBACK_OTP está explícitamente en 'true' (modo desarrollo/certificación).
+    // En producción: dejar sin configurar o en 'false' → el usuario DEBE tener TOTP.
+    const allowFallback = PropertiesService.getScriptProperties().getProperty('ALLOW_FALLBACK_OTP') === 'true';
+    if (!allowFallback) {
+      AuditEngine.log('2FA_NO_TOTP_CONFIGURED', req.email, 'Intento de 2FA sin secreto TOTP configurado y fallback deshabilitado', '');
+      return {
+        success: false,
+        error: 'TOTP_NO_CONFIGURED',
+        message: 'Este usuario no tiene autenticador TOTP configurado. Solicite al administrador generar el secreto con setupTOTP(email).',
+        requiresTOTPSetup: true
+      };
+    }
+    if (req.otp !== '123456') {
+      recordFailedLogin(String(req.email || '').toLowerCase());
+      AuditEngine.log('2FA_FAILED', req.email, `Falló validación 2FA (fallback desarrollo)`, '');
+      return { success: false, error: 'OTP Incorrecto' };
+    }
+    otpValido = true;
+    AuditEngine.log('2FA_FALLBACK_USED', req.email, '⚠️ 2FA validado con OTP de DESARROLLO (fallback habilitado). Deshabilite ALLOW_FALLBACK_OTP en producción.', '');
   }
-  
+
+  // Registrar intento fallido si el código era inválido (rama TOTP)
+  if (!otpValido) {
+    recordFailedLogin(String(req.email || '').toLowerCase());
+  }
+
   // Confiar en este nuevo dispositivo (Zero-Trust Override)
   const deviceInfo = req.fingerprint || 'Desconocido/Temporal';
   if (idxFingerprint !== -1) {
      uSh.getRange(userRow, idxFingerprint + 1).setValue(deviceInfo);
   }
   AuditEngine.log('2FA_SUCCESS', req.email, `Dispositivo confiado tras 2FA: ${deviceInfo}`, '');
-  
+
+  // Resetear intentos fallidos tras 2FA exitoso
+  resetLoginAttempts(req.email);
+
   return generateTokenAndSync(req, uSh, userRow, shData, h, deviceInfo);
 }
-
 function generateTokenAndSync(req, uSh, rowNum, r, h, deviceInfo) {
   const idxEmail = h.indexOf('Email');
   const idxToken = h.indexOf('Token');
@@ -504,6 +608,15 @@ function read(req, user) {
   if (user && String(user.rol).toUpperCase() === 'VENDEDOR' && RESTRICTED_SHEETS.includes(req.sheet)) {
     return { success: false, error: 'Acceso Denegado por RBAC (Sólo lectura Admin).' };
   }
+
+  // Caché solo para ADMIN (los VENDEDOR tienen filtrado por fila y no comparten resultado)
+  const canCache = !user || String(user.rol).toUpperCase() !== 'VENDEDOR';
+  const cacheKey = `read_${req.sheet}`;
+  if (canCache && !req.forceRefresh) {
+    const cached = (typeof getCachedData === 'function') ? getCachedData(cacheKey) : null;
+    if (cached) return { success: true, data: cached, cached: true };
+  }
+
   const sh = getSS().getSheetByName(req.sheet);
   if (!sh) return { success: false, error: 'Hoja no existe: ' + req.sheet };
   const data = sh.getDataRange().getValues();
@@ -517,6 +630,9 @@ function read(req, user) {
 
   if (user && String(user.rol).toUpperCase() === 'VENDEDOR') {
     rows = rows.filter(r => String(r.Vendedor || r.Email || r.Usuario || '').toLowerCase() === String(user.email).toLowerCase() || String(r.Vendedor || r.Responsable || '').toLowerCase() === String(user.nombre).toLowerCase());
+  } else if (canCache && typeof setCachedData === 'function') {
+    // Almacenar versión sin filtrar solo si cabe en el caché (límite ~110KB del CacheService)
+    try { setCachedData(cacheKey, rows, CACHE_TTL_DEFAULT); } catch(e) {}
   }
   return { success: true, data: rows };
 }
@@ -551,22 +667,53 @@ function batchRead(req, user) {
 function append(req, user) {
   const sh = getSS().getSheetByName(req.sheet);
   if (!sh) throw new Error('Hoja no existe');
-  
+
+  // Sanitización de datos de entrada
+  req.data = sanitizarObjeto(req.data);
+
+  // Validación específica por tipo de hoja
+  if (req.sheet === 'Contactos') {
+    if (req.data.RIF) {
+      const rifValidation = validarRIF(req.data.RIF);
+      if (!rifValidation.valido) {
+        throw new Error('RIF inválido: ' + rifValidation.error);
+      }
+      req.data.RIF_Validado = 'SI';
+      req.data.RIF_Ultimo_Digito = rifValidation.numero ? rifValidation.numero.slice(-1) : '';
+    }
+    if (req.data.Email && !validateEmail(req.data.Email)) {
+      throw new Error('Email inválido: ' + req.data.Email);
+    }
+  }
+
   // Inyección de Tasa de Operación para Diferencial Cambiario
   if (req.sheet === 'Finanzas_Ingresos' || req.sheet === 'Finanzas_Egresos') {
       try { req.data['Tasa_BCV_Operacion'] = fetchBcvRate().rate; } catch(e) { }
+      
+      // Validar montos positivos
+      if (req.data['Total USD'] && !validateNumber(req.data['Total USD'], 0)) {
+        throw new Error('El monto total debe ser un número positivo');
+      }
   }
 
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   const row = headers.map(h => req.data[h] !== undefined ? req.data[h] : '');
-  
+
   // Imposición de UUID si no viene uno del front, forzado a la columna 'ID'
   const idxId = headers.indexOf('ID');
   if (idxId !== -1 && !row[idxId]) {
     row[idxId] = Utilities.getUuid();
   }
 
-  sh.appendRow(row);
+  // Escritura bajo lock (concurrencia) + invalidación de caché
+  const doWrite = () => { sh.appendRow(row); };
+  if (typeof executeWithLock === 'function') {
+    executeWithLock(doWrite, `write_${req.sheet}`);
+  } else {
+    doWrite();
+  }
+  if (typeof invalidateOnWrite === 'function') invalidateOnWrite(req.sheet);
+
   const forenseData = JSON.stringify({ insertado: req.data });
   AuditEngine.log('CREATE', user ? user.email : 'System', `Añadió un registro a ${req.sheet} (ID: ${row[idxId]})`, forenseData);
   return { success: true, id: row[idxId] };
@@ -576,13 +723,25 @@ function update(req, user) {
   if (req.sheet === 'Finanzas_Ingresos' || req.sheet === 'Finanzas_Egresos') {
     throw new Error('Art. 121 SENIAT: Prohibida la modificación directa de registros fiscales. Debe emitir Nota de Crédito/Débito.');
   }
-  
+
   const sh = getSS().getSheetByName(req.sheet);
   if (!sh) throw new Error('La hoja ' + req.sheet + ' no existe.');
-  
+
+  // Sanitización de datos de entrada
+  req.data = sanitizarObjeto(req.data);
+
+  // Validación específica por tipo de hoja
+  if (req.sheet === 'Contactos' && req.data.RIF) {
+    const rifValidation = validarRIF(req.data.RIF);
+    if (!rifValidation.valido) {
+      throw new Error('RIF inválido: ' + rifValidation.error);
+    }
+    req.data.RIF_Validado = 'SI';
+  }
+
   const data = sh.getDataRange().getValues();
   const headers = data[0];
-  
+
   // Buscar el índice de la fila (1-based)
   let rowIndex = req.rowIndex || -1;
   if (rowIndex <= 0) {
@@ -602,21 +761,28 @@ function update(req, user) {
     }
     throw new Error('Registro no encontrado para actualización en ' + req.sheet);
   }
-  
+
   // Captura Forense: Estado previo
   const oldRow = data[rowIndex - 1];
   const oldObj = {}; headers.forEach((h, i) => { if(h) oldObj[h] = oldRow[i]; });
 
-  Object.keys(req.data).forEach(h => {
-    const colIdx = headers.indexOf(h);
-    if (colIdx !== -1) sh.getRange(rowIndex, colIdx + 1).setValue(req.data[h]);
-  });
-  
+  const doUpdate = () => {
+    Object.keys(req.data).forEach(h => {
+      const colIdx = headers.indexOf(h);
+      if (colIdx !== -1) sh.getRange(rowIndex, colIdx + 1).setValue(req.data[h]);
+    });
+  };
+  if (typeof executeWithLock === 'function') {
+    executeWithLock(doUpdate, `write_${req.sheet}`);
+  } else {
+    doUpdate();
+  }
+  if (typeof invalidateOnWrite === 'function') invalidateOnWrite(req.sheet);
+
   const forenseData = JSON.stringify({ old: oldObj, newFields: req.data });
   AuditEngine.log('UPDATE', user ? user.email : 'System', `Actualizó registro en ${req.sheet} (ID: ${req.id})`, forenseData);
   return { success: true };
 }
-
 function del(req, user) {
   if (req.sheet === 'Finanzas_Ingresos' || req.sheet === 'Finanzas_Egresos') {
     throw new Error('Art. 121 SENIAT: Prohibida la inhabilitación directa de registros fiscales. Debe emitir Nota de Crédito/Débito.');
@@ -637,14 +803,22 @@ function del(req, user) {
     if (colStatus === -1) colStatus = headers.indexOf('Estatus');
     if (colStatus === -1) colStatus = headers.indexOf('Activo');
 
-    if (colStatus !== -1) {
-       sh.getRange(rowIndex, colStatus + 1).setValue('INACTIVO');
+    const doDelete = () => {
+      if (colStatus !== -1) {
+         sh.getRange(rowIndex, colStatus + 1).setValue('INACTIVO');
+      } else {
+         const newCol = headers.length + 1;
+         sh.getRange(1, newCol).setValue('Status');
+         sh.getRange(rowIndex, newCol).setValue('INACTIVO');
+      }
+    };
+    if (typeof executeWithLock === 'function') {
+      executeWithLock(doDelete, `write_${req.sheet}`);
     } else {
-       const newCol = headers.length + 1;
-       sh.getRange(1, newCol).setValue('Status');
-       sh.getRange(rowIndex, newCol).setValue('INACTIVO');
+      doDelete();
     }
-    
+    if (typeof invalidateOnWrite === 'function') invalidateOnWrite(req.sheet);
+
     const forenseData = JSON.stringify({ old: oldObj, status_cambiado: 'INACTIVO' });
     AuditEngine.log('DELETE_LOGICAL', user ? user.email : 'System', `Inhabilitó registro en ${req.sheet} (ID: ${req.id})`, forenseData);
     return { success: true, message: 'Registro inhabilitado (eliminación lógica)' }; 
